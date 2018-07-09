@@ -60,6 +60,7 @@ struct asset
    {
       return std::tie(a.get_symbol(), a.amount) == std::tie(b.get_symbol(), b.amount);
    }
+   // TODO: check assertion failures with operands. Found on 07/06/18
    friend bool operator < (const asset& a, const asset& b)
    {
       FC_ASSERT(a.get_symbol() == b.get_symbol());

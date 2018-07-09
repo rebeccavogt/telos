@@ -2738,6 +2738,9 @@ int main( int argc, char** argv ) {
 
    auto cancelDelay = canceldelay_subcommand(system);
 
+
+   // TODO: change the exception handling to output stacktrace info
+   // Check build flags also, may be already implemented
    try {
        app.parse(argc, argv);
    } catch (const CLI::ParseError &e) {
