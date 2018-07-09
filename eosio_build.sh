@@ -46,13 +46,16 @@
 		exit 1
 	}
 
+	# TELOS CHANGES:
+	#
+	# 1. Changed CORE_SYMBOL_NAME to TLOS
 	ARCH=$( uname )
 	BUILD_DIR="${PWD}/build"
 	CMAKE_BUILD_TYPE=Release
 	DISK_MIN=20
 	DOXYGEN=false
 	ENABLE_COVERAGE_TESTING=false
-	CORE_SYMBOL_NAME="SYS"
+	CORE_SYMBOL_NAME="TLOS"
 	TEMP_DIR="/tmp"
 	TIME_BEGIN=$( date -u +%s )
 	VERSION=1.2

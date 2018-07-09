@@ -182,8 +182,11 @@ endif()
 
 add_subdirectory( externals )
 
+# TELOS CHANGES:
+#
+# 1. Changed core symbol to TLOS
 if ("${CORE_SYMBOL_NAME}" STREQUAL "")
-  set( CORE_SYMBOL_NAME "SYS" )
+  set( CORE_SYMBOL_NAME "TLOS" )
 endif()
 string(TOUPPER ${CORE_SYMBOL_NAME} CORE_SYMBOL_NAME)
 
