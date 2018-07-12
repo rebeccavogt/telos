@@ -14,14 +14,14 @@ namespace eosiosystem {
     * 3. Update min_activated_stake to reflect TELOS 15% activation threshold --- DONE
     * 4. 
     */
-   const int64_t  min_activated_stake   = 26'250'000;       // calculated from max TLOS supply of 175,000,000
+   const int64_t  min_activated_stake   = 26'250'000'0000;  // calculated from max TLOS supply of 175,000,000
    const double   continuous_rate       = 0.025;            // 2.5% annual inflation rate
    const double   bpstandby_pay_rate    = 0.01;             // 1% TLOS rate to BP/Standby
    const double   worker_fund           = 0.015;            // 1.5% TLOS rate to worker fund
    
    // Constants should be removed, unused in TELOS architecture
-   //const double   perblock_rate         = 0.0025;           // 0.25%
-   //const double   standby_rate          = 0.0075;           // 0.75%
+   //const double   perblock_rate         = 0.0025;         // 0.25%
+   //const double   standby_rate          = 0.0075;         // 0.75%
    //const int64_t  min_pervote_daily_pay = 100'0000;
    
    // Calculated constants
