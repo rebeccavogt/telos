@@ -2,235 +2,325 @@
  *  @file
  *  @copyright defined in eos/LICENSE.txt
  */
-#pragma once
+#include <eosio/faucet_testnet_plugin/faucet_testnet_plugin.hpp>
+#include <eosio/chain_plugin/chain_plugin.hpp>
+#include <eosio/utilities/key_conversion.hpp>
 
-#include <eosio.system/native.hpp>
-#include <eosiolib/asset.hpp>
-#include <eosiolib/time.hpp>
-#include <eosiolib/privileged.hpp>
-#include <eosiolib/singleton.hpp>
-#include <eosio.system/exchange_state.hpp>
+#include <fc/variant.hpp>
+#include <fc/io/json.hpp>
+#include <fc/exception/exception.hpp>
+#include <fc/reflect/variant.hpp>
 
-#include <string>
+#include <boost/asio.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/algorithm/clamp.hpp>
 
-namespace eosiosystem {
+#include <utility>
 
-   using eosio::asset;
-   using eosio::indexed_by;
-   using eosio::const_mem_fun;
-   using eosio::block_timestamp;
+namespace eosio { namespace detail {
+  struct faucet_testnet_empty {};
 
-   struct name_bid {
-     account_name            newname;
-     account_name            high_bidder;
-     int64_t                 high_bid = 0; ///< negative high_bid == closed auction waiting to be claimed
-     uint64_t                last_bid_time = 0;
+  struct faucet_testnet_keys {
+     std::string owner;
+     std::string active;
+  };
 
-     auto     primary_key()const { return newname;                          }
-     uint64_t by_high_bid()const { return static_cast<uint64_t>(-high_bid); }
+  struct faucet_testnet_create_account_params {
+     std::string account;
+     faucet_testnet_keys keys;
+  };
+
+  struct faucet_testnet_create_account_alternates_response {
+     std::vector<chain::account_name> alternates;
+     std::string message;
+  };
+
+  struct faucet_testnet_create_account_rate_limited_response {
+     std::string message;
+  };
+}}
+
+FC_REFLECT(eosio::detail::faucet_testnet_empty, );
+FC_REFLECT(eosio::detail::faucet_testnet_keys, (owner)(active));
+FC_REFLECT(eosio::detail::faucet_testnet_create_account_params, (account)(keys));
+FC_REFLECT(eosio::detail::faucet_testnet_create_account_alternates_response, (alternates)(message));
+FC_REFLECT(eosio::detail::faucet_testnet_create_account_rate_limited_response, (message));
+
+namespace eosio {
+
+static appbase::abstract_plugin& _faucet_testnet_plugin = app().register_plugin<faucet_testnet_plugin>();
+
+using namespace eosio::chain;
+using public_key_type = chain::public_key_type;
+using key_pair = std::pair<std::string, std::string>;
+using results_pair = std::pair<uint32_t,fc::variant>;
+
+#define CALL(api_name, api_handle, call_name, invoke_cb) \
+{std::string("/v1/" #api_name "/" #call_name), \
+   [this](string, string body, url_response_callback response_cb) mutable { \
+          try { \
+             if (body.empty()) body = "{}"; \
+             const auto result = api_handle->invoke_cb(body); \
+             response_cb(result.first, fc::json::to_string(result.second)); \
+          } catch (...) { \
+             http_plugin::handle_exception(#api_name, #call_name, body, response_cb); \
+          } \
+       }}
+
+struct faucet_testnet_plugin_impl {
+   struct create_faucet_account_alternate_results {
+      std::vector<std::string> alternates;
    };
 
-   typedef eosio::multi_index< N(namebids), name_bid,
-                               indexed_by<N(highbid), const_mem_fun<name_bid, uint64_t, &name_bid::by_high_bid>  >
-                               >  name_bid_table;
+   faucet_testnet_plugin_impl(appbase::application& app)
+   : _app(app)
+   , _timer{app.get_io_service()}
+   {
+   }
 
+   void timer_fired() {
+      _blocking_accounts = false;
+   }
 
-   struct eosio_global_state : eosio::blockchain_parameters {
-      uint64_t free_ram()const { return max_ram_size - total_ram_bytes_reserved; }
-
-      uint64_t             max_ram_size = 64ll*1024 * 1024 * 1024;
-      uint64_t             total_ram_bytes_reserved = 0;
-      int64_t              total_ram_stake = 0;
-
-      block_timestamp      last_producer_schedule_update;
-      uint64_t             last_pervote_bucket_fill = 0;
-      int64_t              pervote_bucket = 0;
-      int64_t              perblock_bucket = 0;
-      uint32_t             total_unpaid_blocks = 0; /// all blocks which have been produced but not paid
-      int64_t              total_activated_stake = 0;
-      uint64_t             thresh_activated_stake_time = 0;
-      uint16_t             last_producer_schedule_size = 0;
-      double               total_producer_vote_weight = 0; /// the sum of all producer votes
-      block_timestamp      last_name_close;
-
-      // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE_DERIVED( eosio_global_state, eosio::blockchain_parameters,
-                                (max_ram_size)(total_ram_bytes_reserved)(total_ram_stake)
-                                (last_producer_schedule_update)(last_pervote_bucket_fill)
-                                (pervote_bucket)(perblock_bucket)(total_unpaid_blocks)(total_activated_stake)(thresh_activated_stake_time)
-                                (last_producer_schedule_size)(total_producer_vote_weight)(last_name_close) )
+   enum http_return_codes {
+      account_created = 201,
+      conflict_with_alternates = 409,
+      too_many_requests = 429
    };
 
-   struct producer_info {
-      account_name          owner;
-      double                total_votes = 0;
-      eosio::public_key     producer_key; /// a packed public key object
-      bool                  is_active = true;
-      std::string           url;
-      uint32_t              unpaid_blocks = 0;
-      uint64_t              last_claim_time = 0;
-      uint16_t              location = 0;
+   class extension {
 
-      uint64_t primary_key()const { return owner;                                   }
-      double   by_votes()const    { return is_active ? -total_votes : total_votes;  }
-      bool     active()const      { return is_active;                               }
-      void     deactivate()       { producer_key = public_key(); is_active = false; }
+   public:
+      explicit extension(uint32_t capacity)
+      : max_capacity(capacity)
+      {
+      }
 
-      // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( producer_info, (owner)(total_votes)(producer_key)(is_active)(url)
-                        (unpaid_blocks)(last_claim_time)(location) )
+      bool increment() {
+         bool incremented = false;
+         // start incrementing from the end back to the begining
+         auto rev_itr = ext.rbegin();
+         for (; rev_itr != ext.rend(); ++rev_itr) {
+            // done once a character is incremented
+            if (increment(*rev_itr)) {
+               std::string temp(1, *rev_itr);
+               incremented = true;
+               break;
+            }
+         }
+
+         const bool add_char = (rev_itr == ext.rend());
+
+         if (incremented)
+            return true;
+         else if (add_char && ext.length() >= max_capacity) {
+            return false;
+         }
+
+         if (!ext.empty()) {
+            do {
+               --rev_itr;
+               *rev_itr = init_char;
+               std::string temp(1, *rev_itr);
+            } while(rev_itr != ext.rbegin());
+         }
+
+         if (add_char) {
+            ext.push_back(init_char);
+         }
+         return true;
+      }
+
+      std::string to_string() {
+         return ext;
+      }
+
+      // assuming 13 characters, which will mean inefficiencies if forced to search with 13th char, since only 1 through j is valid there
+      static const uint32_t max_allowed_name_length = 13;
+
+   private:
+      // NOTE: code written expecting struct name to be using charmap of ".12345abcdefghijklmnopqrstuvwxyz"
+      bool increment(char& c) {
+         std::string temp(1, c);
+         if (c >= '1' && c < '5')
+            ++c;
+         else if (c == '5')
+            c = 'a';
+         else if (c >= 'a' && c < 'z')
+            ++c;
+         else
+            return false;
+
+         temp.assign(1, c);
+         return true;
+      }
+
+      const uint32_t max_capacity;
+      std::string ext;
+      const char init_char = '1';
    };
 
-   struct voter_info {
-      account_name                owner = 0; /// the voter
-      account_name                proxy = 0; /// the proxy set by the voter, if any
-      std::vector<account_name>   producers; /// the producers approved by this voter if no proxy set
-      int64_t                     staked = 0;
+   results_pair find_alternates(const std::string& new_account_name) {
+      std::vector<account_name> names;
+      std::string suggestion = new_account_name;
+      while (names.size() < _default_create_alternates_to_return &&
+             !suggestion.empty()) {
+         const int32_t extension_capacity = extension::max_allowed_name_length - suggestion.length();
+         if (extension_capacity > 0) {
+            extension ext(extension_capacity);
+            while(names.size() < _default_create_alternates_to_return && ext.increment()) {
+               chain::account_name alt;
+               // not externalizing all the name struct encoding, so need to handle cases where we
+               // construct an invalid encoded name
+               try {
+                  alt = suggestion + ext.to_string();
+               } catch (const fc::assert_exception& ) {
+                  continue;
+               }
+               const account_object* const obj = database().find<account_object, by_name>(alt);
+               if (obj == nullptr) {
+                  names.push_back(alt);
+               }
+            }
+         }
+         // drop the trailing character and try again
+         suggestion.pop_back();
+      }
 
-      /**
-       *  Every time a vote is cast we must first "undo" the last vote weight, before casting the
-       *  new vote weight.  Vote weight is calculated as:
-       *
-       *  stated.amount * 2 ^ ( weeks_since_launch/weeks_per_year)
-       */
-      double                      last_vote_weight = 0; /// the vote weight cast the last time the vote was updated
+      const eosio::detail::faucet_testnet_create_account_alternates_response response{
+         names, "Account name is already in use."};
+      return { conflict_with_alternates, fc::variant(response) };
+   }
 
-      /**
-       * Total vote weight delegated to this voter.
-       */
-      double                      proxied_vote_weight= 0; /// the total vote weight delegated to this voter as a proxy
-      bool                        is_proxy = 0; /// whether the voter is a proxy for others
+   results_pair create_account(const std::string& new_account_name, const fc::crypto::public_key& owner_pub_key, const fc::crypto::public_key& active_pub_key) {
+
+      auto creating_account = database().find<account_object, by_name>(_create_account_name);
+      EOS_ASSERT(creating_account != nullptr, transaction_exception,
+                 "To create account using the faucet, must already have created account \"${a}\"",("a",_create_account_name));
+
+      auto existing_account = database().find<account_object, by_name>(new_account_name);
+      if (existing_account != nullptr)
+      {
+         return find_alternates(new_account_name);
+      }
+
+      if (_blocking_accounts)
+      {
+         eosio::detail::faucet_testnet_create_account_rate_limited_response response{
+            "Rate limit exceeded, the max is 1 request per " + fc::to_string(_create_interval_msec) +
+            " milliseconds. Come back later."};
+         return std::make_pair(too_many_requests, fc::variant(response));
+      }
+
+      chain::chain_id_type chainid;
+      auto& plugin = _app.get_plugin<chain_plugin>();
+      plugin.get_chain_id(chainid);
+      controller& cc = plugin.chain();
+
+      signed_transaction trx;
+      auto memo = fc::variant(fc::time_point::now()).as_string() + " " + fc::variant(fc::time_point::now().time_since_epoch()).as_string();
+
+      //create "A" account
+      auto owner_auth   = chain::authority{1, {{owner_pub_key, 1}}, {}};
+      auto active_auth  = chain::authority{1, {{active_pub_key, 1}}, {}};
+      auto recovery_auth = chain::authority{1, {}, {{{_create_account_name, "active"}, 1}}};
+
+      trx.actions.emplace_back(vector<chain::permission_level>{{_create_account_name,"active"}},
+                               newaccount{_create_account_name, new_account_name, owner_auth, active_auth});
+
+      trx.expiration = cc.head_block_time() + fc::seconds(30);
+      trx.set_reference_block(cc.head_block_id());
+      trx.sign(_create_account_private_key, chainid);
+
+      try {
+         cc.push_transaction( std::make_shared<transaction_metadata>(trx) );
+      } catch (const account_name_exists_exception& ) {
+         // another transaction ended up adding the account, so look for alternates
+         return find_alternates(new_account_name);
+      }
+
+      _blocking_accounts = true;
+      _timer.expires_from_now(boost::posix_time::microseconds(_create_interval_msec * 1000));
+      _timer.async_wait(boost::bind(&faucet_testnet_plugin_impl::timer_fired, this));
+
+      return std::make_pair(account_created, fc::variant(eosio::detail::faucet_testnet_empty()));
+   }
+
+   results_pair create_faucet_account(const std::string& body) {
+      const eosio::detail::faucet_testnet_create_account_params params = fc::json::from_string(body).as<eosio::detail::faucet_testnet_create_account_params>();
+      return create_account(params.account, fc::crypto::public_key(params.keys.owner), fc::crypto::public_key(params.keys.active));
+   }
+
+   const chainbase::database& database() {
+      static const chainbase::database* db = nullptr;
+      if (db == nullptr)
+         db = &_app.get_plugin<chain_plugin>().chain().db();
+
+      return *db;
+   }
+
+   appbase::application& _app;
+   boost::asio::deadline_timer _timer;
+   bool _blocking_accounts = false;
+
+   static const uint32_t _default_create_interval_msec;
+   uint32_t _create_interval_msec;
+   static const uint32_t _default_create_alternates_to_return;
+   static const std::string _default_create_account_name;
+   chain::account_name _create_account_name;
+   static const key_pair _default_key_pair;
+   fc::crypto::private_key _create_account_private_key;
+   public_key_type _create_account_public_key;
+};
+
+const uint32_t faucet_testnet_plugin_impl::_default_create_interval_msec = 1000;
+const uint32_t faucet_testnet_plugin_impl::_default_create_alternates_to_return = 3;
+const std::string faucet_testnet_plugin_impl::_default_create_account_name = "faucet";
+// defaults to the public/private key of init accounts in private testnet genesis.json
+const key_pair faucet_testnet_plugin_impl::_default_key_pair = {"TLOS6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV", "5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3"};
 
 
-      uint32_t                    reserved1 = 0;
-      time                        reserved2 = 0;
-      eosio::asset                reserved3;
+faucet_testnet_plugin::faucet_testnet_plugin()
+: my(new faucet_testnet_plugin_impl(app()))
+{
+}
 
-      uint64_t primary_key()const { return owner; }
+faucet_testnet_plugin::~faucet_testnet_plugin() {}
 
-      // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( voter_info, (owner)(proxy)(producers)(staked)(last_vote_weight)(proxied_vote_weight)(is_proxy)(reserved1)(reserved2)(reserved3) )
-   };
+void faucet_testnet_plugin::set_program_options(options_description&, options_description& cfg) {
+   cfg.add_options()
+         ("faucet-create-interval-ms", bpo::value<uint32_t>()->default_value(faucet_testnet_plugin_impl::_default_create_interval_msec),
+          "Time to wait, in milliseconds, between creating next faucet created account.")
+         ("faucet-name", bpo::value<std::string>()->default_value(faucet_testnet_plugin_impl::_default_create_account_name),
+          "Name to use as creator for faucet created accounts.")
+         ("faucet-private-key", boost::program_options::value<std::string>()->default_value(fc::json::to_string(faucet_testnet_plugin_impl::_default_key_pair)),
+          "[public key, WIF private key] for signing for faucet creator account")
+         ;
+}
 
-   typedef eosio::multi_index< N(voters), voter_info>  voters_table;
+void faucet_testnet_plugin::plugin_initialize(const variables_map& options) {
+   my->_create_interval_msec = options.at("faucet-create-interval-ms").as<uint32_t>();
+   my->_create_account_name = options.at("faucet-name").as<std::string>();
 
+   auto faucet_key_pair = fc::json::from_string(options.at("faucet-private-key").as<std::string>()).as<key_pair>();
+   my->_create_account_public_key = public_key_type(faucet_key_pair.first);
+   ilog("Public Key: ${public}", ("public", my->_create_account_public_key));
+   fc::crypto::private_key private_key(faucet_key_pair.second);
+   my->_create_account_private_key = std::move(private_key);
+}
 
-   typedef eosio::multi_index< N(producers), producer_info,
-                               indexed_by<N(prototalvote), const_mem_fun<producer_info, double, &producer_info::by_votes>  >
-                               >  producers_table;
+void faucet_testnet_plugin::plugin_startup() {
+   app().get_plugin<http_plugin>().add_api({
+      CALL(faucet, my, create_account, faucet_testnet_plugin_impl::create_faucet_account )
+   });
+}
 
-   typedef eosio::singleton<N(global), eosio_global_state> global_state_singleton;
+void faucet_testnet_plugin::plugin_shutdown() {
+   try {
+      my->_timer.cancel();
+   } catch(fc::exception& e) {
+      edump((e.to_detail_string()));
+   }
+}
 
-   //   static constexpr uint32_t     max_inflation_rate = 5;  // 5% annual inflation
-   static constexpr uint32_t     seconds_per_day = 24 * 3600;
-   static constexpr uint64_t     system_token_symbol = CORE_SYMBOL;
-
-   class system_contract : public native {
-      private:
-         voters_table           _voters;
-         producers_table        _producers;
-         global_state_singleton _global;
-
-         eosio_global_state     _gstate;
-         rammarket              _rammarket;
-
-      public:
-         system_contract( account_name s );
-         ~system_contract();
-
-         // Actions:
-         void onblock( block_timestamp timestamp, account_name producer );
-                      // const block_header& header ); /// only parse first 3 fields of block header
-
-         // functions defined in delegate_bandwidth.cpp
-
-         /**
-          *  Stakes SYS from the balance of 'from' for the benfit of 'receiver'.
-          *  If transfer == true, then 'receiver' can unstake to their account
-          *  Else 'from' can unstake at any time.
-          */
-         void delegatebw( account_name from, account_name receiver,
-                          asset stake_net_quantity, asset stake_cpu_quantity, bool transfer );
-
-
-         /**
-          *  Decreases the total tokens delegated by from to receiver and/or
-          *  frees the memory associated with the delegation if there is nothing
-          *  left to delegate.
-          *
-          *  This will cause an immediate reduction in net/cpu bandwidth of the
-          *  receiver.
-          *
-          *  A transaction is scheduled to send the tokens back to 'from' after
-          *  the staking period has passed. If existing transaction is scheduled, it
-          *  will be canceled and a new transaction issued that has the combined
-          *  undelegated amount.
-          *
-          *  The 'from' account loses voting power as a result of this call and
-          *  all producer tallies are updated.
-          */
-         void undelegatebw( account_name from, account_name receiver,
-                            asset unstake_net_quantity, asset unstake_cpu_quantity );
-
-
-         /**
-          * Increases receiver's ram quota based upon current price and quantity of
-          * tokens provided. An inline transfer from receiver to system contract of
-          * tokens will be executed.
-          */
-         void buyram( account_name buyer, account_name receiver, asset tokens );
-         void buyrambytes( account_name buyer, account_name receiver, uint32_t bytes );
-
-         /**
-          *  Reduces quota my bytes and then performs an inline transfer of tokens
-          *  to receiver based upon the average purchase price of the original quota.
-          */
-         void sellram( account_name receiver, int64_t bytes );
-
-         /**
-          *  This action is called after the delegation-period to claim all pending
-          *  unstaked tokens belonging to owner
-          */
-         void refund( account_name owner );
-
-         // functions defined in voting.cpp
-
-         void regproducer( const account_name producer, const public_key& producer_key, const std::string& url, uint16_t location );
-
-         void unregprod( const account_name producer );
-
-         void setram( uint64_t max_ram_size );
-
-         void voteproducer( const account_name voter, const account_name proxy, const std::vector<account_name>& producers );
-
-         void regproxy( const account_name proxy, bool isproxy );
-
-         void setparams( const eosio::blockchain_parameters& params );
-
-         // functions defined in producer_pay.cpp
-         void claimrewards( const account_name& owner );
-
-         void setpriv( account_name account, uint8_t ispriv );
-
-         void rmvproducer( account_name producer );
-
-         void bidname( account_name bidder, account_name newname, asset bid );
-      private:
-         void update_elected_producers( block_timestamp timestamp );
-
-         // Implementation details:
-
-         //defind in delegate_bandwidth.cpp
-         void changebw( account_name from, account_name receiver,
-                        asset stake_net_quantity, asset stake_cpu_quantity, bool transfer );
-
-         //defined in voting.hpp
-         static eosio_global_state get_default_parameters();
-
-         void update_votes( const account_name voter, const account_name proxy, const std::vector<account_name>& producers, bool voting );
-
-         // defined in voting.cpp
-         void propagate_weight_change( const voter_info& voter );
-   };
-
-} /// eosiosystem
+}
