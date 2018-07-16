@@ -1,6 +1,7 @@
 #pragma once
 
 #include "eosio.system.hpp"
+#include <eosiolib/print.hpp>
 
 #include <eosio.token/eosio.token.hpp>
 
@@ -15,6 +16,7 @@ namespace eosiosystem {
     * 4. Added worker_proposal_rate constant for Worker Proposal Fund --- DONE
     */
     const int64_t  min_activated_stake   = 28'570'987;       // calculated from max TLOS supply of 175,000,000
+        print("min_activated_stake: ", min_activated_stake);
     const double   continuous_rate       = 0.025;            // 2.5% annual inflation rate
     const double   producer_rate         = 0.01;             // 1% TLOS rate to BP/Standby
     const double   worker_proposal_rate  = 0.015;            // 1.5% TLOS rate to worker fund
@@ -110,20 +112,21 @@ namespace eosiosystem {
     */
     using namespace eosio;
     void system_contract::claimrewards( const account_name& owner ) {
+            print("Inside claimrewards");
 
         require_auth(owner);
-            printf(">>> Account_name authorized");
+            //printf(">>> Account_name authorized");
 
         const auto& prod = _producers.get( owner ); // Set prod from _producers table
-            printf(">>> Producer retrieved from table");
+            //printf(">>> Producer retrieved from table");
         eosio_assert( prod.active(), "producer does not have an active key" ); // Assert prod has an active key
-            printf(">>> Producer has activated key");
+            //printf(">>> Producer has activated key");
         eosio_assert( _gstate.total_activated_stake >= min_activated_stake, "cannot claim rewards until the chain is activated (at least 15% of all tokens participate in voting)" );
-            printf(">>> Activated stake is above min_activated_stake");
+            //printf(">>> Activated stake is above min_activated_stake");
         
         auto ct = current_time(); // Set ct to current time
         eosio_assert( ct - prod.last_claim_time > useconds_per_day, "already claimed rewards within past day" ); // Assert last claim time is > seconds in a day
-            printf(">>> Have not claimed rewards in past day");
+            //printf(">>> Have not claimed rewards in past day");
 
         const asset token_supply   = token( N(eosio.token)).get_supply(symbol_type(system_token_symbol).name() ); // Set token_supply to total supply of system token
             printf(">>> Token supply retreived");
