@@ -129,29 +129,29 @@ namespace eosiosystem {
             //printf(">>> Have not claimed rewards in past day");
 
         const asset token_supply   = token( N(eosio.token)).get_supply(symbol_type(system_token_symbol).name() ); // Set token_supply to total supply of system token
-            printf(">>> Token supply retreived");
+            //printf(">>> Token supply retreived");
         const auto usecs_since_last_fill = ct - _gstate.last_pervote_bucket_fill;
 
         if( usecs_since_last_fill > 0 && _gstate.last_pervote_bucket_fill > 0 ) {
             auto new_tokens = static_cast<int64_t>( (continuous_rate * double(token_supply.amount) * double(usecs_since_last_fill)) / double(useconds_per_year) ); // Calculate new tokens
-                printf(">>> Calculated new tokens minted");
+                //printf(">>> Calculated new tokens minted");
 
-            auto to_producers         = (new_tokens / 5) * 2; // Give 40% of new tokens to producers
-                printf(">>> Producer share reserved");
+            auto to_producers         = (new_tokens / 5) * 3; // Give 40% of new tokens to producers
+                //printf(">>> Producer share reserved");
             auto to_worker_proposals  = new_tokens - to_producers; // Give 60% of new tokens to worker proposal fund
-                printf(">>> Worker Proposal share reserved");
+                //printf(">>> Worker Proposal share reserved");
 
             // Issue new tokens to the token contract. This is the inflation action.
             INLINE_ACTION_SENDER(eosio::token, issue)( N(eosio.token), { { N(eosio), N(active)} }, { N(eosio), asset(new_tokens), std::string("Issue new TLOS tokens") });
-                printf(">>> Tokens issued to eosio account");
+                //printf(">>> Tokens issued to eosio account");
 
             // Transfer the worker proposal portion to the eosio.saving account
             INLINE_ACTION_SENDER(eosio::token, transfer)( N(eosio.token), {N(eosio),N(active)}, { N(eosio), N(eosio.saving), asset(to_worker_proposals), "Worker Proposal Fund Payment" } );
-                printf(">>> Tokens transferred to eosio.saving");
+                //printf(">>> Tokens transferred to eosio.saving");
 
             // Transfer producer portion to eosio.bpay account
             INLINE_ACTION_SENDER(eosio::token, transfer)( N(eosio.token), {N(eosio),N(active)}, { N(eosio), N(eosio.bpay), asset(to_producers), "Producer/Standby Payment" } );
-                printf(">>> Tokens transferred to eosio.bpay");
+                //printf(">>> Tokens transferred to eosio.bpay");
 
             _gstate.perblock_bucket += to_producers; // Add producer pay to perblock_bucket
             _gstate.last_pervote_bucket_fill = ct; // Reset time of last bucket fill in global state
