@@ -203,6 +203,11 @@ void system_contract::claimrewards(const account_name &owner)
      * 
      * Telos Payout Architecture will account for missed blocks, and reduce
      * payout based on percentage of missed blocks.
+     * 
+     * For instance, if Producer A misses 3 of their 12 blocks, they will
+     * have missed 25% of their scheduled blocks. For easy math, say producers
+     * earn 1 TLOS per block. This means Producer A will receive a payment of
+     * 9 TLOS for their work, but the other 3 will remain in the bucket.
      */
 
     _gstate.perblock_bucket -= pay_amount;
