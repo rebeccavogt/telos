@@ -47,9 +47,9 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer)
         _gstate.last_pervote_bucket_fill = current_time();
 
     /**
-        * At startup the initial producer may not be one that is registered / elected
-        * and therefore there may be no producer object for them.
-        */
+    * At startup the initial producer may not be one that is registered / elected
+    * and therefore there may be no producer object for them.
+    */
     auto prod = _producers.find(producer);
     if (prod != _producers.end())
     {
@@ -64,6 +64,7 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer)
     {
         update_elected_producers(timestamp);
 
+        // Used in bidding for account names
         if ((timestamp.slot - _gstate.last_name_close.slot) > blocks_per_day)
         {
             name_bid_table bids(_self, _self);
@@ -117,20 +118,20 @@ void system_contract::claimrewards(const account_name &owner)
         auto to_workers = new_tokens - to_producers;
 
         INLINE_ACTION_SENDER(eosio::token, issue)
-        (N(eosio.token), {{N(eosio), N(active)}}, {N(eosio), asset(new_tokens), "issue tokens for producer pay and worker fund"});
+        (N(eosio.token), {{N(eosio), N(active)}}, {N(eosio), asset(new_tokens), "Issue new TLOS tokens"});
 
         INLINE_ACTION_SENDER(eosio::token, transfer)
-        (N(eosio.token), {N(eosio), N(active)}, {N(eosio), N(eosio.saving), asset(to_workers), "Send worker proposal share to eosio.saving account"});
+        (N(eosio.token), {N(eosio), N(active)}, {N(eosio), N(eosio.saving), asset(to_workers), "Transfer worker proposal share to eosio.saving account"});
 
         INLINE_ACTION_SENDER(eosio::token, transfer)
-        (N(eosio.token), {N(eosio), N(active)}, {N(eosio), N(eosio.bpay), asset(to_producers), "fund per-block bucket"});
+        (N(eosio.token), {N(eosio), N(active)}, {N(eosio), N(eosio.bpay), asset(to_producers), "Transfer producer share to per-block bucket"});
 
         _gstate.perblock_bucket += to_producers;
         _gstate.last_pervote_bucket_fill = ct;
 
-        print("\nMinted Tokens: ", new_tokens);
-        print("\n   >Worker Fund: ", to_workers);
-        print("\n   >Producer Fund: ", to_producers);
+        //print("\nMinted Tokens: ", new_tokens);
+        //print("\n   >Worker Fund: ", to_workers);
+        //print("\n   >Producer Fund: ", to_producers);
     }
 
     //Sort _producers table
@@ -141,20 +142,20 @@ void system_contract::claimrewards(const account_name &owner)
 
     for (const auto &item : sortedProds)
     {
-        //if (item.active) {
+        //if (item.active) { // TODO: Only count activated producers
             auto prodName = name{item.owner};
-            print("\n\nproducer name: ", prodName);
 
             if (owner == item.owner) {
                 index = count;
-                print("\nindex: ", index);
+                print("\nProducer Found: ", prodName);
+                //print("\nIndex: ", index);
             }
 
             count++;
         //}
     }
 
-    print("\nTotal Count = ", count);
+    //print("\nTotal Count = ", count);
 
     auto numProds = 0;
     auto numStandbys = 0;
@@ -173,13 +174,13 @@ void system_contract::claimrewards(const account_name &owner)
         numStandbys = (count - 21);
     } 
 
-    print("\nnumProds: ", numProds);
-    print("\nnumStandbys: ", numStandbys);
-    print("\n_gstate.perblock_bucket: ", _gstate.perblock_bucket);
-    print("\ntotalShares: ", totalShares);
+    //print("\nnumProds: ", numProds);
+    //print("\nnumStandbys: ", numStandbys);
+    //print("\n_gstate.perblock_bucket: ", _gstate.perblock_bucket);
+    //print("\ntotalShares: ", totalShares);
 
     auto shareValue = (_gstate.perblock_bucket / totalShares);
-    print("\nshareValue: ", shareValue);
+    //print("\nshareValue: ", shareValue);
 
     auto pay_amount = 0;
 
@@ -216,6 +217,7 @@ void system_contract::claimrewards(const account_name &owner)
     {
         INLINE_ACTION_SENDER(eosio::token, transfer)
         (N(eosio.token), {N(eosio.bpay), N(active)}, {N(eosio.bpay), owner, asset(pay_amount), std::string("Producer/Standby Payment")});
+        print("\nProducer/Standby Payment: ", asset(pay_amount));
     }
 }
 
