@@ -15,6 +15,49 @@ For a full explanation of all the proposed Telos features, be sure to read our w
 
 ## Getting Started
 
+1. Clone the most recent changes from our “developer” branch.
+
+2. Open a terminal and navigate to where you cloned the source. Run the below commands.
+
+    a. ./eosio_build.sh -s TLOS
+
+    b. cd build
+
+    c. sudo make install
+
+3. Now setup your nodeos config.ini file.
+
+    a. Determine your Producer name. This is what your node will be identified by on the testnet. You’ll notice we have a naming convention of using ancient philosphers, feel free to follow this convention or come up with your own name. The only rules are the name must be exactly 12 characters and have no special or uppercase characters. Enter your Producer name into the producer-name field in the config.ini file
+
+    b. Determine your Signature Provider. In order to generate a new public and private key pair, you must run “teclos create key” after building the project. Copy your new keys into the signature-provider field in the config.ini file. Don’t forget to run “teclos wallet import your-private-key” to import your private key into your telos wallet.
+
+    c. Configure your p2p endpoints and addresses in the config.ini file. The fields to be changed are http-server-address, p2p-listen-endpoint, p2p-server-address, and p2p-peer-address.
+
+    d. The only plugin required to become a producer is the eosio::producer_plugin, but if you’d like to be able to process transactions or respond to API requests then include the following plugins:
+
+        i. plugin = eosio::http_plugin
+
+        ii. plugin = eosio::chain_plugin
+
+        iii. plugin = eosio::chain_api_plugin
+
+        iv. plugin = eosio::history_plugin
+
+        v. plugin = eosio::history_api_plugin
+
+        vi. plugin = eosio::net_plugin
+
+        vii. plugin = eosio::net_api_plugin
+
+        viii. plugin = eosio::producer_plugin
+
+4. Navigate to testnet.telosfoundation.io and click on the register tab. Enter your configuration into the form and click submit. This will create your account on the testnet. Copy the command generated from the form, you will need it in the following step.
+
+    a. Run the ‘regproducer’ command generated from the previous step in your terminal to register your node on the network. You MUST run this command in order to be added as a producer.
+
+    b. At this point your Producer account has been created and you are registered as a producer. Feel free to cast your votes now and watch the testnet monitor reflect your actions.
+
+
 
 ## Supported Operating Systems
 Telos currently supports the following operating systems:  

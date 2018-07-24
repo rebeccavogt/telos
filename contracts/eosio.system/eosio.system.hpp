@@ -61,6 +61,12 @@ namespace eosiosystem {
                                 (last_producer_schedule_size)(total_producer_vote_weight)(last_name_close) )
    };
 
+   /**
+    * TELOS CHANGES:
+    * 
+    * 1. Added missed_blocks field, used for counting missed blocks and
+    *    adjusting producer payout accordingly.
+    */
    struct producer_info {
       account_name          owner;
       double                total_votes = 0;
@@ -68,6 +74,7 @@ namespace eosiosystem {
       bool                  is_active = true;
       std::string           url;
       uint32_t              unpaid_blocks = 0;
+      uint32_t              missed_blocks = 0;
       uint64_t              last_claim_time = 0;
       uint16_t              location = 0;
 
