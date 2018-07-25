@@ -107,9 +107,9 @@ The Telos Foundation has created a lightweight, powerful tool that helps with au
 
 The Telos Testnet is a sandbox for testing newly implemented features and finding bugs within the network. In order to ensure the network behaves as expected, participation in Testnet activites and providing meaningful feedback is encouraged. 
 
-* _Voting_ Voting is an important part of the network, and with Telos' proposed changes to the voting stucture each vote will carry more weight and whales will have significantly less influence on the direction of the network. 
+* __Voting__ Voting is an important part of the network, and with Telos' proposed changes to the voting stucture each vote will carry more weight and whales will have significantly less influence on the direction of the network. 
 
-* _Claiming Producer/Standby Rewards_ In order to receive your hard-earned Producer/Standby payout, registered producers will make a call to `claimrewards` no more than once per day. When `claimrewards` is called, the calling producer's share of TLOS is calculated and paid to their account. In addition to sending the producer's earned payout, `claimrewards` will also make a deposit to the Worker Proposal Fund. This deposit is not taken out of the producer's share, but rather from the newly minted tokens from the claimrewards call. For a more in depth explanation of this process, please consult the whitepaper or join a discussion on our many public channels.
+* __Claiming Producer/Standby Rewards__ In order to receive your hard-earned Producer/Standby payout, registered producers will make a call to `claimrewards` no more than once per day. When `claimrewards` is called, the calling producer's share of TLOS is calculated and paid to their account. In addition to sending the producer's earned payout, `claimrewards` will also make a deposit to the Worker Proposal Fund. This deposit is not taken out of the producer's share, but rather from the newly minted tokens from the claimrewards call. For a more in depth explanation of this process, please consult the whitepaper or join a discussion on our many public channels.
 
 ## Supported Operating Systems
 Telos currently supports the following operating systems:  
