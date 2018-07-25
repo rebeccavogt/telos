@@ -61,38 +61,35 @@ The Telos Foundation has created a lightweight, powerful tool that helps with au
 
 3. Set up config.ini file
 
-    a. Run nodeos to generate a config file.
+    a. Run nodeos to generate a config file. This will generate a config.ini file in the current directory if none exists.
 
-        i. Run `nodeos --config-dir ./` This will generate a config.ini file in the current directory if none exists.
+        nodeos --config-dir ./
 
     b. Determine your Producer name. Please be aware there are restrictions on the allowed characters.
 
-        i. `producer-name = prodname1234`
+        producer-name = prodname1234
 
     b. Determine your Signature Provider. Run `teclos create key`, and import your keys into your wallet.
 
-        i. `signature-provider = TLOS{public key}=KEY:{private key}`
+        signature-provider = TLOS{public key}=KEY:{private key}
 
     c. Determine your p2p and http endpoints. Choose your own p2p and http ports.
 
-        i. `http-server-address = 0.0.0.0:{http port}`
-
-        ii. `p2p-listen-endpoint = 0.0.0.0:{p2p port}`
-
-        iii. `p2p-server-address = {external IP address}:{p2p port}`
-
-        iv. `p2p-peer-address = stage1_1.telosfoundation.io`
+        http-server-address = 0.0.0.0:{http port}
+        p2p-listen-endpoint = 0.0.0.0:{p2p port}
+        p2p-server-address = {external IP address}:{p2p port}
+        p2p-peer-address = stage1_1.telosfoundation.io
 
     d. Determine your Plugins. The only required plugin is producer_plugin, but other plugins add extended functionality to your nodes.
 
-        ```plugin = eosio::http_plugin
+        plugin = eosio::http_plugin
         plugin = eosio::chain_plugin
         plugin = eosio::chain_api_plugin
         plugin = eosio::history_plugin
         plugin = eosio::history_api_plugin
         plugin = eosio::net_plugin
         plugin = eosio::net_api_plugin
-        plugin = eosio::producer_plugin```
+        plugin = eosio::producer_plugin
 
 4. Register Node on Testnet
 
