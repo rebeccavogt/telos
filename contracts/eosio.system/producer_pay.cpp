@@ -138,35 +138,34 @@ void system_contract::claimrewards(const account_name &owner)
     //Sort _producers table
     auto sortedProds = _producers.get_index<N(prototalvote)>();
 
-    int64_t count = 0;
-    int64_t index = 0;
+    uint32_t count = 0;
+    uint32_t index = 0;
 
     for (const auto &item : sortedProds) //TODO: Stop loop after 51 iterations?
     {
         if (item.active()) { //Only count activated producers
             auto prodName = name{item.owner};
+	    count++;
 
             if (owner == item.owner) {
                 index = count;
                 print("\nProducer Found: ", prodName);
                 //print("\nIndex: ", index);
             }
-
-            count++;
         }
     }
 
     //print("\nTotal Count = ", count);
 
-    auto numProds = 0;
-    auto numStandbys = 0;
-    auto totalShares = 0;
+    uint32_t numProds = 0;
+    uint32_t numStandbys = 0;
+    int64_t totalShares = 0;
 
     // Calculate totalShares
     // TODO: Check implicit conversion precision, off by 0.0005 TLOS
     if (count <= 21)
     {
-        totalShares = (count * 2);
+        totalShares = (count * uint32_t(2));
         numProds = count;
         numStandbys = 0;
     } else {
@@ -177,19 +176,19 @@ void system_contract::claimrewards(const account_name &owner)
 
     //print("\nnumProds: ", numProds);
     //print("\nnumStandbys: ", numStandbys);
-    //print("\n_gstate.perblock_bucket: ", _gstate.perblock_bucket);
+    //print("\n_gstate.perblock_bucket: ", asset(_gstate.perblock_bucket));
     //print("\ntotalShares: ", totalShares);
 
     auto shareValue = (_gstate.perblock_bucket / totalShares);
-    //print("\nshareValue: ", shareValue);
+    //print("\nshareValue: ", asset(shareValue));
 
-    auto pay_amount = 0;
+    int64_t pay_amount = 0;
 
     // Determine if an account is a Producer or Standby, and calculate shares accordingly
     if (_gstate.total_unpaid_blocks > 0)
     {
         if (index <= 21) {
-            pay_amount = (shareValue * 2);
+            pay_amount = (shareValue * int64_t(2));
             print("\nCaller is a Producer @ ", index);
         } else if (index >= 22 && index <= 51) {
             pay_amount = shareValue;
