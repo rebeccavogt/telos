@@ -15,15 +15,14 @@ namespace eosiosystem
     * 2. Added producer_rate constant for BP/Standby payout --- DONE
     * 3. Updated min_activated_stake to reflect TELOS 15% activation threshold --- DONE
     * 4. Added worker_proposal_rate constant for Worker Proposal Fund --- DONE
+    * 
+    * NOTE: A full breakdown of the calculated token supply and 15% activation threshold
+    * can be found at: https://docs.google.com/document/d/1K8w_Kd8Vmk_L0tAK56ETfAWlqgLo7r7Ae3JX25A5zVk/edit?usp=sharing
     */
-const int64_t min_activated_stake = 28'570'987; // calculated from max TLOS supply of 175,000,000
-const double continuous_rate = 0.025;           // 2.5% annual inflation rate
-const double producer_rate = 0.01;              // 1% TLOS rate to BP/Standby
-const double worker_rate = 0.015;               // 1.5% TLOS rate to worker fund
-
-// Constants should be removed, unused in TELOS architecture
-//const double   perblock_rate         = 0.0025;         // 0.25%
-//const double   standby_rate          = 0.0075;         // 0.75%
+const int64_t min_activated_stake = 28'570'987'0000; // calculated from max TLOS supply of 190,473,249 (fluctuating value until mainnet activation)
+const double continuous_rate = 0.025;                // 2.5% annual inflation rate
+const double producer_rate = 0.01;                   // 1% TLOS rate to BP/Standby
+const double worker_rate = 0.015;                    // 1.5% TLOS rate to worker fund
 
 // Calculated constants
 const uint32_t blocks_per_year = 52 * 7 * 24 * 2 * 3600; // half seconds per year
@@ -90,7 +89,7 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer)
     * TELOS CHANGES:
     *
     * 1. Updated to_producers (BP/Standby payments) to reflect new payout structure (40% of inflation) --- DONE
-    * 2. Updated to_worker_proposals (Telos Fund) to reflect new payout structure (remaining 60% of inflation) --- DONE
+    * 2. Updated to_worker_proposals (Worker Proposal Fund) to reflect new payout structure (remaining 60% of inflation) --- DONE
     * 3. Implement debugging logs with print() --- DONE
     */
 using namespace eosio;
@@ -184,6 +183,7 @@ void system_contract::claimrewards(const account_name &owner)
 
     auto pay_amount = 0;
 
+    // Determine if an account is a Producer or Standby, and calculate shares accordingly
     if (_gstate.total_unpaid_blocks > 0)
     {
         if (index <= 21) {
