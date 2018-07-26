@@ -91,6 +91,8 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer)
     * 1. Updated to_producers (BP/Standby payments) to reflect new payout structure (40% of inflation) --- DONE
     * 2. Updated to_worker_proposals (Worker Proposal Fund) to reflect new payout structure (remaining 60% of inflation) --- DONE
     * 3. Implement debugging logs with print() --- DONE
+    * 
+    * TODO: Fix issue where the claimrewards debug output is shown twice
     */
 using namespace eosio;
 void system_contract::claimrewards(const account_name &owner)
@@ -139,9 +141,9 @@ void system_contract::claimrewards(const account_name &owner)
     int64_t count = 0;
     int64_t index = 0;
 
-    for (const auto &item : sortedProds)
+    for (const auto &item : sortedProds) //TODO: Stop loop after 51 iterations?
     {
-        //if (item.active) { // TODO: Only count activated producers
+        if (item.active()) { //Only count activated producers
             auto prodName = name{item.owner};
 
             if (owner == item.owner) {
@@ -151,7 +153,7 @@ void system_contract::claimrewards(const account_name &owner)
             }
 
             count++;
-        //}
+        }
     }
 
     //print("\nTotal Count = ", count);
