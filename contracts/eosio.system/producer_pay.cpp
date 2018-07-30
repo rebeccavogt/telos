@@ -15,6 +15,7 @@ namespace eosiosystem
     * 2. Added producer_rate constant for BP/Standby payout --- DONE
     * 3. Updated min_activated_stake to reflect TELOS 15% activation threshold --- DONE
     * 4. Added worker_proposal_rate constant for Worker Proposal Fund --- DONE
+    * 5. Added min_unpaid_blocks_threshold constant for producer payout qualification --- DONE
     * 
     * NOTE: A full breakdown of the calculated token supply and 15% activation threshold
     * can be found at: https://docs.google.com/document/d/1K8w_Kd8Vmk_L0tAK56ETfAWlqgLo7r7Ae3JX25A5zVk/edit?usp=sharing
@@ -23,6 +24,7 @@ const int64_t min_activated_stake = 28'570'987'0000; // calculated from max TLOS
 const double continuous_rate = 0.025;                // 2.5% annual inflation rate
 const double producer_rate = 0.01;                   // 1% TLOS rate to BP/Standby
 const double worker_rate = 0.015;                    // 1.5% TLOS rate to worker fund
+const uint64_t min_unpaid_blocks_threshold = 342;    // Minimum unpaid blocks required to qualify for Producer level payout
 
 // Calculated constants
 const uint32_t blocks_per_year = 52 * 7 * 24 * 2 * 3600; // half seconds per year
@@ -141,16 +143,21 @@ void system_contract::claimrewards(const account_name &owner)
     uint32_t count = 0;
     uint32_t index = 0;
 
-    for (const auto &item : sortedProds) //TODO: Stop loop after 51 iterations?
+    // NOTE: Loop stops after 51st iteration. Counting farther than 51 is unnecessary when calculating payouts.
+    for (const auto &item : sortedProds)
     {
         if (item.active()) { //Only count activated producers
             auto prodName = name{item.owner};
-	    count++;
+	        count++;
 
             if (owner == item.owner) {
                 index = count;
                 print("\nProducer Found: ", prodName);
                 //print("\nIndex: ", index);
+            }
+
+            if (count >= 51) {
+                break;
             }
         }
     }
@@ -162,7 +169,7 @@ void system_contract::claimrewards(const account_name &owner)
     int64_t totalShares = 0;
 
     // Calculate totalShares
-    // TODO: Check implicit conversion precision, off by 0.0005 TLOS
+    // TEST: Extensive testing to ensure no precision is lost during calculation of claimed rewards.
     if (count <= 21)
     {
         totalShares = (count * uint32_t(2));
@@ -184,18 +191,43 @@ void system_contract::claimrewards(const account_name &owner)
 
     int64_t pay_amount = 0;
 
+    /**
+     * RATIONALE: Minimum Unpaid Blocks Threshold
+     * 
+     * In the Telos Payment Architecture, block reward payments are calculated on the fly at the time
+     * of the call to claimrewards. When called, the claimrewards function determines which payment level
+     * the calling account qualifies for and pays them accordingly.
+     * 
+     * In order to qualify for a Producer level payout, the caller must be in the top 21 producers AND have
+     * at least 12 hours worth of block production as a producer. Requiring the calling account to have produced
+     * a minimum of 12 hours worth of blocks ensures Standby's can't "jump the fence" just long enough to call 
+     * claimrewards and take a producer's share of the payout.
+     */
+
     // Determine if an account is a Producer or Standby, and calculate shares accordingly
     if (_gstate.total_unpaid_blocks > 0)
     {
-        if (index <= 21) {
+        if (index <= 21 && prod.unpaid_blocks >= min_unpaid_blocks_threshold) {
             pay_amount = (shareValue * int64_t(2));
             print("\nCaller is a Producer @ ", index);
+            print("\nUnpaid blocks: ", prod.unpaid_blocks);
+            print("\nPayment: ", asset(pay_amount));
+        } else if (index <= 21 && prod.unpaid_blocks <= min_unpaid_blocks_threshold) {
+            pay_amount = shareValue;
+            print("\nCaller is a Producer @ ", index);
+            print("\nUnpaid blocks: ", prod.unpaid_blocks);
+            print("\nCaller doesn't meet minimum unpaid blocks threshold of: ", min_unpaid_blocks_threshold);
+            print("\nPayment: ", asset(pay_amount));
         } else if (index >= 22 && index <= 51) {
             pay_amount = shareValue;
             print("\nCaller is a Standby @ ", index);
+            print("\nUnpaid blocks: ", prod.unpaid_blocks);
+            print("\nPayment: ", asset(pay_amount));
         } else {
             pay_amount = 0;
             print("\nCaller is outside Top 51 @ ", index);
+            print("\nUnpaid blocks: ", prod.unpaid_blocks);
+            print("\nPayment: ", asset(pay_amount));
         }
     }
 
@@ -223,7 +255,6 @@ void system_contract::claimrewards(const account_name &owner)
     {
         INLINE_ACTION_SENDER(eosio::token, transfer)
         (N(eosio.token), {N(eosio.bpay), N(active)}, {N(eosio.bpay), owner, asset(pay_amount), std::string("Producer/Standby Payment")});
-        print("\nProducer/Standby Payment: ", asset(pay_amount));
     }
 }
 
