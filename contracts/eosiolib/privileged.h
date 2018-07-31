@@ -29,6 +29,8 @@ extern "C" {
     */
    int64_t set_proposed_producers( char *producer_data, uint32_t producer_data_size );
 
+   int64_t set_proposed_schedule( char *producer_data, uint32_t producer_data_size, char *sb_producer_data, uint32_t sb_producer_data_size );
+
    bool is_privileged( account_name account );
 
    void set_privileged( account_name account, bool is_priv );

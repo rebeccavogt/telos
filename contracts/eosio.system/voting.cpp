@@ -76,10 +76,17 @@ namespace eosiosystem {
       auto idx = _producers.get_index<N(prototalvote)>();
 
       std::vector< std::pair<eosio::producer_key,uint16_t> > top_producers;
+      std::vector< std::pair<eosio::producer_key,uint16_t> > bottom_producers;
       top_producers.reserve(21);
+      bottom_producers.reserve(30);
 
-      for ( auto it = idx.cbegin(); it != idx.cend() && top_producers.size() < 21 && 0 < it->total_votes && it->active(); ++it ) {
-         top_producers.emplace_back( std::pair<eosio::producer_key,uint16_t>({{it->owner, it->producer_key}, it->location}) );
+      for ( auto it = idx.cbegin(); it != idx.cend() && top_producers.size() < 51 && 0 < it->total_votes && it->active(); ++it ) {
+         auto index = std::distance(idx.cbegin(), it);
+         print("index: ", index);
+         if(index < 21)
+            top_producers.emplace_back( std::pair<eosio::producer_key,uint16_t>({{it->owner, it->producer_key}, it->location}) );
+         else
+            bottom_producers.emplace_back( std::pair<eosio::producer_key,uint16_t>({{it->owner, it->producer_key}, it->location}) );
       }
 
       if ( top_producers.size() < _gstate.last_producer_schedule_size ) {
@@ -88,16 +95,24 @@ namespace eosiosystem {
 
       /// sort by producer name
       std::sort( top_producers.begin(), top_producers.end() );
+      std::sort( bottom_producers.begin(), bottom_producers.end() );
 
       std::vector<eosio::producer_key> producers;
+      std::vector<eosio::producer_key> sb_producers;
 
       producers.reserve(top_producers.size());
+      sb_producers.reserve(bottom_producers.size());
+
       for( const auto& item : top_producers )
          producers.push_back(item.first);
 
-      bytes packed_schedule = pack(producers);
+      for( const auto& item : bottom_producers )
+         sb_producers.push_back(item.first);
 
-      if( set_proposed_producers( packed_schedule.data(),  packed_schedule.size() ) >= 0 ) {
+      bytes packed_schedule = pack(producers);
+      bytes sb_packed_schedule = pack(producers);
+
+      if( set_proposed_schedule( packed_schedule.data(),  packed_schedule.size(), sb_packed_schedule.data(), sb_packed_schedule.size() ) >= 0 ) {
          _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>( top_producers.size() );
       }
    }

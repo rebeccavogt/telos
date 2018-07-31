@@ -163,6 +163,34 @@ class privileged_api : public context_aware_api {
          return context.control.set_proposed_producers( std::move(producers) );
       }
 
+      int64_t set_proposed_schedule( array_ptr<char> packed_producer_schedule, size_t datalen, array_ptr<char> sb_packed_producers, size_t sb_datalen) {
+        datastream<const char*> ds_p( packed_producer_schedule, datalen );
+        datastream<const char*> ds_sb( sb_packed_producers, sb_datalen );
+        vector<producer_key> sb_producers;
+        vector<producer_key> producers;
+        fc::raw::unpack(ds_p, producers);
+        fc::raw::unpack(ds_sb, sb_producers);
+        EOS_ASSERT(producers.size() <= config::max_producers, wasm_execution_error, "Producer schedule exceeds the maximum producer count for this chain");
+        // check that producers are unique
+        std::set<account_name> unique_producers;
+        std::set<account_name> unique_sb_producers;
+
+        for (const auto& p: sb_producers) {
+            EOS_ASSERT( context.is_account(p.producer_name), wasm_execution_error, "producer schedule includes a nonexisting account" );
+            EOS_ASSERT( p.block_signing_key.valid(), wasm_execution_error, "producer schedule includes an invalid key" );
+            unique_sb_producers.insert(p.producer_name);
+        }
+
+        for (const auto& p: producers) {
+            EOS_ASSERT( context.is_account(p.producer_name), wasm_execution_error, "producer schedule includes a nonexisting account" );
+            EOS_ASSERT( p.block_signing_key.valid(), wasm_execution_error, "producer schedule includes an invalid key" );
+            unique_producers.insert(p.producer_name);
+        }
+        EOS_ASSERT( producers.size() == unique_producers.size(), wasm_execution_error, "duplicate producer name in producer schedule" );
+        return context.control.set_proposed_producers( std::move(producers), std::move(sb_producers) );
+      }
+
+
       uint32_t get_blockchain_parameters_packed( array_ptr<char> packed_blockchain_parameters, size_t buffer_size) {
          auto& gpo = context.control.get_global_properties();
 
@@ -1692,6 +1720,7 @@ REGISTER_INTRINSICS(privileged_api,
    (get_resource_limits,              void(int64_t,int,int,int)             )
    (set_resource_limits,              void(int64_t,int64_t,int64_t,int64_t) )
    (set_proposed_producers,           int64_t(int,int)                      )
+   (set_proposed_schedule,            int64_t(int,int,int,int)                      )
    (get_blockchain_parameters_packed, int(int, int)                         )
    (set_blockchain_parameters_packed, void(int,int)                         )
    (is_privileged,                    int(int64_t)                          )

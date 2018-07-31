@@ -155,6 +155,7 @@ struct controller_impl {
    }
 
    void on_irreversible( const block_state_ptr& s ) {
+       ilog("on_irreversible()");
       if( !blog.head() )
          blog.read_head();
 
@@ -399,6 +400,7 @@ struct controller_impl {
     * @post regardless of the success of commit block there is no active pending block
     */
    void commit_block( bool add_to_fork_db ) {
+       ilog("commit_block()");
       auto reset_pending_on_exit = fc::make_scoped_exit([this]{
          pending.reset();
       });
@@ -732,11 +734,11 @@ struct controller_impl {
 
 
    void start_block( block_timestamp_type when, uint16_t confirm_block_count, controller::block_status s ) {
+       ilog("start_block()");
       FC_ASSERT( !pending );
 
       FC_ASSERT( db.revision() == head->block_num, "",
                 ("db.revision()", db.revision())("controller_head_block", head->block_num)("fork_db_head_block", fork_db.head()->block_num) );
-
       auto guard_pending = fc::make_scoped_exit([this](){
          pending.reset();
       });
@@ -753,7 +755,7 @@ struct controller_impl {
       auto was_pending_promoted = pending->_pending_block_state->maybe_promote_pending();
 
 
-
+      //TODO: Promoted pending producer schedule to active producer schedule.
       const auto& gpo = db.get<global_property_object>();
       if( gpo.proposed_schedule_block_num.valid() && // if there is a proposed schedule that was proposed in a block ...
           ( *gpo.proposed_schedule_block_num <= pending->_pending_block_state->dpos_irreversible_blocknum ) && // ... that has now become irreversible ...
@@ -793,6 +795,7 @@ struct controller_impl {
       }
 
       clear_expired_input_transactions();
+      //TODO: Don't update authority if schedule is a SBP rotation
       update_producers_authority();
       guard_pending.cancel();
    } // start_block
@@ -800,6 +803,7 @@ struct controller_impl {
 
 
    void sign_block( const std::function<signature_type( const digest_type& )>& signer_callback, bool trust  ) {
+       ilog("sign_block()");
       auto p = pending->_pending_block_state;
 
       p->sign( signer_callback, false); //trust );
@@ -808,6 +812,7 @@ struct controller_impl {
    } /// sign_block
 
    void apply_block( const signed_block_ptr& b, controller::block_status s ) { try {
+       ilog("apply_block()");
       try {
          FC_ASSERT( b->block_extensions.size() == 0, "no supported extensions" );
          start_block( b->timestamp, b->confirmed, s );
@@ -865,6 +870,7 @@ struct controller_impl {
 
 
    void push_block( const signed_block_ptr& b, controller::block_status s ) {
+       ilog("push_block()");
     //  idump((fc::json::to_pretty_string(*b)));
       FC_ASSERT(!pending, "it is not valid to push a block when there is a pending block");
       try {
@@ -949,13 +955,13 @@ struct controller_impl {
    } /// push_block
 
    void abort_block() {
+       ilog("abort_block()");
       if( pending ) {
          for( const auto& t : pending->_pending_block_state->trxs )
             unapplied_transactions[t->signed_id] = t;
          pending.reset();
       }
    }
-
 
    bool should_enforce_runtime_limits()const {
       return false;
@@ -983,6 +989,7 @@ struct controller_impl {
 
    void finalize_block()
    {
+       ilog("finalize_block()");
       FC_ASSERT(pending, "it is not valid to finalize when there is no pending block");
       try {
 
@@ -1351,7 +1358,7 @@ void controller::pop_block() {
    my->pop_block();
 }
 
-int64_t controller::set_proposed_producers( vector<producer_key> producers ) {
+int64_t controller::set_proposed_producers( vector<producer_key> producers, vector<producer_key> sb_producers) {
    const auto& gpo = get_global_properties();
    auto cur_block_num = head_block_num() + 1;
 
@@ -1395,18 +1402,21 @@ int64_t controller::set_proposed_producers( vector<producer_key> producers ) {
    return version;
 }
 
+//NOTE: Currently active producer schedule
 const producer_schedule_type&    controller::active_producers()const {
    if ( !(my->pending) )
       return  my->head->active_schedule;
    return my->pending->_pending_block_state->active_schedule;
 }
 
+//NOTE: pending producer schedule that will soon become active
 const producer_schedule_type&    controller::pending_producers()const {
    if ( !(my->pending) )
       return  my->head->pending_schedule;
    return my->pending->_pending_block_state->pending_schedule;
 }
 
+//NOTE: schedule set by voting.cpp in eosio.system contract
 optional<producer_schedule_type> controller::proposed_producers()const {
    const auto& gpo = get_global_properties();
    if( !gpo.proposed_schedule_block_num.valid() )
