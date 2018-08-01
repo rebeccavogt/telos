@@ -24,7 +24,7 @@ Options:
   -h,--help                   Print this help message and exit
   -u,--url TEXT=http://localhost:8888/
                               the http/https URL where nodeos is running
-  --wallet-url TEXT=http://localhost:8888/
+  --wallet-url TEXT=http://localhost:8999/
                               the http/https URL where keosd is running
   -r,--header                 pass specific HTTP header, repeat this option to pass multiple headers
   -n,--no-verify              don't verify peer certificate when using HTTPS
@@ -150,7 +150,7 @@ FC_DECLARE_EXCEPTION( localized_exception, 10000000, "an error occured" );
   )
 
 string url = "http://localhost:8888/";
-string wallet_url = "http://localhost:8900/";
+string wallet_url = "http://localhost:8999/"; // TELOS CHANGES: change defalut keosd port when launched automatically by teclos
 bool no_verify = false;
 vector<string> headers;
 
