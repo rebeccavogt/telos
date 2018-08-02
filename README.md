@@ -143,34 +143,34 @@ The Telos Roadmap is broken into four separate stages. Each stage implements the
     - [x] [Change Key Prefix from EOS to TLOS](https://github.com/Telos-Foundation/telos/issues/26)
 * Stage 1.1
     - [x] [Claim Rewards Improvements](https://github.com/Telos-Foundation/telos/issues/10)
-    - [] [Inverse Voting Weights](https://github.com/Telos-Foundation/telos/issues/7)
+    - [ ] [Inverse Voting Weights](https://github.com/Telos-Foundation/telos/issues/7)
     - [x] [Changing Default keosd ports](https://github.com/Telos-Foundation/telos/issues/11)
-    - [] [Rename keosd](https://github.com/Telos-Foundation/telos/issues/5)
-    - [] [Refactor teclos usage data](https://github.com/Telos-Foundation/telos/issues/15)
-    - [] [Block Producer Rotations](https://github.com/Telos-Foundation/telos/issues/3)
-    - [] [Chain Update/Restart Rehearsal](https://github.com/Telos-Foundation/grow/issues/1)
+    - [ ] [Rename keosd](https://github.com/Telos-Foundation/telos/issues/5)
+    - [ ] [Refactor teclos usage data](https://github.com/Telos-Foundation/telos/issues/15)
+    - [ ] [Block Producer Rotations](https://github.com/Telos-Foundation/telos/issues/3)
+    - [ ] [Chain Update/Restart Rehearsal](https://github.com/Telos-Foundation/grow/issues/1)
 * Stage 2.0
-    - [] [Account Arbitatration Contract](https://github.com/Telos-Foundation/telos/issues/27)
-    - [] Refactor Unit Tests
-        - [] [Test 27](https://github.com/Telos-Foundation/telos/issues/17) 
-        - [] [Test 28](https://github.com/Telos-Foundation/telos/issues/18) 
-        - [] [Test 31](https://github.com/Telos-Foundation/telos/issues/19) 
-        - [] [Test 33](https://github.com/Telos-Foundation/telos/issues/20) 
-        - [] [Test 34](https://github.com/Telos-Foundation/telos/issues/21) 
-        - [] [Test 35](https://github.com/Telos-Foundation/telos/issues/22) 
-        - [] [Test 36](https://github.com/Telos-Foundation/telos/issues/23) 
-        - [] [Test 37](https://github.com/Telos-Foundation/telos/issues/24) 
-    - [] [Adding Faucet to Testnet](https://github.com/Telos-Foundation/telos/issues/28)
-    - [] [Replay Attack Testing]()
+    - [ ] [Account Arbitatration Contract](https://github.com/Telos-Foundation/telos/issues/27)
+    - [ ] Refactor Unit Tests
+        - [ ] [Test 27](https://github.com/Telos-Foundation/telos/issues/17) 
+        - [ ] [Test 28](https://github.com/Telos-Foundation/telos/issues/18) 
+        - [ ] [Test 31](https://github.com/Telos-Foundation/telos/issues/19) 
+        - [ ] [Test 33](https://github.com/Telos-Foundation/telos/issues/20) 
+        - [ ] [Test 34](https://github.com/Telos-Foundation/telos/issues/21) 
+        - [ ] [Test 35](https://github.com/Telos-Foundation/telos/issues/22) 
+        - [ ] [Test 36](https://github.com/Telos-Foundation/telos/issues/23) 
+        - [ ] [Test 37](https://github.com/Telos-Foundation/telos/issues/24) 
+    - [ ] [Adding Faucet to Testnet](https://github.com/Telos-Foundation/telos/issues/28)
+    - [ ] [Replay Attack Testing]()
 * Stage 3.0
-    - [] [Ratify and Amend Contract](https://github.com/Telos-Foundation/telos/issues/29)
-    - [] Automatic Block Producer Minimum Enforcement
-    - [] [Block Producer Adjudication Contract](https://github.com/Telos-Foundation/telos/issues/30)
+    - [ ] [Ratify and Amend Contract](https://github.com/Telos-Foundation/telos/issues/29)
+    - [ ] Automatic Block Producer Minimum Enforcement
+    - [ ] [Block Producer Adjudication Contract](https://github.com/Telos-Foundation/telos/issues/30)
 * Stage 4.0
-    - [] Include Snapshot Accounts
-    - [] Validate Snapshot Accounts
-    - [] Validate Chain Functionality
-    - [] Test Chain Security
+    - [ ] Include Snapshot Accounts
+    - [ ] Validate Snapshot Accounts
+    - [ ] Validate Chain Functionality
+    - [ ] Test Chain Security
 * Main Net
 
 
