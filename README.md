@@ -133,7 +133,7 @@ The Telos Testnet is a sandbox for testing newly implemented features and findin
 * __Claiming Producer/Standby Rewards__ In order to receive your hard-earned Producer/Standby payout, registered producers will make a call to `claimrewards` no more than once per day. When `claimrewards` is called, the calling producer's share of TLOS is calculated and paid to their account. In addition to sending the producer's earned payout, `claimrewards` will also make a deposit to the Worker Proposal Fund. This deposit is not taken out of the producer's share, but rather from the newly minted tokens from the claimrewards call. For a more in depth explanation of this process, please consult the whitepaper or join a discussion on our many public channels.
 
 # Testnet Road Map
-The Telos Roadmap is broken into four separate stages. Each stage implements the new features outlined in the white paper. Once all the features of a stage have been implemented, tested, and peer reviewed, the group will move onto implementing the next stage. Each stage may be broken into subsequent versions. These versions will contain amendments and feature that were yet to implemented. Below you will see an outline of the stages.
+The Telos Roadmap is broken into four separate stages. Each stage implements new features outlined in the white paper. Once all the features of a stage have been implemented, tested, and peer reviewed, the group will move onto implementing the next stage. Each stage may contain versions. These versions will contain amendments and features that have yet to be completed and/or tested. Below you will see an outline of the stages.
 
 * Stage 1.0
     - [x] [Refactor Claim Rewards]()
