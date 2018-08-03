@@ -1,4 +1,4 @@
-version: "3"
+Zversion: "3"
 
 services:
   builder:
@@ -25,11 +25,7 @@ services:
 
   keosd:
     image: eosio/eos
-<<<<<<< HEAD
     command: /opt/eosio/bin/keosd --wallet-dir /opt/eosio/bin/data-dir --http-server-address=127.0.0.1:8999
-=======
-    command: /opt/eosio/bin/keosd --wallet-dir /opt/eosio/bin/data-dir --http-server-address=127.0.0.1:8900 --http-alias=keosd:8900 --http-alias=localhost:8900
->>>>>>> v1.1.2
     hostname: keosd
     links:
       - nodeosd

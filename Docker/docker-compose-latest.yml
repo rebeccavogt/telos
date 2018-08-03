@@ -17,13 +17,8 @@ services:
     stop_grace_period: 10m
 
   keosd:
-<<<<<<< HEAD:Docker/docker-compose-eosio1.0.yaml
     image: eosio/eos:v1.0.8
     command: /opt/eosio/bin/keosd --wallet-dir /opt/eosio/bin/data-dir --http-server-address=127.0.0.1:8999
-=======
-    image: eosio/eos:latest
-    command: /opt/eosio/bin/keosd --wallet-dir /opt/eosio/bin/data-dir --http-server-address=127.0.0.1:8900 --http-alias=keosd:8900 --http-alias=localhost:8900
->>>>>>> v1.1.2:Docker/docker-compose-latest.yml
     hostname: keosd
     links:
       - nodeosd
