@@ -324,9 +324,16 @@ namespace eosiosystem {
 
    void system_contract::propagate_weight_change(const voter_info &voter) {
      eosio_assert( voter.proxy == 0 || !voter.is_proxy, "account registered as a proxy is not allowed to use a proxy");
-     auto totalProds = std::distance(_producers.cbegin(), _producers.cend());
+     
+     //getting all active producers
+     auto totalProds = 0;
+     for (const auto &prod : _producers) {
+       if(prod.isActive()) { 
+         totalProds++;
+       }
+     }
      auto totalStake = voter.staked + voter.proxied_vote_weight;
-     double new_weight = inverseVoteWeight(totalStake, voter.producers.size(), VOTE_VARIATION);
+     double new_weight = inverseVoteWeight(totalStake, totalProds, VOTE_VARIATION);
     
      if (voter.proxy) {
        auto &proxy = _voters.get(voter.proxy, "proxy not found"); // data corruption
