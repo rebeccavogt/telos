@@ -103,13 +103,6 @@ namespace eosiosystem {
       }
    }
 
-   double stake2vote( int64_t staked ) {
-      /// TODO subtract 2080 brings the large numbers closer to this decade
-      double weight = int64_t( (now() - (block_timestamp::block_timestamp_epoch / 1000)) / (seconds_per_day * 7) )  / double( 52 );
-      
-      return double(staked) * std::pow( 2, weight );
-   }
-
    double system_contract::inverseVoteWeight(int64_t staked, double amountVotedProducers, double variation) {
      if (amountVotedProducers == 0.0) {
        return 0;
@@ -171,19 +164,13 @@ namespace eosiosystem {
       eosio_assert( !proxy || !voter->is_proxy, "account registered as a proxy is not allowed to use a proxy" );
 
       auto totalStaked = voter->staked;
-      print("\nVote: ", voting);
-      print("\nTotal producers to vote: ", producers.size());
-      print("\nVoter stake: ", totalStaked);
       if(proxy){
          auto pxy = _voters.find(proxy);
          totalStaked += pxy->proxied_vote_weight;
-      print("\\nVoter total producers voted: ", pxy->producers.size());
-         print("\nVoter stake + Proxy stake: ", totalStaked);
       }
       auto inverse_stake = inverseVoteWeight(totalStaked, (double) producers.size(), VOTE_VARIATION);
       auto new_vote_weight = inverse_stake;
-      print("\nInverse vote weight: ", new_vote_weight);
-
+      
       /**
        * The first time someone votes we calculate and set last_vote_weight, since they cannot unstake until
        * after total_activated_stake hits threshold, we can use last_vote_weight to determine that this is
@@ -211,20 +198,14 @@ namespace eosiosystem {
          }
       }
 
-      print("\nGlobal activated stake:  ", _gstate.total_activated_stake);
-      
       boost::container::flat_map<account_name, pair<double, bool /*new*/> > producer_deltas;
 
       //Voter from second vote
       if ( voter->last_vote_weight > 0 ) {
-           print("\naccount first vote: ", name{voter->owner});
+           
          //if voter account has set proxy to a other voter account
          if( voter->proxy ) { 
-           print("\naccount has proxy");
-           print("\naccount proxy: ", name{voter->proxy});    
-
             auto old_proxy = _voters.find( voter->proxy );
-            print("\naccount old proxy: ", name{old_proxy->owner});   
 
             eosio_assert( old_proxy != _voters.end(), "old proxy not found" ); //data corruption
             _voters.modify( old_proxy, 0, [&]( auto& vp ) {
@@ -233,7 +214,6 @@ namespace eosiosystem {
             propagate_weight_change( *old_proxy );
          } 
          else {
-           print("\naccount doesn't have a proxy");
             for( const auto& p : voter->producers ) {
                auto& d = producer_deltas[p];
                d.first -= voter->last_vote_weight;
@@ -243,10 +223,7 @@ namespace eosiosystem {
       }
 
       if( proxy ) {
-         print("\naccount: ", name{voter->owner}); 
-         print("\nset proxy: ", name{proxy});   
          auto new_proxy = _voters.find( proxy );
-         print("\nfound proxy on voters table", name{proxy});
          eosio_assert( new_proxy != _voters.end(), "invalid proxy specified" ); //if ( !voting ) { data corruption } else { wrong vote }
          eosio_assert( !voting || new_proxy->is_proxy, "proxy not found" );
         
@@ -290,14 +267,12 @@ namespace eosiosystem {
       }
 
       for( const auto& pd : producer_deltas ) {
-         print("\n producer delta: ", name{pd.first});
          auto pitr = _producers.find( pd.first );
          if( pitr != _producers.end() ) {
             eosio_assert( !voting || pitr->active() || !pd.second.second /* not from new set */, "producer is not currently registered" );
             _producers.modify( pitr, 0, [&]( auto& p ) {
                p.total_votes += pd.second.first;
                if ( p.total_votes < 0 ) { // floating point arithmetics can give small negative numbers
-                   print("\n producer was unvoted: " , name{p.owner});
                   p.total_votes = 0;
                }
                _gstate.total_producer_vote_weight += pd.second.first;
@@ -333,13 +308,7 @@ namespace eosiosystem {
          _voters.modify( pitr, 0, [&]( auto& p ) {
           p.is_proxy = isproxy;
         });    
-        print("\nVoter is proxy: ", name{pitr->owner});
-        print("\nVoter proxied: ", name{pitr->proxy});
-        print("\nVoter staked: ", pitr->staked);
-        print("\nProducers: ", pitr->producers.size());
-        print("\nVoter proxied vote weight: ", pitr->proxied_vote_weight);
       } else {
-         print("\nVoter doesn't exist. Voter created: ", name{proxy});
          _voters.emplace( proxy, [&]( auto& p ) {
             p.owner  = proxy;
             p.is_proxy = isproxy;
@@ -350,24 +319,19 @@ namespace eosiosystem {
    void system_contract::propagate_weight_change(const voter_info &voter) {
      eosio_assert( voter.proxy == 0 || !voter.is_proxy, "account registered as a proxy is not allowed to use a proxy");
      auto totalProds = std::distance(_producers.cbegin(), _producers.cend());
-     print("\n propagate weight - total prods: ", totalProds);
      auto totalStake = voter.staked + voter.proxied_vote_weight;
-     print("\n propagate weight - total stake: ", totalStake);
      double new_weight = inverseVoteWeight(totalStake, voter.producers.size(), VOTE_VARIATION);
-     print("\n propagate weight - new vote weight: ", new_weight);
-
+    
      if (voter.proxy) {
        auto &proxy = _voters.get(voter.proxy, "proxy not found"); // data corruption
        _voters.modify(proxy, 0, [&](auto &p) { p.proxied_vote_weight = proxy.staked; });
        
        propagate_weight_change(proxy);
      } else {
-       //       auto delta = new_weight - voter.last_vote_weight;
        for (auto acnt : voter.producers) {
          auto &pitr = _producers.get(acnt, "producer not found"); // data corruption
          _producers.modify(pitr, 0, [&](auto &p) {
            p.total_votes = new_weight;
-           //                _gstate.total_producer_vote_weight += delta;
          });
        }
      }
