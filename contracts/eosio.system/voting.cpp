@@ -102,7 +102,11 @@ namespace eosiosystem {
          _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>( top_producers.size() );
       }
    }
-
+   
+   /*
+   * This function caculates the inverse weight voting. 
+   * The maximum weight vote weight will be reached if a producer vote for the maximum producers registered.  
+   */   
    double system_contract::inverseVoteWeight(int64_t staked, double amountVotedProducers, double variation) {
      if (amountVotedProducers == 0.0) {
        return 0;
@@ -139,7 +143,7 @@ namespace eosiosystem {
      require_auth(voter_name);
      update_votes(voter_name, proxy, producers, true);
    }
-
+   
    void system_contract::checkNetworkActivation(){
      if( _gstate.total_activated_stake >= min_activated_stake && _gstate.thresh_activated_stake_time == 0 ) {
             _gstate.thresh_activated_stake_time = current_time();
@@ -175,6 +179,8 @@ namespace eosiosystem {
        * The first time someone votes we calculate and set last_vote_weight, since they cannot unstake until
        * after total_activated_stake hits threshold, we can use last_vote_weight to determine that this is
        * their first vote and should consider their stake activated.
+       * 
+       * Setting a proxy will change the global staked if the proxied producer has voted. 
        */
       if( voter->last_vote_weight <= 0.0 && producers.size() > 0 && voting ) {
           _gstate.total_activated_stake += voter->staked;
@@ -242,7 +248,7 @@ namespace eosiosystem {
         }
       } else {
          if( new_vote_weight >= 0 ) {
-           //if voter has is proxied
+           //if voter is proxied
            //remove staked provided to account and propagate new vote weight
             if(voter->proxy){
              auto old_proxy = _voters.find( voter->proxy );
@@ -335,7 +341,9 @@ namespace eosiosystem {
          });
        }
      }
-     _voters.modify(voter, 0, [&](auto &v) { v.last_vote_weight = new_weight; });
+     _voters.modify(voter, 0, [&](auto &v) { 
+        v.last_vote_weight = new_weight; 
+      });
    }
 
 } /// namespace eosiosystem
