@@ -328,7 +328,7 @@ namespace eosiosystem {
      //getting all active producers
      auto totalProds = 0;
      for (const auto &prod : _producers) {
-       if(prod.isActive()) { 
+       if(prod.active()) { 
          totalProds++;
        }
      }
