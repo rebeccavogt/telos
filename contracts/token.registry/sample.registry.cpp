@@ -90,7 +90,7 @@ void registry::allot(account_name owner, account_name recipient, asset tokens) {
 /**
  * 
  */
-void registry::transfer_from(account_name owner, account_name recipient, asset tokens, string memo) {
+void registry::transferfrom(account_name owner, account_name recipient, asset tokens, string memo) {
     require_auth(owner);
     eosio_assert(is_account(recipient), "recipient account does not exist");
     eosio_assert(owner != recipient, "cannot transfer from self to self");
