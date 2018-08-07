@@ -25,7 +25,7 @@ class registry : public contract {
 
         void allot(account_name owner, account_name recipient, asset tokens);
 
-        void transfer_from(account_name owner, account_name recipient, asset tokens, string memo);
+        void transferfrom(account_name owner, account_name recipient, asset tokens, string memo);
 
     protected:
         account_name contract_owner;

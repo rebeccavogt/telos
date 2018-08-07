@@ -153,4 +153,4 @@ void registry::add_balance(account_name owner, asset tokens, account_name payer)
    }
 }
 
-EOSIO_ABI(registry, (mint)(transfer)(allot)(transfer_from))
+EOSIO_ABI(registry, (mint)(transfer)(allot)(transferfrom))
