@@ -26,7 +26,7 @@ void registry::init() {
         a.name = "";
         a.max_supply = 1000;
         a.supply = 10;
-        a.symbol = N(TEST);
+        a.symbol = S(2, TEST);
         a.is_initialized = true;
     });
 }
