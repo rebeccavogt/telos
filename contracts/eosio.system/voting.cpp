@@ -105,22 +105,27 @@ namespace eosiosystem {
    
    /*
    * This function caculates the inverse weight voting. 
-   * The maximum weight vote weight will be reached if a producer vote for the maximum producers registered.  
+   * The maximum weighted vote will be reached if an account votes for the maximum number of registered producers (up to 30 in total).  
    */   
-   double system_contract::inverseVoteWeight(int64_t staked, double amountVotedProducers, double variation) {
+   double system_contract::inverseVoteWeight(int64_t staked, double amountVotedProducers) {
      if (amountVotedProducers == 0.0) {
        return 0;
      }
 
-     double totalProducers = double(std::distance(_producers.begin(), _producers.end()));
+     auto totalProducers = 0;
+     for (const auto &prod : _producers) {
+       if(prod.active()) { 
+         totalProducers++;
+       }
+     }
      // 30 max producers allowed to vote
      if(totalProducers > 30) {
        totalProducers = 30;
      }
 
-     double k = 1 - variation;
+     double k = 1 - VOTE_VARIATION;
      
-     return (k * sin(M_PI_2 * (amountVotedProducers / totalProducers)) + variation) * double(staked);
+     return (k * sin(M_PI_2 * (amountVotedProducers / totalProducers)) + VOTE_VARIATION) * double(staked);
    }
 
    /**
@@ -172,7 +177,7 @@ namespace eosiosystem {
          auto pxy = _voters.find(proxy);
          totalStaked += pxy->proxied_vote_weight;
       }
-      auto inverse_stake = inverseVoteWeight(totalStaked, (double) producers.size(), VOTE_VARIATION);
+      auto inverse_stake = inverseVoteWeight(totalStaked, (double) producers.size());
       auto new_vote_weight = inverse_stake;
       
       /**
@@ -333,7 +338,7 @@ namespace eosiosystem {
        }
      }
      auto totalStake = voter.staked + voter.proxied_vote_weight;
-     double new_weight = inverseVoteWeight(totalStake, totalProds, VOTE_VARIATION);
+     double new_weight = inverseVoteWeight(totalStake, totalProds);
     
      if (voter.proxy) {
        auto &proxy = _voters.get(voter.proxy, "proxy not found"); // data corruption
