@@ -5,12 +5,13 @@
  *  @brief Recommended TIP-5 Implementation
  * 
  * TODO: Check for matching asset symbols
+ * TODO: Add updatesupply function
  */
 
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/asset.hpp>
 #include <string>
-#include <token.registry.hpp>
+#include "token.registry.hpp"
 
 using namespace eosio;
 using namespace std;
@@ -19,14 +20,14 @@ using namespace std;
  * 
  */
 void registry::init() {
-    settings_table token_settings(contract_owner, contract_owner);
-    auto t = *token_settings.begin();
+    settings_table token_settings(contractowner, contractowner);
+    //auto t = *token_settings.begin();
 
-    token_settings.emplace(contract_owner, [&]( auto& a ){
-        a.name = "";
-        a.max_supply = 1000;
-        a.supply = 10;
-        a.symbol = S(2, TEST);
+    token_settings.emplace(contractowner, [&]( auto& a ){
+        a.name = "Interface Test Token";
+        a.max_supply = int64_t(1000);
+        a.supply = int64_t(10);
+        a.symbol = S(2, ITT);
         a.is_initialized = true;
     });
 }
@@ -35,10 +36,10 @@ void registry::init() {
  * 
  */
 void registry::mint(account_name recipient, asset tokens, string memo) {
-    require_auth(contract_owner);
+    require_auth(contractowner);
     eosio_assert(is_account(recipient), "recipient account does not exist");
 
-    settings_table token_settings(contract_owner, contract_owner);
+    settings_table token_settings(contractowner, contractowner);
     auto t = *token_settings.begin();
     eosio_assert(tokens.amount + t.supply <= t.max_supply, "minting would exceed max_supply");
 
@@ -70,7 +71,7 @@ void registry::allot(account_name owner, account_name recipient, asset tokens) {
 
     sub_balance(owner, tokens);
     
-    allotments_table allotments(contract_owner, owner);
+    allotments_table allotments(contractowner, owner);
     auto al = allotments.find(owner);
 
     if(al == allotments.end() ) {
@@ -98,7 +99,7 @@ void registry::transferfrom(account_name owner, account_name recipient, asset to
     eosio_assert(tokens.amount > 0, "must transfer positive quantity" );
     eosio_assert(memo.size() <= 256, "memo has more than 256 bytes" );
 
-    allotments_table allotments(contract_owner, owner);
+    allotments_table allotments(contractowner, owner);
     auto al = allotments.get(owner, "No allotment approved by owner account");
     eosio_assert(al.tokens.amount >= tokens.amount, "transaction would overdraw balance");
 
@@ -119,7 +120,7 @@ void registry::transferfrom(account_name owner, account_name recipient, asset to
 void registry::sub_balance(account_name owner, asset tokens) {
     eosio_assert(is_account(owner), "owner account does not exist");
 
-    balances_table balances(contract_owner, owner);
+    balances_table balances(contractowner, owner);
     auto b = balances.get(owner, "No balance exists for given account");
     eosio_assert(b.tokens.amount >= tokens.amount, "transaction would overdraw balance");
 
@@ -139,7 +140,7 @@ void registry::add_balance(account_name owner, asset tokens, account_name payer)
     eosio_assert(is_account(owner), "owner account does not exist");
     eosio_assert(is_account(payer), "payer account does not exist");
 
-    balances_table balances(contract_owner, owner);
+    balances_table balances(contractowner, owner);
     auto b = balances.find(owner);
 
     if(b == balances.end() ) {
@@ -153,4 +154,4 @@ void registry::add_balance(account_name owner, asset tokens, account_name payer)
    }
 }
 
-EOSIO_ABI(registry, (mint)(transfer)(allot)(transferfrom))
+EOSIO_ABI(registry, (init)(mint)(transfer)(allot)(transferfrom))
