@@ -6,7 +6,7 @@
  */
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/asset.hpp>
-#include <string>
+#include <eosiolib/singleton.hpp>
 
 using namespace eosio;
 using namespace std;
@@ -15,9 +15,10 @@ class registry : public contract {
 
     public:
         // Constructor
-        registry(account_name _self):contract(_self){
+        registry(account_name _self) : contract(_self),
+            settings(_self, _self)
+        {
             contractowner = _self;
-            init();
         }
 
         account_name contractowner;
@@ -25,13 +26,13 @@ class registry : public contract {
         // ABI Actions
         void init();
 
-        void mint(account_name recipient, asset tokens, string memo);
+        void mint(account_name recipient, asset tokens);
 
-        void transfer(account_name owner, account_name recipient, asset tokens, string memo);
+        void transfer(account_name owner, account_name recipient, asset tokens);
 
         void allot(account_name owner, account_name recipient, asset tokens);
 
-        void transferfrom(account_name owner, account_name recipient, asset tokens, string memo);
+        void transferfrom(account_name owner, account_name recipient, asset tokens);
 
     protected:
 
@@ -41,14 +42,14 @@ class registry : public contract {
         
         //@abi table settings i64
         struct setting {
+            account_name issuer;
+            asset max_supply;
+            asset supply;
             string name;
-            int64_t max_supply;
-            int64_t supply;
-            symbol_type symbol;
             bool is_initialized;
 
-            uint64_t primary_key()const { return symbol.name(); }
-            EOSLIB_SERIALIZE(setting, (name)(max_supply)(supply)(symbol)(is_initialized))
+            uint64_t primary_key() const { return issuer; }
+            EOSLIB_SERIALIZE(setting, (issuer)(max_supply)(supply)(name)(is_initialized))
         };
         
         //@abi table balances i64
@@ -56,7 +57,7 @@ class registry : public contract {
             account_name owner;
             asset tokens;
 
-            uint64_t primary_key()const { return owner; }
+            uint64_t primary_key() const { return owner; }
             EOSLIB_SERIALIZE(balance, (owner)(tokens))
         };
 
@@ -66,11 +67,13 @@ class registry : public contract {
             account_name recipient;
             asset tokens;
 
-            uint64_t primary_key()const { return owner; }
+            uint64_t primary_key() const { return owner; }
             EOSLIB_SERIALIZE(allotment, (owner)(recipient)(tokens))
         };
 
         typedef multi_index< N(balances), balance> balances_table;
         typedef multi_index< N(allotments), allotment> allotments_table;
-        typedef multi_index< N(settings), setting> settings_table;
+
+        typedef eosio::singleton<N(singleton), setting> settings_table;
+        settings_table settings;
 };
