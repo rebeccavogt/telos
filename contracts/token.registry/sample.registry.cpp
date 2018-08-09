@@ -1,10 +1,12 @@
 /**
- *  @file
- *  @copyright defined in telos/LICENSE.txt
+ * @file
+ * @copyright defined in telos/LICENSE.txt
  * 
- *  @brief Recommended TIP-5 Implementation
+ * @brief Recommended TIP-5 Implementation
+ * @author Craig Branscom
  * 
- * TODO: Check for matching asset symbols
+ * TODO: Enforce rejection of subsequent calls to init()
+ * TODO: Check for matching tokens
  */
 
 #include <eosiolib/eosio.hpp>
@@ -18,7 +20,7 @@ using namespace eosio;
 using namespace std;
 
 /**
- * 
+ * @brief init() is called to set the token information.
  */
 void registry::init() {
     require_auth(contractowner);
@@ -35,7 +37,7 @@ void registry::init() {
 }
 
 /**
- * 
+ * @brief mint() is called to mint new tokens into circulation. New tokens are sent to recipient.
  */
 void registry::mint(account_name recipient, asset tokens) {
     require_auth(contractowner);
@@ -66,7 +68,7 @@ void registry::mint(account_name recipient, asset tokens) {
 }
 
 /**
- * 
+ * @brief transfer() sends tokens from owner to recipient.
  */
 void registry::transfer(account_name owner, account_name recipient, asset tokens) {
     require_auth(owner);
@@ -80,7 +82,7 @@ void registry::transfer(account_name owner, account_name recipient, asset tokens
 }
 
 /**
- * 
+ * @brief allot() is called to set an allotment of tokens to be claimed later by recipient.
  */
 void registry::allot(account_name owner, account_name recipient, asset tokens) {
     require_auth(owner);
@@ -107,7 +109,7 @@ void registry::allot(account_name owner, account_name recipient, asset tokens) {
 }
 
 /**
- * 
+ * @brief transferfrom() is called to claim an allotment.
  */
 void registry::transferfrom(account_name owner, account_name recipient, asset tokens) {
     require_auth(recipient);
@@ -133,7 +135,9 @@ void registry::transferfrom(account_name owner, account_name recipient, asset to
 }
 
 /**
+ * @brief sub_balance() is called as a shorthand way of subtracting tokens from owner's entry in the balances table.
  * 
+ * NOTE: This implementation only affects the balances table. Allotments are not affected.
  */
 void registry::sub_balance(account_name owner, asset tokens) {
     eosio_assert(is_account(owner), "owner account does not exist");
@@ -153,7 +157,9 @@ void registry::sub_balance(account_name owner, asset tokens) {
 }
 
 /**
+ * @brief add_balance is called as a shorthand way of adding tokens to owner's entry in the balances table.
  * 
+ * NOTE: This implementation only affects the balances table. Allotments are not affected.
  */
 void registry::add_balance(account_name owner, asset tokens, account_name payer) {
     eosio_assert(is_account(owner), "owner account does not exist");
@@ -174,4 +180,5 @@ void registry::add_balance(account_name owner, asset tokens, account_name payer)
    }
 }
 
+//NOTE: sub_balance() and add_balance() are omitted from the ABI. These should only be callable by the contract itself.
 EOSIO_ABI(registry, (init)(mint)(transfer)(allot)(transferfrom))
