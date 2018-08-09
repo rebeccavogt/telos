@@ -88,6 +88,14 @@ namespace eosiosystem {
                         (unpaid_blocks)(last_claim_time)(location) )
    };
 
+   struct rotation_info {
+      account_name           bp_currently_out;
+      account_name           sbp_currently_in;
+      uint32_t               bp_out_index;
+      uint32_t               sbp_in_index;
+      block_timestamp        next_rotation_time;
+   };
+
    struct voter_info {
       account_name                owner = 0; /// the voter
       account_name                proxy = 0; /// the proxy set by the voter, if any
@@ -116,11 +124,12 @@ namespace eosiosystem {
       uint64_t primary_key()const { return owner; }
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( voter_info, (owner)(proxy)(producers)(staked)(last_vote_weight)(proxied_vote_weight)(is_proxy)(reserved1)(reserved2)(reserved3) )
+      // EOSLIB_SERIALIZE( voter_info, (owner)(proxy)(producers)(staked)(last_vote_weight)(proxied_vote_weight)(is_proxy)(reserved1)(reserved2)(reserved3) )
    };
 
    typedef eosio::multi_index< N(voters), voter_info>  voters_table;
 
+  typedef eosio::singleton<N(rotations), rotation_info> rotation_info_singleton;
 
    typedef eosio::multi_index< N(producers), producer_info,
                                indexed_by<N(prototalvote), const_mem_fun<producer_info, double, &producer_info::by_votes>  >
@@ -137,8 +146,10 @@ namespace eosiosystem {
          voters_table           _voters;
          producers_table        _producers;
          global_state_singleton _global;
+         rotation_info_singleton _rotations;
 
          eosio_global_state     _gstate;
+         rotation_info          _grotations;
          rammarket              _rammarket;
 
       public:
@@ -240,10 +251,12 @@ namespace eosiosystem {
          void propagate_weight_change( const voter_info& voter );
 
          //calculate the inverse vote weight
-         double inverseVoteWeight(int64_t staked, double amountVotedProducers);
+         double inverseVoteWeight(double staked, double amountVotedProducers);
 
          //verify if the network is activated
          void checkNetworkActivation();
+
+         bool is_in_range(int32_t index, int32_t low_bound, int32_t up_bound);
    };
 
 } /// eosiosystem

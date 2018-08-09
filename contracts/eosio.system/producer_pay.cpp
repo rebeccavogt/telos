@@ -37,15 +37,15 @@ const uint64_t useconds_per_year = seconds_per_year * 1000000ll;
 void system_contract::onblock(block_timestamp timestamp, account_name producer)
 {
     using namespace eosio;
-
+    print("\nonblock()");
     require_auth(N(eosio));
 
-    // Until activated stake crosses this threshold no new rewards are paid
+    //Until activated stake crosses this threshold no new rewards are paid
     if (_gstate.total_activated_stake < min_activated_stake)
         return;
 
-    if (_gstate.last_pervote_bucket_fill == 0) /// start the presses
-        _gstate.last_pervote_bucket_fill = current_time();
+    // if (_gstate.last_pervote_bucket_fill == 0) /// start the presses
+    //     _gstate.last_pervote_bucket_fill = current_time();
 
     /**
     * At startup the initial producer may not be one that is registered / elected
@@ -63,8 +63,9 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer)
     // Only update block producers once every minute, block_timestamp is in half seconds
     if (timestamp.slot - _gstate.last_producer_schedule_update.slot > 120)
     {
+        print("\npre: update_elected_producers");
         update_elected_producers(timestamp);
-
+        print("\npost: update_elected_producers");
         // Used in bidding for account names
         if ((timestamp.slot - _gstate.last_name_close.slot) > blocks_per_day)
         {
