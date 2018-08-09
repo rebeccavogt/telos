@@ -36,7 +36,7 @@ The Telos Foundation has created a lightweight, powerful tool that helps with au
 
     a. Example: `grow spin single prodname1234 64.169.144.58 path/to/genesis.json stage1_1.telosfoundation.io`
 
-    b. There are also 2 optional flags: `--p2p-port` and `--http-port`. These flags have default values of `8888` and `9876`, respectively.
+    b. There are also 2 optional flags: `--p2p-port` and `--http-port`. These flags have default values of `9876` and `8888`, respectively.
 
 4. Run `grow spin output prodname1234` to view the feed from the node.
 
