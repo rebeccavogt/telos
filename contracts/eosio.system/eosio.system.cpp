@@ -17,12 +17,11 @@ namespace eosiosystem {
     _rotations(_self,_self),
     _rammarket(_self,_self)
    {
-      print( "construct system\n" );
+      //print( "construct system\n" );
       _gstate = _global.exists() ? _global.get() : get_default_parameters();
       _grotations = _rotations.get_or_create(_self, rotation_info{
         0, 0, 0, 75, block_timestamp()
       });
-      print("\ngrotation: ", _grotations.sbp_in_index);
       auto itr = _rammarket.find(S(4,RAMCORE));
 
       if( itr == _rammarket.end() ) {
@@ -50,7 +49,7 @@ namespace eosiosystem {
 
 
    system_contract::~system_contract() {
-      print( "destruct system\n" );
+      //print( "destruct system\n" );
       _global.set( _gstate, _self );
       _rotations.set( _grotations, _self );
       //eosio_exit(0);
