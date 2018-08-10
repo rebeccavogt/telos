@@ -94,6 +94,7 @@ namespace eosiosystem {
       uint32_t               bp_out_index;
       uint32_t               sbp_in_index;
       block_timestamp        next_rotation_time;
+      block_timestamp        last_rotation_time;
    };
 
    struct voter_info {
@@ -129,7 +130,7 @@ namespace eosiosystem {
 
    typedef eosio::multi_index< N(voters), voter_info>  voters_table;
 
-  typedef eosio::singleton<N(rotations), rotation_info> rotation_info_singleton;
+   typedef eosio::singleton<N(rotations), rotation_info> rotation_info_singleton;
 
    typedef eosio::multi_index< N(producers), producer_info,
                                indexed_by<N(prototalvote), const_mem_fun<producer_info, double, &producer_info::by_votes>  >

@@ -37,7 +37,7 @@ const uint64_t useconds_per_year = seconds_per_year * 1000000ll;
 void system_contract::onblock(block_timestamp timestamp, account_name producer)
 {
     using namespace eosio;
-    //print("\nonblock()");
+    print("\nonblock()");
     require_auth(N(eosio));
 
     //Until activated stake crosses this threshold no new rewards are paid
