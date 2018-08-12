@@ -18,6 +18,17 @@
    }],
    "____comment": "eosio.bios structs: set_account_limits, setpriv, set_global_limits, producer_key, set_producers, require_auth are provided so abi available for deserialization in future.",
    "structs": [{
+      "name": "rotation_info",
+      "base": "",
+      "fields": [
+        {"name":"bp_currently_out",     "type":"account_name"},
+        {"name":"sbp_currently_in",     "type":"account_name"},
+        {"name":"bp_out_index",         "type":"uint32"},
+        {"name":"sbp_in_index",         "type":"uint32"},
+        {"name":"next_rotation_time",   "type":"block_timestamp_type"},
+        {"name":"last_rotation_time",   "type":"block_timestamp_type"}
+      ]
+    },{
       "name": "permission_level",
       "base": "",
       "fields": [
