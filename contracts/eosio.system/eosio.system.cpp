@@ -14,6 +14,7 @@ namespace eosiosystem {
     _voters(_self,_self),
     _producers(_self,_self),
     _global(_self,_self),
+    _rotations(_self,_self),
     _rammarket(_self,_self)
    {
       //print( "construct system\n" );
@@ -50,6 +51,7 @@ namespace eosiosystem {
    system_contract::~system_contract() {
       //print( "destruct system\n" );
       _global.set( _gstate, _self );
+      _rotations.set( _grotations, _self );
       //eosio_exit(0);
    }
 

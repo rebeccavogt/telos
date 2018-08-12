@@ -125,7 +125,7 @@ namespace eosiosystem {
       uint64_t primary_key()const { return owner; }
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( voter_info, (owner)(proxy)(producers)(staked)(last_vote_weight)(proxied_vote_weight)(is_proxy)(reserved1)(reserved2)(reserved3) )
+      // EOSLIB_SERIALIZE( voter_info, (owner)(proxy)(producers)(staked)(last_vote_weight)(proxied_vote_weight)(is_proxy)(reserved1)(reserved2)(reserved3) )
    };
 
    typedef eosio::multi_index< N(voters), voter_info>  voters_table;
@@ -147,8 +147,10 @@ namespace eosiosystem {
          voters_table           _voters;
          producers_table        _producers;
          global_state_singleton _global;
+         rotation_info_singleton _rotations;
 
          eosio_global_state     _gstate;
+         rotation_info          _grotations;
          rammarket              _rammarket;
 
       public:
@@ -248,6 +250,14 @@ namespace eosiosystem {
 
          // defined in voting.cpp
          void propagate_weight_change( const voter_info& voter );
+
+         //calculate the inverse vote weight
+         double inverseVoteWeight(double staked, double amountVotedProducers);
+
+         //verify if the network is activated
+         void checkNetworkActivation();
+
+         bool is_in_range(int32_t index, int32_t low_bound, int32_t up_bound);
    };
 
 } /// eosiosystem
