@@ -5,13 +5,13 @@
  * @brief Recommended TIP-5 Implementation
  * @author Craig Branscom
  * 
- * TODO: Enforce rejection of subsequent calls to init()
- * TODO: Check for matching tokens
+ * This contract is a fully working example implementation of the TIP-5 interface.
+ * 
+ * NOTE: Constructor and Destructor are called each time an action is called.
  */
 
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/asset.hpp>
-#include <string>
 #include "token.registry.hpp"
 
 #include <eosiolib/print.hpp>
@@ -20,165 +20,220 @@ using namespace eosio;
 using namespace std;
 
 /**
- * @brief init() is called to set the token information.
+ * @brief Contructor
  */
-void registry::init() {
-    require_auth(contractowner);
-    settings.set(
-        setting{
-            contractowner,
-            asset(int64_t(10000), S(2, ITT)),
-            asset(int64_t(0), S(2, ITT)),
-            "Interface Test Token",
+registry::registry(account_name self) : contract(self), settings(self, self) {
+    if (!settings.exists()) {
+
+            print("creating singleton...");
+
+        _settings = setting{
+            self,
+            asset(int64_t(10000), S(2, TTT)),
+            asset(int64_t(0), S(2, TTT)),
+            "Telos Test Token",
             true
-        },
-        contractowner
-    );
+        };
+
+        settings.set(_settings, self);
+        _settings = settings.get();
+    } else {
+
+            print("getting existing singleton...");
+
+        _settings = settings.get();
+    }
 }
 
 /**
- * @brief mint() is called to mint new tokens into circulation. New tokens are sent to recipient.
+ * @brief Destructor
+ */
+registry::~registry() {
+    if (settings.exists()) {
+        settings.set(_settings, _settings.issuer);
+
+        print("\nsetting singleton at contract destruction...");
+    }
+}
+
+/**
+ * @brief Mints new tokens into circulation.
  */
 void registry::mint(account_name recipient, asset tokens) {
-    require_auth(contractowner);
+    require_auth(_settings.issuer);
     eosio_assert(is_account(recipient), "recipient account does not exist");
+    eosio_assert(_settings.supply + tokens <= _settings.max_supply, "minting would exceed max_supply");
 
-    auto s = settings.get();
-    eosio_assert(s.supply + tokens <= s.max_supply, "minting would exceed max_supply");
+    add_balance(recipient, tokens, _settings.issuer);
 
-    add_balance(recipient, tokens, contractowner);
+    _settings.supply = (_settings.supply + tokens);
 
-    auto new_supply = (s.supply + tokens);
-
-    settings.set(
-        setting{
-            s.issuer,
-            s.max_supply,
-            new_supply,
-            s.name,
-            s.is_initialized
-        },
-        contractowner
-    );
-
-        print("\nnew_supply: ", new_supply);
-        print("\nmax_supply: ", s.max_supply);
-        print("\nissuer: ", name{s.issuer});
-        print("\nname: ", s.name);
+        print("\nnew_supply: ", _settings.supply);
+        print("\nmax_supply: ", _settings.max_supply);
+        print("\nissuer: ", name{_settings.issuer});
+        print("\nname: ", _settings.name);
 }
 
 /**
- * @brief transfer() sends tokens from owner to recipient.
+ * @brief Transfers tokens to another account.
  */
 void registry::transfer(account_name owner, account_name recipient, asset tokens) {
     require_auth(owner);
     eosio_assert(is_account(recipient), "recipient account does not exist");
     eosio_assert(owner != recipient, "cannot transfer to self");
-    eosio_assert(tokens.is_valid(), "invalid quantity given" );
+    eosio_assert(tokens.is_valid(), "invalid token symbol" );
     eosio_assert(tokens.amount > 0, "must transfer positive quantity" );
     
-    sub_balance(owner, tokens);
     add_balance(recipient, tokens, owner);
+    sub_balance(owner, tokens);
 }
 
 /**
- * @brief allot() is called to set an allotment of tokens to be claimed later by recipient.
+ * @brief Allots tokens to be claimed by recipient.
  */
 void registry::allot(account_name owner, account_name recipient, asset tokens) {
     require_auth(owner);
     eosio_assert(is_account(recipient), "recipient account does not exist");
     eosio_assert(owner != recipient, "cannot allot tokens to self");
+    eosio_assert(tokens.is_valid(), "invalid token symbol" );
+    eosio_assert(tokens.amount > 0, "must allot positive quantity" );
 
     sub_balance(owner, tokens);
-    
-    allotments_table allotments(contractowner, owner);
-    auto al = allotments.find(owner);
-
-    if(al == allotments.end() ) {
-      allotments.emplace(owner, [&]( auto& a ){
-        a.owner = owner;
-        a.recipient = recipient;
-        a.tokens = tokens;
-      });
-   } else {
-      allotments.modify(al, 0, [&]( auto& a ) {
-        a.recipient = recipient;
-        a.tokens += tokens;
-      });
-   }
+    add_allot(owner, recipient, tokens, owner);
 }
 
 /**
- * @brief transferfrom() is called to claim an allotment.
+ * @brief Reclaims an allotment.
+ */
+void registry::reclaim(account_name owner, account_name recipient, asset tokens) {
+    require_auth(owner);
+    eosio_assert(tokens.is_valid(), "invalid token symbol" );
+    eosio_assert(tokens.amount > 0, "must allot positive quantity" );
+
+    sub_allot(owner, recipient, tokens);
+    add_balance(owner, tokens, owner);
+}
+
+/**
+ * @brief Transfers an allotment to the intended recipient.
  */
 void registry::transferfrom(account_name owner, account_name recipient, asset tokens) {
     require_auth(recipient);
-    eosio_assert(is_account(recipient), "recipient account does not exist");
+    eosio_assert(is_account(owner), "owner account does not exist");
     eosio_assert(owner != recipient, "cannot transfer from self to self");
     eosio_assert(tokens.is_valid(), "invalid quantity given" );
     eosio_assert(tokens.amount > 0, "must transfer positive quantity" );
+    
+    sub_allot(owner, recipient, tokens);
+    add_balance(recipient, tokens, recipient);
+}
 
-    allotments_table allotments(contractowner, owner);
-    auto itr = allotments.find(owner);
+/**
+ * @brief Creates a new zero balance wallet entry.
+ */
+void registry::createwallet(account_name owner) {
+    require_auth(owner);
+
+    balances_table balances(_settings.issuer, owner);
+    auto b = balances.find(owner);
+
+    if(b == balances.end() ) {
+        balances.emplace(owner, [&]( auto& a ){
+            a.owner = owner;
+            a.tokens = asset(int64_t(0), S(2, TTT));
+        });
+
+        print("\nNew wallet created for ", name{owner});
+    } else {
+        print("Wallet already exists for given account");
+    }
+}
+
+/**
+ * @brief Deletes a zero balance wallet entry.
+ */
+void registry::deletewallet(account_name owner) {
+    require_auth(owner);
+
+    balances_table balances(_settings.issuer, owner);
+    auto itr = balances.find(owner);
+    auto b = *itr;
+
+    if(b.tokens.amount == 0) {
+        balances.erase(itr);
+
+            print("\nWallet deleted for ", name{owner});
+    } else {
+        print("\nCannot delete wallet unless balance is 0");
+    }
+}
+
+void registry::sub_balance(account_name owner, asset tokens) {
+    balances_table balances(_settings.issuer, owner);
+    auto itr = balances.find(owner);
+    auto b = *itr;
+    eosio_assert(b.tokens.amount >= tokens.amount, "transaction would overdraw balance");
+
+    balances.modify(itr, 0, [&]( auto& a ) {
+        a.tokens -= tokens;
+
+            print("\nbalance subtracted...");
+    });
+}
+
+void registry::add_balance(account_name recipient, asset tokens, account_name payer) {
+    balances_table balances(_settings.issuer, recipient);
+    auto itr = balances.find(recipient);
+
+    eosio_assert(itr != balances.end(), "No wallet found for recipient");
+
+    balances.modify(itr, 0, [&]( auto& a ) {
+        a.tokens += tokens;
+
+            print("\nbalance added...");
+    });
+}
+
+void registry::sub_allot(account_name owner, account_name recipient, asset tokens) {
+    allotments_table allotments(_settings.issuer, owner);
+    auto itr = allotments.find(recipient);
     auto al = *itr;
     eosio_assert(al.tokens.amount >= tokens.amount, "transaction would overdraw balance");
 
     if(al.tokens.amount == tokens.amount ) {
         allotments.erase(itr);
+
+            print("\nerasing allotment entry...");
     } else {
-        allotments.modify(itr, recipient, [&]( auto& a ) {
+        allotments.modify(itr, 0, [&]( auto& a ) {
             a.tokens -= tokens;
-        });
-    }
 
-    add_balance(recipient, tokens, recipient);
-}
+                print("\nsubtracting from existing allotment...");
 
-/**
- * @brief sub_balance() is called as a shorthand way of subtracting tokens from owner's entry in the balances table.
- * 
- * NOTE: This implementation only affects the balances table. Allotments are not affected.
- */
-void registry::sub_balance(account_name owner, asset tokens) {
-    eosio_assert(is_account(owner), "owner account does not exist");
-
-    balances_table balances(contractowner, owner);
-    auto itr = balances.find(owner);
-    auto b = *itr;
-    eosio_assert(b.tokens.amount >= tokens.amount, "transaction would overdraw balance");
-
-    if(b.tokens.amount == tokens.amount ) {
-        balances.erase(itr);
-    } else {
-        balances.modify(itr, owner, [&]( auto& a ) {
-            a.tokens -= tokens;
         });
     }
 }
 
-/**
- * @brief add_balance is called as a shorthand way of adding tokens to owner's entry in the balances table.
- * 
- * NOTE: This implementation only affects the balances table. Allotments are not affected.
- */
-void registry::add_balance(account_name owner, asset tokens, account_name payer) {
-    eosio_assert(is_account(owner), "owner account does not exist");
-    eosio_assert(is_account(payer), "payer account does not exist");
+void registry::add_allot(account_name owner, account_name recipient, asset tokens, account_name payer) {
+    allotments_table allotments(_settings.issuer, owner);
+    auto itr = allotments.find(recipient);
 
-    balances_table balances(contractowner, owner);
-    auto b = balances.find(owner);
+    if(itr == allotments.end() ) {
+        allotments.emplace(payer, [&]( auto& a ){
+            a.recipient = recipient;
+            a.owner = owner;
+            a.tokens = tokens;
+        });
 
-    if(b == balances.end() ) {
-      balances.emplace(payer, [&]( auto& a ){
-        a.owner = owner;
-        a.tokens = tokens;
-      });
+        print("\nemplacing new allotment...");
    } else {
-      balances.modify(b, 0, [&]( auto& a ) {
-        a.tokens += tokens;
-      });
+        allotments.modify(itr, 0, [&]( auto& a ) {
+            a.tokens += tokens;
+        });
+
+        print("\nadding to existing allotment...");
+
    }
 }
 
-//NOTE: sub_balance() and add_balance() are omitted from the ABI. These should only be callable by the contract itself.
-EOSIO_ABI(registry, (init)(mint)(transfer)(allot)(transferfrom))
+EOSIO_ABI(registry, (mint)(transfer)(allot)(reclaim)(transferfrom)(createwallet)(deletewallet))
