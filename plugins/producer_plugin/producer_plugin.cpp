@@ -411,7 +411,7 @@ void producer_plugin::set_program_options(
    auto private_key_default = std::make_pair(default_priv_key.get_public_key(), default_priv_key );
 
    boost::program_options::options_description producer_options;
-
+   // TELOS CHANGES: rename keosd to tkeosd
    producer_options.add_options()
          ("enable-stale-production,e", boost::program_options::bool_switch()->notifier([this](bool e){my->_production_enabled = e;}), "Enable block production, even if the chain is stale.")
          ("pause-on-startup,x", boost::program_options::bool_switch()->notifier([this](bool p){my->_pause_production = p;}), "Start this node in a state where production is paused")
@@ -428,11 +428,11 @@ void producer_plugin::set_program_options(
           "Where:\n"
           "   <public-key>    \tis a string form of a vaild EOSIO public key\n\n"
           "   <provider-spec> \tis a string in the form <provider-type>:<data>\n\n"
-          "   <provider-type> \tis KEY, or KEOSD\n\n"
+          "   <provider-type> \tis KEY, or TKEOSD\n\n"
           "   KEY:<data>      \tis a string form of a valid EOSIO private key which maps to the provided public key\n\n"
-          "   KEOSD:<data>    \tis the URL where keosd is available and the approptiate wallet(s) are unlocked")
-         ("keosd-provider-timeout", boost::program_options::value<int32_t>()->default_value(5),
-          "Limits the maximum time (in milliseconds) that is allowd for sending blocks to a keosd provider for signing")
+          "   TKEOSD:<data>    \tis the URL where tkeosd is available and the approptiate wallet(s) are unlocked") 
+         ("tkeosd-provider-timeout", boost::program_options::value<int32_t>()->default_value(5),
+          "Limits the maximum time (in milliseconds) that is allowd for sending blocks to a tkeosd provider for signing")
          ;
    config_file_options.add(producer_options);
 }
@@ -514,7 +514,7 @@ void producer_plugin::plugin_initialize(const boost::program_options::variables_
          }
       }
    }
-
+   // TELOS CHANGES: rename keosd to tkeosd
    if( options.count("signature-provider") ) {
       const std::vector<std::string> key_spec_pairs = options["signature-provider"].as<std::vector<std::string>>();
       for (const auto& key_spec_pair : key_spec_pairs) {
@@ -533,7 +533,7 @@ void producer_plugin::plugin_initialize(const boost::program_options::variables_
 
             if (spec_type_str == "KEY") {
                my->_signature_providers[pubkey] = make_key_signature_provider(private_key_type(spec_data));
-            } else if (spec_type_str == "KEOSD") {
+            } else if (spec_type_str == "TKEOSD") {
                my->_signature_providers[pubkey] = make_keosd_signature_provider(my, spec_data, pubkey);
             }
 
@@ -543,7 +543,7 @@ void producer_plugin::plugin_initialize(const boost::program_options::variables_
       }
    }
 
-   my->_keosd_provider_timeout_us = fc::milliseconds(options.at("keosd-provider-timeout").as<int32_t>());
+   my->_keosd_provider_timeout_us = fc::milliseconds(options.at("tkeosd-provider-timeout").as<int32_t>());
 
    my->_max_transaction_time_ms = options.at("max-transaction-time").as<int32_t>();
 
