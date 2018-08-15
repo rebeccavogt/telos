@@ -50,7 +50,7 @@ killEosInstances=not dontKill
 killWallet=not dontKill
 
 WalletdName="keosd"
-ClientName="cleos"
+ClientName="teclos"
 # testUtils.Utils.setMongoSyncTime(50)
 
 try:
@@ -205,7 +205,7 @@ try:
     Print("Validating accounts before user accounts creation")
     cluster.validateAccounts(None)
 
-    # create accounts via eosio as otherwise a bid is needed 
+    # create accounts via eosio as otherwise a bid is needed
     Print("Create new account %s via %s" % (testeraAccount.name, cluster.eosioAccount.name))
     transId=node.createInitializeAccount(testeraAccount, cluster.eosioAccount, stakedDeposit=0, waitForTransBlock=False)
     if transId is None:

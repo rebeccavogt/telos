@@ -1,3 +1,4 @@
+#include <typeinfo>
 #include <boost/test/unit_test.hpp>
 #include <eosio/testing/tester.hpp>
 #include <eosio/chain/abi_serializer.hpp>
@@ -35,39 +36,40 @@ struct genesis_account {
    uint64_t     initial_balance;
 };
 
+// Updated voter weights based on https://docs.google.com/document/d/1K8w_Kd8Vmk_L0tAK56ETfAWlqgLo7r7Ae3JX25A5zVk/edit?usp=sharing
 std::vector<genesis_account> test_genesis( {
-  {N(b1),    100'000'000'0000ll},
-  {N(whale4), 40'000'000'0000ll},
-  {N(whale3), 30'000'000'0000ll},
-  {N(whale2), 20'000'000'0000ll},
-  {N(proda),      1'000'000'0000ll},
-  {N(prodb),      1'000'000'0000ll},
-  {N(prodc),      1'000'000'0000ll},
-  {N(prodd),      1'000'000'0000ll},
-  {N(prode),      1'000'000'0000ll},
-  {N(prodf),      1'000'000'0000ll},
-  {N(prodg),      1'000'000'0000ll},
-  {N(prodh),      1'000'000'0000ll},
-  {N(prodi),      1'000'000'0000ll},
-  {N(prodj),      1'000'000'0000ll},
-  {N(prodk),      1'000'000'0000ll},
-  {N(prodl),      1'000'000'0000ll},
-  {N(prodm),      1'000'000'0000ll},
-  {N(prodn),      1'000'000'0000ll},
-  {N(prodo),      1'000'000'0000ll},
-  {N(prodp),      1'000'000'0000ll},
-  {N(prodq),      1'000'000'0000ll},
-  {N(prodr),      1'000'000'0000ll},
-  {N(prods),      1'000'000'0000ll},
-  {N(prodt),      1'000'000'0000ll},
-  {N(produ),      1'000'000'0000ll},
-  {N(runnerup1),1'000'000'0000ll},
-  {N(runnerup2),1'000'000'0000ll},
-  {N(runnerup3),1'000'000'0000ll},
-  {N(minow1),        100'0000ll},
-  {N(minow2),          1'0000ll},
-  {N(minow3),          1'0000ll},
-  {N(masses),800'000'000'0000ll}
+  {N(b1),      19'047'324'9000ll},
+  {N(whale4),   7'618'929'9600ll},
+  {N(whale3),   5'714'197'4700ll},
+  {N(whale2),   3'809'464'9800ll},
+  {N(proda),      190'473'2490ll},
+  {N(prodb),      190'473'2490ll},
+  {N(prodc),      190'473'2490ll},
+  {N(prodd),      190'473'2490ll},
+  {N(prode),      190'473'2490ll},
+  {N(prodf),      190'473'2490ll},
+  {N(prodg),      190'473'2490ll},
+  {N(prodh),      190'473'2490ll},
+  {N(prodi),      190'473'2490ll},
+  {N(prodj),      190'473'2490ll},
+  {N(prodk),      190'473'2490ll},
+  {N(prodl),      190'473'2490ll},
+  {N(prodm),      190'473'2490ll},
+  {N(prodn),      190'473'2490ll},
+  {N(prodo),      190'473'2490ll},
+  {N(prodp),      190'473'2490ll},
+  {N(prodq),      190'473'2490ll},
+  {N(prodr),      190'473'2490ll},
+  {N(prods),      190'473'2490ll},
+  {N(prodt),      190'473'2490ll},
+  {N(produ),      190'473'2490ll},
+  {N(runnerup1),  190'473'2490ll},
+  {N(runnerup2),  190'473'2490ll},
+  {N(runnerup3),  190'473'2490ll},
+  {N(minow1),         190'4732ll},
+  {N(minow2),           1'9047ll},
+  {N(minow3),           1'9047ll},
+  {N(masses), 152'378'599'2000ll}
 });
 
 class bootseq_tester : public TESTER {
@@ -203,14 +205,15 @@ BOOST_FIXTURE_TEST_CASE( bootseq_test, bootseq_tester ) {
 
 
         // Create SYS tokens in eosio.token, set its manager as eosio
-        auto max_supply = core_from_string("10000000000.0000"); /// 1x larger than 1B initial tokens
-        auto initial_supply = core_from_string("1000000000.0000"); /// 1x larger than 1B initial tokens
+        auto max_supply = core_from_string("1000000000.0000"); /// 1x larger than 1B initial tokens
+        auto initial_supply = core_from_string("190473249.0000"); /// supply based on https://docs.google.com/document/d/1K8w_Kd8Vmk_L0tAK56ETfAWlqgLo7r7Ae3JX25A5zVk/edit?usp=sharing
         create_currency(N(eosio.token), config::system_account_name, max_supply);
         // Issue the genesis supply of 1 billion SYS tokens to eosio.system
         issue(N(eosio.token), config::system_account_name, config::system_account_name, initial_supply);
 
         auto actual = get_balance(config::system_account_name);
         BOOST_REQUIRE_EQUAL(initial_supply, actual);
+
 
         // Create genesis accounts
         for( const auto& a : test_genesis ) {
@@ -261,25 +264,26 @@ BOOST_FIXTURE_TEST_CASE( bootseq_test, bootseq_tester ) {
         votepro( N(whale2), {N(runnerup1), N(runnerup2), N(runnerup3)} );
         votepro( N(whale3), {N(proda), N(prodb), N(prodc), N(prodd), N(prode)} );
 
-        // Total Stakes = b1 + whale2 + whale3 stake = (100,000,000 - 1,000) + (20,000,000 - 1,000) + (30,000,000 - 1,000)
-        BOOST_TEST(get_global_state()["total_activated_stake"].as<int64_t>() == 1499999997000);
+        // Total Stakes = b1 + whale2 + whale3 stake = (19,047,324.9 - 1,000) + (3,809,646.98 - 1,000) + (5,714,197.47 - 1,000)
+        BOOST_TEST(get_global_state()["total_activated_stake"].as<int64_t>() == 285709870500);
 
         // No producers will be set, since the total activated stake is less than 150,000,000
         produce_blocks_for_n_rounds(2); // 2 rounds since new producer schedule is set when the first block of next round is irreversible
         auto active_schedule = control->head_block_state()->active_schedule;
+
         BOOST_TEST(active_schedule.producers.size() == 1);
         BOOST_TEST(active_schedule.producers.front().producer_name == "eosio");
 
         // Spend some time so the producer pay pool is filled by the inflation rate
         produce_min_num_of_blocks_to_spend_time_wo_inactive_prod(fc::seconds(30 * 24 * 3600)); // 30 days
-        // Since the total activated stake is less than 150,000,000, it shouldn't be possible to claim rewards
+        // Since the total activated stake is less than 28,570,987.35, it shouldn't be possible to claim rewards
         BOOST_REQUIRE_THROW(claim_rewards(N(runnerup1)), eosio_assert_message_exception);
 
-        // This will increase the total vote stake by (40,000,000 - 1,000)
+        // This will increase the total vote stake by (7,618,929.96 - 1,000)
         votepro( N(whale4), {N(prodq), N(prodr), N(prods), N(prodt), N(produ)} );
-        BOOST_TEST(get_global_state()["total_activated_stake"].as<int64_t>() == 1899999996000);
+        BOOST_TEST(get_global_state()["total_activated_stake"].as<int64_t>() == 361899169100);
 
-        // Since the total vote stake is more than 150,000,000, the new producer set will be set
+        // Since the total vote stake is more than 28,570,987.35, the new producer set will be set
         produce_blocks_for_n_rounds(2); // 2 rounds since new producer schedule is set when the first block of next round is irreversible
         active_schedule = control->head_block_state()->active_schedule;
         BOOST_REQUIRE(active_schedule.producers.size() == 21);
@@ -307,7 +311,7 @@ BOOST_FIXTURE_TEST_CASE( bootseq_test, bootseq_tester ) {
 
         // Spend some time so the producer pay pool is filled by the inflation rate
         produce_min_num_of_blocks_to_spend_time_wo_inactive_prod(fc::seconds(30 * 24 * 3600)); // 30 days
-        // Since the total activated stake is larger than 150,000,000, pool should be filled reward should be bigger than zero
+        // Since the total activated stake is larger than 28,570,987.35, pool should be filled reward should be bigger than zero
         claim_rewards(N(runnerup1));
         BOOST_TEST(get_balance(N(runnerup1)).get_amount() > 0);
 
@@ -317,14 +321,11 @@ BOOST_FIXTURE_TEST_CASE( bootseq_test, bootseq_tester ) {
         BOOST_REQUIRE(control->head_block_time().time_since_epoch() < first_june_2028);
 
         // This should thrown an error, since block one can only unstake all his stake after 10 years
-
-        BOOST_REQUIRE_THROW(undelegate_bandwidth(N(b1), N(b1), core_from_string("49999500.0000"), core_from_string("49999500.0000")), eosio_assert_message_exception);
-
+        BOOST_REQUIRE_THROW(undelegate_bandwidth(N(b1), N(b1), core_from_string("9523567.2134"), core_from_string("9523567.2134")), eosio_assert_message_exception);
         // Skip 10 years
         produce_block(first_june_2028 - control->head_block_time().time_since_epoch());
-
         // Block one should be able to unstake all his stake now
-        undelegate_bandwidth(N(b1), N(b1), core_from_string("49999500.0000"), core_from_string("49999500.0000"));
+        undelegate_bandwidth(N(b1), N(b1), core_from_string("9523567.2134"), core_from_string("9523567.2134"));
 
         return;
         produce_blocks(7000); /// produce blocks until virutal bandwidth can acomadate a small user

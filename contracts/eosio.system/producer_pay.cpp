@@ -16,11 +16,11 @@ namespace eosiosystem
     * 3. Updated min_activated_stake to reflect TELOS 15% activation threshold --- DONE
     * 4. Added worker_proposal_rate constant for Worker Proposal Fund --- DONE
     * 5. Added min_unpaid_blocks_threshold constant for producer payout qualification --- DONE
-    * 
+    *
     * NOTE: A full breakdown of the calculated token supply and 15% activation threshold
     * can be found at: https://docs.google.com/document/d/1K8w_Kd8Vmk_L0tAK56ETfAWlqgLo7r7Ae3JX25A5zVk/edit?usp=sharing
     */
-const int64_t min_activated_stake = 28'570'987'0000; // calculated from max TLOS supply of 190,473,249 (fluctuating value until mainnet activation)
+const int64_t min_activated_stake = 28'570'987'3500; // calculated from max TLOS supply of 190,473,249 (fluctuating value until mainnet activation)
 const double continuous_rate = 0.025;                // 2.5% annual inflation rate
 const double producer_rate = 0.01;                   // 1% TLOS rate to BP/Standby
 const double worker_rate = 0.015;                    // 1.5% TLOS rate to worker fund
@@ -93,7 +93,7 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer)
     * 1. Updated to_producers (BP/Standby payments) to reflect new payout structure (40% of inflation) --- DONE
     * 2. Updated to_worker_proposals (Worker Proposal Fund) to reflect new payout structure (remaining 60% of inflation) --- DONE
     * 3. Implement debugging logs with print() --- DONE
-    * 
+    *
     * TODO: Fix issue where the claimrewards debug output is shown twice
     */
 using namespace eosio;
@@ -179,7 +179,7 @@ void system_contract::claimrewards(const account_name &owner)
         totalShares = (count + 21);
         numProds = 21;
         numStandbys = (count - 21);
-    } 
+    }
 
     //print("\nnumProds: ", numProds);
     //print("\nnumStandbys: ", numStandbys);
@@ -193,14 +193,14 @@ void system_contract::claimrewards(const account_name &owner)
 
     /**
      * RATIONALE: Minimum Unpaid Blocks Threshold
-     * 
+     *
      * In the Telos Payment Architecture, block reward payments are calculated on the fly at the time
      * of the call to claimrewards. When called, the claimrewards function determines which payment level
      * the calling account qualifies for and pays them accordingly.
-     * 
+     *
      * In order to qualify for a Producer level payout, the caller must be in the top 21 producers AND have
      * at least 12 hours worth of block production as a producer. Requiring the calling account to have produced
-     * a minimum of 12 hours worth of blocks ensures Standby's can't "jump the fence" just long enough to call 
+     * a minimum of 12 hours worth of blocks ensures Standby's can't "jump the fence" just long enough to call
      * claimrewards and take a producer's share of the payout.
      */
 
@@ -233,10 +233,10 @@ void system_contract::claimrewards(const account_name &owner)
 
     /**
      * TODO: Implement Missed Block Deductions
-     * 
+     *
      * Telos Payout Architecture will account for missed blocks, and reduce
      * payout based on percentage of missed blocks.
-     * 
+     *
      * For instance, if Producer A misses 3 of their 12 blocks, they will
      * have missed 25% of their scheduled blocks. For easy math, say producers
      * earn 1 TLOS per block. This means Producer A will receive a payment of
@@ -245,7 +245,7 @@ void system_contract::claimrewards(const account_name &owner)
 
     _gstate.perblock_bucket -= pay_amount;
     _gstate.total_unpaid_blocks -= prod.unpaid_blocks;
-    
+
     _producers.modify(prod, 0, [&](auto &p) {
         p.last_claim_time = ct;
         p.unpaid_blocks = 0;
