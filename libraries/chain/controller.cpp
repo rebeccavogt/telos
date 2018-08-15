@@ -400,7 +400,6 @@ struct controller_impl {
     * @post regardless of the success of commit block there is no active pending block
     */
    void commit_block( bool add_to_fork_db ) {
-       ilog("commit_block()");
       auto reset_pending_on_exit = fc::make_scoped_exit([this]{
          pending.reset();
       });
@@ -870,7 +869,6 @@ struct controller_impl {
 
 
    void push_block( const signed_block_ptr& b, controller::block_status s ) {
-       ilog("push_block()");
     //  idump((fc::json::to_pretty_string(*b)));
       FC_ASSERT(!pending, "it is not valid to push a block when there is a pending block");
       try {
@@ -955,7 +953,6 @@ struct controller_impl {
    } /// push_block
 
    void abort_block() {
-       ilog("abort_block()");
       if( pending ) {
          for( const auto& t : pending->_pending_block_state->trxs )
             unapplied_transactions[t->signed_id] = t;
@@ -989,7 +986,6 @@ struct controller_impl {
 
    void finalize_block()
    {
-       ilog("finalize_block()");
       FC_ASSERT(pending, "it is not valid to finalize when there is no pending block");
       try {
 
