@@ -1,4 +1,5 @@
 {
+   "TELOS-NOTE": "THIS WAS NOT GENERATED WITH EOSIOCPP",
    "version": "eosio::abi/1.0",
    "types": [{
       "new_type_name": "account_name",
@@ -535,6 +536,12 @@
       "ricardian_contract": ""
     }],
    "tables": [{
+      "name": "rotations",
+      "type": "rotation_info",
+      "index_type": "i64",
+      "key_names" : ["bp_currently_out"],
+      "key_types" : ["uint64"]
+    },{
       "name": "producers",
       "type": "producer_info",
       "index_type": "i64",

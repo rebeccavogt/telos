@@ -734,7 +734,7 @@ struct controller_impl {
 
 
    void start_block( block_timestamp_type when, uint16_t confirm_block_count, controller::block_status s ) {
-       ilog("start_block()");
+       
       FC_ASSERT( !pending );
 
       FC_ASSERT( db.revision() == head->block_num, "",
@@ -803,7 +803,7 @@ struct controller_impl {
 
 
    void sign_block( const std::function<signature_type( const digest_type& )>& signer_callback, bool trust  ) {
-       ilog("sign_block()");
+       
       auto p = pending->_pending_block_state;
 
       p->sign( signer_callback, false); //trust );
@@ -812,7 +812,7 @@ struct controller_impl {
    } /// sign_block
 
    void apply_block( const signed_block_ptr& b, controller::block_status s ) { try {
-       ilog("apply_block()");
+       
       try {
          FC_ASSERT( b->block_extensions.size() == 0, "no supported extensions" );
          start_block( b->timestamp, b->confirmed, s );
