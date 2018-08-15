@@ -111,19 +111,17 @@ namespace eosiosystem {
         if (distance > 21) { //distance > 21 should rotate bps
           print("\nThere are more than 21 producers. calculating swaps...");
           _grotations.bp_out_index = _grotations.bp_out_index > 20 ? 0 : _grotations.bp_out_index + 1;
-          _grotations.sbp_in_index = _grotations.sbp_in_index > distance ? 21 : _grotations.sbp_in_index + 1;
-          
+          _grotations.sbp_in_index = _grotations.sbp_in_index > distance - 1 ? 21 : _grotations.sbp_in_index + 1;
+
           print("\nsbp_index: ", _grotations.sbp_in_index);
           print("\nbp_index: ", _grotations.bp_out_index);
-
+                    
           account_name bp_name = producers[_grotations.bp_out_index].first.producer_name;
           account_name sbp_name = producers[_grotations.sbp_in_index].first.producer_name;
           
           print("\nBlock Producer to be rotated: ", name{bp_name});
           print("\nStandby Producer to be rotated: ",  name{sbp_name});
 
-          //Find bp and sbt
-          
           it_bp = std::find_if(producers.begin(), producers.end(), [&bp_name](const producer_schedule_sig &g) {
             return g.first.producer_name == bp_name; 
           });
@@ -132,26 +130,43 @@ namespace eosiosystem {
             return g.first.producer_name == sbp_name; 
           });
 
-          //TODO: Check that 0 is an invalid account_name
-          if (it_bp == producers.end() || it_sbp == producers.end())
-          {
+          if(it_bp != producers.end() && it_sbp == producers.end()) {
+            if(_grotations.sbp_in_index > distance - 1) {
+              _grotations.sbp_in_index = 21;
+              
+              sbp_name = producers[_grotations.sbp_in_index].first.producer_name;
+              it_sbp = std::find_if(producers.begin(), producers.end(), [&sbp_name](const producer_schedule_sig &g) {
+                return g.first.producer_name == sbp_name; 
+              });
+            }
+          } else if (it_bp == producers.end() && it_sbp != producers.end()) {
+            if(_grotations.bp_out_index > 20) {
+              _grotations.bp_out_index = 0;
+              
+              bp_name = bp_name = producers[_grotations.bp_out_index].first.producer_name;
+              it_bp = std::find_if(producers.begin(), producers.end(), [&bp_name](const producer_schedule_sig &g) {
+                return g.first.producer_name == bp_name; 
+              });
+            }
+          } else if(it_bp == producers.end() && it_sbp == producers.end()){
             print("\nBP or SPB don't exist. Setting bp in and sbp out to initial state.");
             _grotations.sbp_currently_in = 0;
             _grotations.bp_currently_out = 0;
 
             _grotations.bp_out_index = 21;
             _grotations.sbp_in_index = 75;
-          }
-          else
-          {
+
+            it_bp = producers.end();
+            it_sbp = producers.end();
+          } else {
             print("\nBP and SBP found. Setting bp in and sbp out to rotation table.");
             _grotations.sbp_currently_in = sbp_name;
             _grotations.bp_currently_out = bp_name;
-          }
+         } 
           _grotations.last_rotation_time = block_time;
           _grotations.next_rotation_time = block_timestamp(block_time.to_time_point() + time_point(microseconds(SIX_MINUTES_US)));
-        } 
       } 
+    }
       else
       {
         //Check index initial state. bp index = 21 | sbp index = 75
@@ -181,13 +196,15 @@ namespace eosiosystem {
           //getting sbp index to check if it still on 22 - 51
           auto _sbp_index = std::distance(producers.begin(), it_sbp);
 
-          if(it_bp == producers.end() || it_sbp == producers.end() || distance < 21) {
+          if(it_bp == producers.end() || it_sbp == producers.end()) {
             print("\nless than 21 producers and set global rotations table to inital state");            
             _grotations.bp_currently_out = 0;
             _grotations.sbp_currently_in = 0;
 
-            _grotations.bp_out_index = 21;
-            _grotations.sbp_in_index = 75;
+            if(distance < 21) {
+              _grotations.bp_out_index = 21;
+              _grotations.sbp_in_index = 75;
+            }
           } else if (distance > 21 && (!is_in_range(_bp_index, 0, 21) || !is_in_range(_sbp_index, 21, 51))) {
             print("\nproducers list > 21 and bp or sbp out of range");
             _grotations.bp_currently_out = 0;
