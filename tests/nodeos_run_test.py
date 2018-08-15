@@ -49,7 +49,7 @@ testSuccessful=False
 killEosInstances=not dontKill
 killWallet=not dontKill
 
-WalletdName="keosd"
+WalletdName="tkeosd"
 ClientName="cleos"
 # testUtils.Utils.setMongoSyncTime(50)
 
