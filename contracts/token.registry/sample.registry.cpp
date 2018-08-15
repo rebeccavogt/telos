@@ -6,26 +6,22 @@
  * @author Craig Branscom
  * 
  * This contract is a fully working example implementation of the TIP-5 interface.
- * 
- * NOTE: Constructor and Destructor are called each time an action is called.
  */
 
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/asset.hpp>
 #include "token.registry.hpp"
 
-#include <eosiolib/print.hpp>
+//#include <eosiolib/print.hpp>
 
 using namespace eosio;
 using namespace std;
 
 /**
- * @brief Contructor
+ * @brief Constructor
  */
 registry::registry(account_name self) : contract(self), settings(self, self) {
     if (!settings.exists()) {
-
-            print("creating singleton...");
 
         _settings = setting{
             self,
@@ -39,8 +35,6 @@ registry::registry(account_name self) : contract(self), settings(self, self) {
         _settings = settings.get();
     } else {
 
-            print("getting existing singleton...");
-
         _settings = settings.get();
     }
 }
@@ -51,8 +45,6 @@ registry::registry(account_name self) : contract(self), settings(self, self) {
 registry::~registry() {
     if (settings.exists()) {
         settings.set(_settings, _settings.issuer);
-
-        print("\nsetting singleton at contract destruction...");
     }
 }
 
@@ -68,10 +60,10 @@ void registry::mint(account_name recipient, asset tokens) {
 
     _settings.supply = (_settings.supply + tokens);
 
-        print("\nnew_supply: ", _settings.supply);
-        print("\nmax_supply: ", _settings.max_supply);
-        print("\nissuer: ", name{_settings.issuer});
-        print("\nname: ", _settings.name);
+    //print("\nToken Name: ", _settings.name);
+    //print("\nCirculating Supply: ", _settings.supply);
+    //print("\nMax Supply: ", _settings.max_supply);
+    //print("\nIssuer: ", name{_settings.issuer});
 }
 
 /**
@@ -143,9 +135,9 @@ void registry::createwallet(account_name owner) {
             a.tokens = asset(int64_t(0), S(2, TTT));
         });
 
-        print("\nNew wallet created for ", name{owner});
+        //print("\nNew wallet created for ", name{owner});
     } else {
-        print("Wallet already exists for given account");
+        //print("\nWallet already exists for given account");
     }
 }
 
@@ -162,9 +154,9 @@ void registry::deletewallet(account_name owner) {
     if(b.tokens.amount == 0) {
         balances.erase(itr);
 
-            print("\nWallet deleted for ", name{owner});
+        //print("\nWallet deleted for ", name{owner});
     } else {
-        print("\nCannot delete wallet unless balance is 0");
+        //print("\nCannot delete wallet unless balance is 0");
     }
 }
 
@@ -177,7 +169,7 @@ void registry::sub_balance(account_name owner, asset tokens) {
     balances.modify(itr, 0, [&]( auto& a ) {
         a.tokens -= tokens;
 
-            print("\nbalance subtracted...");
+        //print("\nBalance subtracted...");
     });
 }
 
@@ -190,7 +182,7 @@ void registry::add_balance(account_name recipient, asset tokens, account_name pa
     balances.modify(itr, 0, [&]( auto& a ) {
         a.tokens += tokens;
 
-            print("\nbalance added...");
+        //print("\nBalance added...");
     });
 }
 
@@ -203,13 +195,12 @@ void registry::sub_allot(account_name owner, account_name recipient, asset token
     if(al.tokens.amount == tokens.amount ) {
         allotments.erase(itr);
 
-            print("\nerasing allotment entry...");
+        //print("\nErasing allotment entry...");
     } else {
         allotments.modify(itr, 0, [&]( auto& a ) {
             a.tokens -= tokens;
 
-                print("\nsubtracting from existing allotment...");
-
+            //print("\nSubtracting from existing allotment...");
         });
     }
 }
@@ -225,14 +216,13 @@ void registry::add_allot(account_name owner, account_name recipient, asset token
             a.tokens = tokens;
         });
 
-        print("\nemplacing new allotment...");
+        //print("\nEmplacing new allotment...");
    } else {
         allotments.modify(itr, 0, [&]( auto& a ) {
             a.tokens += tokens;
         });
 
-        print("\nadding to existing allotment...");
-
+        //print("\nAdding to existing allotment...");
    }
 }
 

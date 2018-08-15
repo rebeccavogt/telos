@@ -4,8 +4,6 @@
  * 
  * @brief TIP_5 Single Token Registry Interface
  * @author Craig Branscom
- * 
- * 
  */
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/asset.hpp>
