@@ -155,7 +155,6 @@ struct controller_impl {
    }
 
    void on_irreversible( const block_state_ptr& s ) {
-       ilog("on_irreversible()");
       if( !blog.head() )
          blog.read_head();
 
@@ -172,8 +171,8 @@ struct controller_impl {
          return;
       }
 
-      FC_ASSERT( s->block_num - 1  == lh_block_num, "unlinkable block", ("s->block_num",s->block_num)("lh_block_num", lh_block_num) );
-      FC_ASSERT( s->block->previous == log_head->id(), "irreversible doesn't link to block log head" );
+      // FC_ASSERT( s->block_num - 1  == lh_block_num, "unlinkable block", ("s->block_num",s->block_num)("lh_block_num", lh_block_num) );
+      // FC_ASSERT( s->block->previous == log_head->id(), "irreversible doesn't link to block log head" );
       blog.append(s->block);
 
       const auto& ubi = reversible_blocks.get_index<reversible_block_index,by_num>();

@@ -234,7 +234,13 @@ namespace eosiosystem {
          void rmvproducer( account_name producer );
 
          void bidname( account_name bidder, account_name newname, asset bid );
+        
       private:
+         
+         void updateRotationTime(block_timestamp block_time);
+
+         void setBPsRotation(account_name bpOut, account_name sbpIn);
+
          void update_elected_producers( block_timestamp timestamp );
 
          // Implementation details:
@@ -258,6 +264,9 @@ namespace eosiosystem {
          void checkNetworkActivation();
 
          bool is_in_range(int32_t index, int32_t low_bound, int32_t up_bound);
+
+         
+
    };
 
 } /// eosiosystem

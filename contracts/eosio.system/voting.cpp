@@ -21,6 +21,8 @@
 #define VOTE_VARIATION 0.1
 #define TWELVE_HOURS_US 43200000000
 #define SIX_MINUTES_US 360000000
+#define MAX_PRODUCERS 51
+#define TOP_PRODUCERS 21
 
 namespace eosiosystem {
    using namespace eosio;
@@ -73,34 +75,44 @@ namespace eosiosystem {
             info.deactivate();
       });
    }
-  
+
+   void system_contract::setBPsRotation(account_name bpOut, account_name sbpIn) {
+      _grotations.bp_currently_out = bpOut;
+      _grotations.sbp_currently_in = sbpIn;
+   }
+
+   void system_contract::updateRotationTime(block_timestamp block_time){
+      _grotations.last_rotation_time = block_time;
+      _grotations.next_rotation_time = block_timestamp(block_time.to_time_point() + time_point(microseconds(SIX_MINUTES_US)));
+   } 
+
    void system_contract::update_elected_producers( block_timestamp block_time ) {
       print("\ninit function");
       print("\nsbp_index: ", _grotations.sbp_in_index);
       print("\nbp_index: ", _grotations.bp_out_index);
 
-      typedef std::pair<eosio::producer_key, uint16_t> producer_schedule_sig;
+      // typedef std::pair<eosio::producer_key, uint16_t> producer_schedule_sig;
       _gstate.last_producer_schedule_update = block_time;
 
       auto idx = _producers.get_index<N(prototalvote)>();
 
-      uint32_t distance = std::distance(idx.begin(), idx.end());
-      distance = distance > 51 ? 51 : distance;
+      auto totalActiveVotedProds = std::distance(idx.begin(), idx.end());
+      totalActiveVotedProds = totalActiveVotedProds > MAX_PRODUCERS ? MAX_PRODUCERS : totalActiveVotedProds;
       
-      print("\nTotal producers amount: ", distance);
+      print("\nTotal producers amount: ", totalActiveVotedProds);
       
-      std::vector<producer_schedule_sig> producers;
-      producers.reserve(distance);
+      std::vector<eosio::producer_key> prods;
+      prods.reserve(totalActiveVotedProds);
 
       //add active producers with vote > 0
-      for ( auto it = idx.cbegin(); it != idx.cend() && producers.size() < distance && it->total_votes > 0 && it->active(); ++it ) {
-         producers.emplace_back( producer_schedule_sig({{it->owner, it->producer_key}, it->location}) );
+      for ( auto it = idx.cbegin(); it != idx.cend() && prods.size() < totalActiveVotedProds && it->total_votes > 0 && it->active(); ++it ) {
+         prods.emplace_back( eosio::producer_key{it->owner, it->producer_key} );
       }
 
-      distance = producers.size();
+      totalActiveVotedProds = prods.size();
       
-      vector<producer_schedule_sig>::iterator it_bp = producers.end();
-      vector<producer_schedule_sig>::iterator it_sbp = producers.end();
+      vector<eosio::producer_key>::iterator it_bp = prods.end();
+      vector<eosio::producer_key>::iterator it_sbp = prods.end();
 
       if (_grotations.next_rotation_time <= block_time)
       {
@@ -108,125 +120,134 @@ namespace eosiosystem {
         print("\nCurrent SBP Rotation: ", _grotations.sbp_currently_in);
         print("\nCurrent BP Rotation: ", _grotations.bp_currently_out);
         
-        if (distance > 21) { //distance > 21 should rotate bps
+        if (totalActiveVotedProds > TOP_PRODUCERS) { //totalActiveVotedProds > 21 should rotate bps
           print("\nThere are more than 21 producers. calculating swaps...");
-          _grotations.bp_out_index = _grotations.bp_out_index > 20 ? 0 : _grotations.bp_out_index + 1;
-          _grotations.sbp_in_index = _grotations.sbp_in_index > distance - 1 ? 21 : _grotations.sbp_in_index + 1;
+          _grotations.bp_out_index = _grotations.bp_out_index > TOP_PRODUCERS - 1 ? 0 : ++_grotations.bp_out_index;
+          _grotations.sbp_in_index = _grotations.sbp_in_index > totalActiveVotedProds ? TOP_PRODUCERS : ++_grotations.sbp_in_index;
 
           print("\nsbp_index: ", _grotations.sbp_in_index);
           print("\nbp_index: ", _grotations.bp_out_index);
                     
-          account_name bp_name = producers[_grotations.bp_out_index].first.producer_name;
-          account_name sbp_name = producers[_grotations.sbp_in_index].first.producer_name;
+          account_name bp_name = prods[_grotations.bp_out_index].producer_name;
+          account_name sbp_name = prods[_grotations.sbp_in_index].producer_name;
           
-          print("\nBlock Producer to be rotated: ", name{bp_name});
-          print("\nStandby Producer to be rotated: ",  name{sbp_name});
+          // it_bp = findProducerIterator(prods, bp_name);
 
-          it_bp = std::find_if(producers.begin(), producers.end(), [&bp_name](const producer_schedule_sig &g) {
-            return g.first.producer_name == bp_name; 
-          });
+          // it_sbp = findProducerIterator(prods, sbp_name);
 
-          it_sbp = std::find_if(producers.begin(), producers.end(), [&sbp_name](const producer_schedule_sig &g) {
-            return g.first.producer_name == sbp_name; 
-          });
+ it_bp = std::find_if(prods.begin(), prods.end(), [&bp_name](const eosio::producer_key &g) {
+      return g.producer_name == bp_name; 
+    });
 
-          if(it_bp != producers.end() && it_sbp == producers.end()) {
-            if(_grotations.sbp_in_index > distance - 1) {
-              _grotations.sbp_in_index = 21;
-              
-              sbp_name = producers[_grotations.sbp_in_index].first.producer_name;
-              it_sbp = std::find_if(producers.begin(), producers.end(), [&sbp_name](const producer_schedule_sig &g) {
-                return g.first.producer_name == sbp_name; 
-              });
-            }
-          } else if (it_bp == producers.end() && it_sbp != producers.end()) {
-            if(_grotations.bp_out_index > 20) {
-              _grotations.bp_out_index = 0;
-              
-              bp_name = bp_name = producers[_grotations.bp_out_index].first.producer_name;
-              it_bp = std::find_if(producers.begin(), producers.end(), [&bp_name](const producer_schedule_sig &g) {
-                return g.first.producer_name == bp_name; 
-              });
-            }
-          } else if(it_bp == producers.end() && it_sbp == producers.end()){
-            print("\nBP or SPB don't exist. Setting bp in and sbp out to initial state.");
-            _grotations.sbp_currently_in = 0;
-            _grotations.bp_currently_out = 0;
+ it_sbp = std::find_if(prods.begin(), prods.end(), [&sbp_name](const eosio::producer_key &g) {
+      return g.producer_name == sbp_name; 
+    });
 
-            _grotations.bp_out_index = 21;
-            _grotations.sbp_in_index = 75;
+          print("\nBlock Producer to be rotated: ", name{it_bp->producer_name});
+          print("\nStandby Producer to be rotated: ",  name{it_sbp->producer_name});
 
-            it_bp = producers.end();
-            it_sbp = producers.end();
+
+          if(it_bp == prods.end() && it_sbp == prods.end()) {
+            print("\nBP or SPB don't exist. Setting bp in and sbp out to initial state.");            
+            setBPsRotation(0, 0);
+
+            //restart the pointer to the top of the list on the next call
+            _grotations.bp_out_index = TOP_PRODUCERS;
+            _grotations.sbp_in_index = MAX_PRODUCERS;
+
+            it_bp = prods.end();
+            it_sbp = prods.end();
+
           } else {
-            print("\nBP and SBP found. Setting bp in and sbp out to rotation table.");
-            _grotations.sbp_currently_in = sbp_name;
-            _grotations.bp_currently_out = bp_name;
-         } 
-          _grotations.last_rotation_time = block_time;
-          _grotations.next_rotation_time = block_timestamp(block_time.to_time_point() + time_point(microseconds(SIX_MINUTES_US)));
+            if(it_bp != prods.end() && it_sbp == prods.end()) {
+              print("\nsbp not found. index: ", _grotations.sbp_in_index);
+              if(_grotations.sbp_in_index > totalActiveVotedProds - 1) {
+                _grotations.sbp_in_index = TOP_PRODUCERS;
+                 print("\nnew sbp index : ", _grotations.sbp_in_index);
+                 
+                sbp_name = prods[_grotations.sbp_in_index].producer_name;
+                it_sbp = std::find_if(prods.begin(), prods.end(), [&sbp_name](const eosio::producer_key &g) {
+                  return g.producer_name == sbp_name; 
+                });
+
+                print("\nsbp out of range. start again. sbp should be: ", it_sbp->producer_name);
+
+              }
+
+            } else if (it_bp == prods.end() && it_sbp != prods.end()) {
+              
+              if(_grotations.bp_out_index > TOP_PRODUCERS - 1) {
+                _grotations.bp_out_index = 0;
+                
+                // it_bp = findProducerIterator(prods, prods[_grotations.bp_out_index].producer_name);
+                bp_name = prods[_grotations.sbp_in_index].producer_name;
+                it_bp = std::find_if(prods.begin(), prods.end(), [&bp_name](const eosio::producer_key &g) {
+                  return g.producer_name == bp_name; 
+                });
+
+              }
+
+            } else {
+              print("\nBP and SBP found. Setting bp in and sbp out to rotation table.");
+              setBPsRotation(bp_name, sbp_name);
+            }
+          }
       } 
+      updateRotationTime(block_time);
     }
       else
       {
-        //Check index initial state. bp index = 21 | sbp index = 75
-        if(_grotations.bp_out_index < 21 && _grotations.sbp_currently_in < distance) {
-          /*
-          *Check if bp and sbt are still on the top 51.
-          *If there is any change on the bp and sbp votes or they unregprod 
-          *or the total list is less than 21
-          *Rotations table should be updated to initial state.
-          */
+        if(_grotations.bp_out_index < TOP_PRODUCERS && _grotations.sbp_currently_in < totalActiveVotedProds) {
+         
+          // it_bp = findProducerIterator(prods, );
 
-          account_name _bp = _grotations.bp_currently_out;
-          it_bp = std::find_if(producers.begin(), producers.end(), [&_bp](const producer_schedule_sig &g) {
-            return g.first.producer_name == _bp; 
+          // it_sbp = findProducerIterator(prods, _grotations.sbp_currently_in);
+
+          auto bp_name = _grotations.bp_currently_out;
+          it_bp = std::find_if(prods.begin(), prods.end(), [&bp_name](const eosio::producer_key &g) {
+            return g.producer_name == bp_name; 
           });
 
-          account_name _sbp = _grotations.sbp_currently_in;
-          it_sbp = std::find_if(producers.begin(), producers.end(), [&_sbp](const producer_schedule_sig &g) {
-            return g.first.producer_name == _sbp; 
+          auto sbp_name = _grotations.sbp_currently_in;
+          it_sbp = std::find_if(prods.begin(), prods.end(), [&sbp_name](const eosio::producer_key &g) {
+            return g.producer_name == sbp_name; 
           });
 
-          print("\nit_bp producer: ", name{it_bp->first.producer_name});
+          print("\nit_bp producer: ", name{it_bp->producer_name});
           //getting bp index to check if it still on top 21
-          auto _bp_index = std::distance(producers.begin(), it_bp);
+          auto _bp_index = std::distance(prods.begin(), it_bp);
           
-          print("\nit_sbp producer: ", name{it_sbp->first.producer_name});
+          print("\nit_sbp producer: ", name{it_sbp->producer_name});
           //getting sbp index to check if it still on 22 - 51
-          auto _sbp_index = std::distance(producers.begin(), it_sbp);
+          auto _sbp_index = std::distance(prods.begin(), it_sbp);
 
-          if(it_bp == producers.end() || it_sbp == producers.end()) {
+          if(it_bp == prods.end() || it_sbp == prods.end()) {
             print("\nless than 21 producers and set global rotations table to inital state");            
-            _grotations.bp_currently_out = 0;
-            _grotations.sbp_currently_in = 0;
+             setBPsRotation(0, 0);
 
-            if(distance < 21) {
-              _grotations.bp_out_index = 21;
-              _grotations.sbp_in_index = 75;
+            if(totalActiveVotedProds < TOP_PRODUCERS) {
+              _grotations.bp_out_index = TOP_PRODUCERS;
+              _grotations.sbp_in_index = MAX_PRODUCERS+1;
             }
-          } else if (distance > 21 && (!is_in_range(_bp_index, 0, 21) || !is_in_range(_sbp_index, 21, 51))) {
+          } else if (totalActiveVotedProds > TOP_PRODUCERS && (!is_in_range(_bp_index, 0, TOP_PRODUCERS) || !is_in_range(_sbp_index, TOP_PRODUCERS, MAX_PRODUCERS))) {
             print("\nproducers list > 21 and bp or sbp out of range");
-            _grotations.bp_currently_out = 0;
-            _grotations.sbp_currently_in = 0;
-
-            // _grotations.bp_out_index = 21;
-            // _grotations.sbp_in_index = 75;
+             setBPsRotation(0, 0);
           }
         }
       }
 
-      std::vector< producer_schedule_sig > top_producers;
+      std::vector<eosio::producer_key>  top_producers;
       
-      if(it_bp != producers.end() && it_sbp != producers.end()) {
-        print("\nProducer removed: ", name{it_bp->first.producer_name});
-        print("\nProducer added: ", name{it_sbp->first.producer_name});
+      //Rotation
+      if(it_bp != prods.end() && it_sbp != prods.end()) {
+        print("\nProducer removed: ", name{it_bp->producer_name});
+        print("\nProducer added: ", name{it_sbp->producer_name});
         
-        for ( auto pIt = producers.begin(); pIt != producers.end(); ++pIt) {
-          auto i = std::distance(producers.begin(), pIt); 
-          if(i > 20) break;
+        for ( auto pIt = prods.begin(); pIt != prods.end(); ++pIt) {
+          auto i = std::distance(prods.begin(), pIt); 
+          if(i > TOP_PRODUCERS - 1) break;
 
-          if(pIt->first.producer_name == it_bp->first.producer_name) {
+          if(pIt->producer_name == it_bp->producer_name) {
             top_producers.emplace_back(*it_sbp);
           } else {
             top_producers.emplace_back(*pIt);
@@ -234,36 +255,27 @@ namespace eosiosystem {
        }
       } 
       else {
-        top_producers = producers;
-        top_producers.resize(21);
+        top_producers = prods;
+        if(prods.size() > TOP_PRODUCERS) top_producers.resize(TOP_PRODUCERS);
+        else top_producers.resize(prods.size());
       }
 
-      
-      //doens't apply for telos
-      // if ( top_producers.size() < _gstate.last_producer_schedule_size ) {
-      //    return;
-      // }
+      if ( top_producers.size() < _gstate.last_producer_schedule_size ) {
+         return;
+      }
 
-      /// sort by producer name
+      // sort by producer name
       std::sort( top_producers.begin(), top_producers.end() );
 
-      std::vector<eosio::producer_key> new_producers;
-
-      new_producers.reserve(top_producers.size());
-      for( const auto& item : top_producers ){
-         new_producers.push_back(item.first);
-      }
-
-      bytes packed_schedule = pack(new_producers);
+      bytes packed_schedule = pack(top_producers);
 
       if( set_proposed_producers( packed_schedule.data(),  packed_schedule.size() ) >= 0 ) {
         print("\nschedule was proposed");
 
         for( const auto& item : top_producers ){
-         print("\n*producer: ", name{item.first.producer_name});
+         print("\n*producer: ", name{item.producer_name});
         }
-
-         _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>( new_producers.size() );
+         _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>( top_producers.size() );
       }
    }
    
