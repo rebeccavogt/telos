@@ -194,7 +194,7 @@ class producer_plugin_impl : public std::enable_shared_from_this<producer_plugin
                      _last_signed_block_time = bsp->header.timestamp;
                      _last_signed_block_num  = bsp->block_num;
 
-   //                  ilog( "${n} confirmed", ("n",name(producer)) );
+                     ilog( "${n} confirmed", ("n",name(producer)) );
                      _self->confirmed_block( { bsp->id, d, producer, sig } );
                   }
                }
