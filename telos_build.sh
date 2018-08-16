@@ -150,7 +150,6 @@
          exit 1
       fi
 
-<<<<<<< HEAD:telos_build.sh
 	# TELOS CHANGES:
 	#
 	# 1. Changed CORE_SYMBOL_NAME to TLOS
@@ -164,9 +163,7 @@
 	TEMP_DIR="/tmp"
 	TIME_BEGIN=$( date -u +%s )
 	VERSION=1.2
-=======
       OS_NAME=$( cat /etc/os-release | grep ^NAME | cut -d'=' -f2 | sed 's/\"//gI' )
->>>>>>> v1.2.0:eosio_build.sh
 
       case "$OS_NAME" in
          "Amazon Linux AMI")
