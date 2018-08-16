@@ -148,13 +148,8 @@ FC_DECLARE_EXCEPTION( localized_exception, 10000000, "an error occured" );
     FC_MULTILINE_MACRO_END \
   )
 
-<<<<<<< HEAD:programs/teclos/main.cpp
 string url = "http://localhost:8888/";
 string wallet_url = "http://localhost:8999/"; // TELOS CHANGES: change default keosd port when launched automatically by teclos
-=======
-string url = "http://127.0.0.1:8888/";
-string wallet_url = "http://127.0.0.1:8900/";
->>>>>>> v1.2.0:programs/cleos/main.cpp
 bool no_verify = false;
 vector<string> headers;
 
@@ -1177,16 +1172,10 @@ struct delegate_bandwidth_subcommand {
       auto delegate_bandwidth = actionRoot->add_subcommand("delegatebw", localized("Delegate bandwidth"));
       delegate_bandwidth->add_option("from", from_str, localized("The account to delegate bandwidth from"))->required();
       delegate_bandwidth->add_option("receiver", receiver_str, localized("The account to receive the delegated bandwidth"))->required();
-<<<<<<< HEAD:programs/teclos/main.cpp
       delegate_bandwidth->add_option("stake_net_quantity", stake_net_amount, localized("The amount of TLOS to stake for network bandwidth"))->required();
       delegate_bandwidth->add_option("stake_cpu_quantity", stake_cpu_amount, localized("The amount of TLOS to stake for CPU bandwidth"))->required();
+      delegate_bandwidth->add_option("--buyram", buy_ram_amount, localized("The amount of TLOS to buyram"));
       delegate_bandwidth->add_flag("--transfer", transfer, localized("Transfer voting power and right to unstake TLOS to receiver"));
-=======
-      delegate_bandwidth->add_option("stake_net_quantity", stake_net_amount, localized("The amount of EOS to stake for network bandwidth"))->required();
-      delegate_bandwidth->add_option("stake_cpu_quantity", stake_cpu_amount, localized("The amount of EOS to stake for CPU bandwidth"))->required();
-      delegate_bandwidth->add_option("--buyram", buy_ram_amount, localized("The amount of EOS to buyram"));
-      delegate_bandwidth->add_flag("--transfer", transfer, localized("Transfer voting power and right to unstake EOS to receiver"));
->>>>>>> v1.2.0:programs/cleos/main.cpp
       add_standard_transaction_options(delegate_bandwidth);
 
       delegate_bandwidth->set_callback([this] {
@@ -1335,12 +1324,8 @@ struct buyram_subcommand {
       auto buyram = actionRoot->add_subcommand("buyram", localized("Buy RAM"));
       buyram->add_option("payer", from_str, localized("The account paying for RAM"))->required();
       buyram->add_option("receiver", receiver_str, localized("The account receiving bought RAM"))->required();
-<<<<<<< HEAD:programs/teclos/main.cpp
-      buyram->add_option("tokens", amount, localized("The amount of TLOS to pay for RAM"))->required();
-=======
-      buyram->add_option("amount", amount, localized("The amount of EOS to pay for RAM, or number of kbytes of RAM if --kbytes is set"))->required();
+      buyram->add_option("amount", amount, localized("The amount of TLOS to pay for RAM, or number of kbytes of RAM if --kbytes is set"))->required();
       buyram->add_flag("--kbytes,-k", kbytes, localized("buyram in number of kbytes"));
->>>>>>> v1.2.0:programs/cleos/main.cpp
       add_standard_transaction_options(buyram);
       buyram->set_callback([this] {
          if (kbytes) {
