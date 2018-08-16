@@ -288,7 +288,6 @@
       exit -1
    fi
 
-<<<<<<< HEAD:telos_build.sh
 	printf "\n\n${bldred}\t  ______ ______ __    ____  _____\n";
 	printf "\t /_  __// ____// /   / __ \/ ___/\n";
 	printf "\t  / /  / __/  / /   / / / /\__ \ \n";
@@ -315,21 +314,6 @@
 			printf "\\n\\t>>>>>>>>>>>>>>>>>>>> CMAKE building eos.io package has exited with the above error.\\n\\n"
 			exit -1
 		fi
-=======
-   TIME_END=$(( $(date -u +%s) - ${TIME_BEGIN} ))
-
-   printf "\n\n${bldred}\t _______  _______  _______ _________ _______\n"
-   printf '\t(  ____ \(  ___  )(  ____ \\\\__   __/(  ___  )\n'
-   printf "\t| (    \/| (   ) || (    \/   ) (   | (   ) |\n"
-   printf "\t| (__    | |   | || (_____    | |   | |   | |\n"
-   printf "\t|  __)   | |   | |(_____  )   | |   | |   | |\n"
-   printf "\t| (      | |   | |      ) |   | |   | |   | |\n"
-   printf "\t| (____/\| (___) |/\____) |___) (___| (___) |\n"
-   printf "\t(_______/(_______)\_______)\_______/(_______)\n${txtrst}"
-
-   printf "\\n\\tEOSIO has been successfully built. %02d:%02d:%02d\\n\\n" $(($TIME_END/3600)) $(($TIME_END%3600/60)) $(($TIME_END%60))
-   printf "\\tTo verify your installation run the following commands:\\n"
->>>>>>> v1.2.0:eosio_build.sh
 
    print_instructions
 
