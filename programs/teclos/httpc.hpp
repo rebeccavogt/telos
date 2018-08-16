@@ -88,9 +88,11 @@ namespace eosio { namespace client { namespace http {
    const string get_table_func = chain_func_base + "/get_table_rows";
    const string get_code_func = chain_func_base + "/get_code";
    const string get_abi_func = chain_func_base + "/get_abi";
+   const string get_raw_code_and_abi_func = chain_func_base + "/get_raw_code_and_abi";
    const string get_currency_balance_func = chain_func_base + "/get_currency_balance";
    const string get_currency_stats_func = chain_func_base + "/get_currency_stats";
    const string get_producers_func = chain_func_base + "/get_producers";
+   const string get_schedule_func = chain_func_base + "/get_producer_schedule";
    const string get_required_keys = chain_func_base + "/get_required_keys";
 
 
@@ -99,9 +101,6 @@ namespace eosio { namespace client { namespace http {
    const string get_transaction_func = history_func_base + "/get_transaction";
    const string get_key_accounts_func = history_func_base + "/get_key_accounts";
    const string get_controlled_accounts_func = history_func_base + "/get_controlled_accounts";
-
-   const string account_history_func_base = "/v1/account_history";
-   const string get_transactions_func = account_history_func_base + "/get_transactions";
 
    const string net_func_base = "/v1/net";
    const string net_connect = net_func_base + "/connect";
