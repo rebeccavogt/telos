@@ -295,7 +295,6 @@
 	printf "\t/_/  /_____//_____/\____//____/  \n";
 	printf "\t                                 \n${txtrst}";
 
-	printf "\\n\\tTELOS has been successfully built. %02d:%02d:%02d\\n\\n" $(($TIME_END/3600)) $(($TIME_END%3600/60)) $(($TIME_END%60))
 	printf "\\tTo verify your installation run the following commands:\\n"
 	
 	print_instructions
