@@ -1598,6 +1598,7 @@ namespace eosio {
          send_handshakes();
       }
    }
+   
    void sync_manager::recv_block (connection_ptr c, const block_id_type &blk_id, uint32_t blk_num) {
       fc_dlog(logger," got block ${bn} from ${p}",("bn",blk_num)("p",c->peer_name()));
       if (state == lib_catchup) {
