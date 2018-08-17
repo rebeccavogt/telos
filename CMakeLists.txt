@@ -4,6 +4,13 @@ project( EOSIO )
 
 enable_testing()
 
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+   message(WARNING "CMAKE_INSTALL_PREFIX is set to default path of ${CMAKE_INSTALL_PREFIX}, resetting to ${CMAKE_INSTALL_PREFIX}/eosio")
+   set(CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/eosio")
+elseif ("${CMAKE_INSTALL_PREFIX}" STREQUAL "/usr/local")
+   message(WARNING "CMAKE_INSTALL_PREFIX is explicitly set to /usr/local. This is not recommended.")
+endif()
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/libraries/fc/CMakeModules")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
 
@@ -19,13 +26,15 @@ set( CMAKE_CXX_EXTENSIONS ON )
 set( CXX_STANDARD_REQUIRED ON)
 
 set(VERSION_MAJOR 1)
-set(VERSION_MINOR 0)
-set(VERSION_PATCH 8)
+set(VERSION_MINOR 2)
+set(VERSION_PATCH 1)
 
 # TELOS CHANGES:
 # 
 # 1. Changed CLI to teclos
 set( CLI_CLIENT_EXECUTABLE_NAME teclos )
+set( NODE_EXECUTABLE_NAME nodeos )
+set( KEY_STORE_EXECUTABLE_NAME tkeosd )
 set( GUI_CLIENT_EXECUTABLE_NAME eosio )
 set( CUSTOM_URL_SCHEME "gcs" )
 set( INSTALLER_APP_ID "68ad7005-8eee-49c9-95ce-9eed97e5b347" )
@@ -67,6 +76,8 @@ if ("${OPENSSL_ROOT_DIR}" STREQUAL "")
       message(FATAL_ERROR "openssl not found and don't know where to look, please specify OPENSSL_ROOT_DIR")
    endif()
 endif()
+
+find_package(Secp256k1 REQUIRED)
 
 if(UNIX)
   if(APPLE)
@@ -224,6 +235,13 @@ install(FILES testnet.template DESTINATION ${CMAKE_INSTALL_FULL_SYSCONFDIR}/eosi
 install_directory_permissions(DIRECTORY ${CMAKE_INSTALL_FULL_SYSCONFDIR}/eosio)
 install_directory_permissions(DIRECTORY ${CMAKE_INSTALL_FULL_SYSCONFDIR}/eosio/launcher)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/testnet.template ${CMAKE_CURRENT_BINARY_DIR}/etc/eosio/launcher/testnet.template COPYONLY)
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/eosio.version.in ${CMAKE_CURRENT_BINARY_DIR}/eosio.version.hpp)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/eosio.version.hpp DESTINATION ${CMAKE_INSTALL_FULL_INCLUDEDIR})
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/EosioTester.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/EosioTester.cmake @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/EosioTesterBuild.cmake.in ${CMAKE_BINARY_DIR}/lib/cmake/EosioTester.cmake @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/EosioTester.cmake DESTINATION ${CMAKE_INSTALL_FULL_LIBDIR}/cmake/)
 
 include(installer)
 
