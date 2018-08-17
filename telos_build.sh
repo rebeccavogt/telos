@@ -313,12 +313,4 @@
 			printf "\\n\\t>>>>>>>>>>>>>>>>>>>> CMAKE building eos.io package has exited with the above error.\\n\\n"
 			exit -1
 		fi
-
-   print_instructions
-
-   printf "\\tFor more information:\\n"
-   printf "\\tEOSIO website: https://eos.io\\n"
-   printf "\\tEOSIO Telegram channel @ https://t.me/EOSProject\\n"
-   printf "\\tEOSIO resources: https://eos.io/resources/\\n"
-   printf "\\tEOSIO Stack Exchange: https://eosio.stackexchange.com\\n"
-   printf "\\tEOSIO wiki: https://github.com/EOSIO/eos/wiki\\n\\n\\n"
+      fi
