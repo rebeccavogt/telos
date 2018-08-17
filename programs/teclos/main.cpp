@@ -148,8 +148,8 @@ FC_DECLARE_EXCEPTION( localized_exception, 10000000, "an error occured" );
     FC_MULTILINE_MACRO_END \
   )
 
-string url = "http://localhost:8888/";
-string wallet_url = "http://localhost:8999/"; // TELOS CHANGES: change default keosd port when launched automatically by teclos
+string url = "http://127.0.0.1:8888/";
+string wallet_url = "http://127.0.0.1:8999/"; // TELOS CHANGES: change default keosd port when launched automatically by teclos
 bool no_verify = false;
 vector<string> headers;
 
