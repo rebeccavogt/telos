@@ -1026,6 +1026,7 @@ launcher_def::write_config_file (tn_node_def &node) {
    cfg << "readonly = 0\n";
    cfg << "send-whole-blocks = true\n";
    cfg << "http-server-address = " << host->host_name << ":" << instance.http_port << "\n";
+   cfg << "http-validate-host = false\n";
    if (p2p == p2p_plugin::NET) {
       cfg << "p2p-listen-endpoint = " << host->listen_addr << ":" << instance.p2p_port << "\n";
       cfg << "p2p-server-address = " << host->public_name << ":" << instance.p2p_port << "\n";
@@ -1222,7 +1223,7 @@ launcher_def::write_bios_boot () {
          }
          else if (key == "prodkeys" ) {
             for (auto &node : network.nodes) {
-               brb << "wcmd import -n ignition " << string(node.second.keys[0]) << "\n";
+               brb << "wcmd import -n ignition --private-key " << string(node.second.keys[0]) << "\n";
             }
          }
          else if (key == "cacmd") {
@@ -1504,7 +1505,7 @@ launcher_def::launch (eosd_def &instance, string &gts) {
   }
 
   eosdcmd += " --config-dir " + instance.config_dir_name + " --data-dir " + instance.data_dir_name;
-  eosdcmd += " --genesis-json " + genesis.string();
+  eosdcmd += " --genesis-json " + instance.config_dir_name + "/genesis.json";
   if (gts.length()) {
     eosdcmd += " --genesis-timestamp " + gts;
   }
@@ -1651,8 +1652,8 @@ launcher_def::bounce (const string& node_numbers) {
       string node_num = node.name.substr( node.name.length() - 2 );
       string cmd = "cd " + host.eosio_home + "; "
                  + "export EOSIO_HOME=" + host.eosio_home + string("; ")
-                 + "export EOSIO_TN_NODE=" + node_num + "; "
-                 + "./scripts/eosio-tn_bounce.sh";
+                 + "export EOSIO_NODE=" + node_num + "; "
+                 + "./scripts/eosio-tn_bounce.sh " + eosd_extra_args;
       cout << "Bouncing " << node.name << endl;
       if (!do_ssh(cmd, host.host_name)) {
          cerr << "Unable to bounce " << node.name << endl;
@@ -1670,7 +1671,7 @@ launcher_def::down (const string& node_numbers) {
       string node_num = node.name.substr( node.name.length() - 2 );
       string cmd = "cd " + host.eosio_home + "; "
                  + "export EOSIO_HOME=" + host.eosio_home + "; "
-                 + "export EOSIO_TN_NODE=" + node_num + "; "
+                 + "export EOSIO_NODE=" + node_num + "; "
          + "export EOSIO_TN_RESTART_CONFIG_DIR=" + node.config_dir_name + "; "
                  + "./scripts/eosio-tn_down.sh";
       cout << "Taking down " << node.name << endl;
