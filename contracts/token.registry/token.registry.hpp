@@ -2,7 +2,7 @@
  * @file
  * @copyright defined in telos/LICENSE.txt
  * 
- * @brief TIP_5 Single Token Registry Interface
+ * @brief TIP-5 Single Token Registry Interface
  * @author Craig Branscom
  */
 #include <eosiolib/eosio.hpp>
