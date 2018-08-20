@@ -34,11 +34,8 @@ add_subdirectory(noop)
 add_subdirectory(dice)
 add_subdirectory(tic_tac_toe)
 add_subdirectory(payloadless)
-<<<<<<< HEAD
 add_subdirectory(token.registry)
-=======
 add_subdirectory(integration_test)
->>>>>>> merge/1.2.1
 
 
 file(GLOB SKELETONS RELATIVE ${CMAKE_SOURCE_DIR}/contracts "skeleton/*")
