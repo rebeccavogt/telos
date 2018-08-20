@@ -238,6 +238,12 @@ namespace eosiosystem {
 
          // defined in voting.cpp
          void propagate_weight_change( const voter_info& voter );
+
+         //calculate the inverse vote weight
+         double inverseVoteWeight(int64_t staked, double amountVotedProducers);
+
+         //verify if the network is activated
+         void checkNetworkActivation();
    };
 
 } /// eosiosystem
