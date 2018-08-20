@@ -18,9 +18,15 @@
 #include <algorithm>
 #include <cmath>
 
-#define VOTE_VARIATION 0.1 
+#define VOTE_VARIATION 0.1
+#define TWELVE_HOURS_US 43200000000
+#define SIX_MINUTES_US 360000000 // debug version
+#define SIX_HOURS_US 21600000000
+#define MAX_PRODUCERS 51
+#define TOP_PRODUCERS 21
 
 namespace eosiosystem {
+   using namespace eosio;
    using eosio::indexed_by;
    using eosio::const_mem_fun;
    using eosio::bytes;
@@ -71,34 +77,155 @@ namespace eosiosystem {
       });
    }
 
+   void system_contract::setBPsRotation(account_name bpOut, account_name sbpIn) {
+      _grotations.bp_currently_out = bpOut;
+      _grotations.sbp_currently_in = sbpIn;
+   }
+
+   void system_contract::updateRotationTime(block_timestamp block_time){
+      _grotations.last_rotation_time = block_time;
+      _grotations.next_rotation_time = block_timestamp(block_time.to_time_point() + time_point(microseconds(SIX_HOURS_US)));
+   } 
+
    void system_contract::update_elected_producers( block_timestamp block_time ) {
       _gstate.last_producer_schedule_update = block_time;
 
       auto idx = _producers.get_index<N(prototalvote)>();
 
-      std::vector< std::pair<eosio::producer_key,uint16_t> > top_producers;
-      top_producers.reserve(21);
+      auto totalActiveVotedProds = std::distance(idx.begin(), idx.end());
+      totalActiveVotedProds = totalActiveVotedProds > MAX_PRODUCERS ? MAX_PRODUCERS : totalActiveVotedProds;
+      
+      std::vector<eosio::producer_key> prods;
+      prods.reserve(totalActiveVotedProds);
 
-      for ( auto it = idx.cbegin(); it != idx.cend() && top_producers.size() < 21 && 0 < it->total_votes && it->active(); ++it ) {
-         top_producers.emplace_back( std::pair<eosio::producer_key,uint16_t>({{it->owner, it->producer_key}, it->location}) );
+      //add active producers with vote > 0
+      for ( auto it = idx.cbegin(); it != idx.cend() && prods.size() < totalActiveVotedProds && it->total_votes > 0 && it->active(); ++it ) {
+         prods.emplace_back( eosio::producer_key{it->owner, it->producer_key} );
+      }
+
+      totalActiveVotedProds = prods.size();
+      
+      vector<eosio::producer_key>::iterator it_bp = prods.end();
+      vector<eosio::producer_key>::iterator it_sbp = prods.end();
+
+      if (_grotations.next_rotation_time <= block_time) {
+        if (totalActiveVotedProds > TOP_PRODUCERS) {
+          _grotations.bp_out_index = _grotations.bp_out_index >= TOP_PRODUCERS - 1 ? 0 : _grotations.bp_out_index + 1;
+          _grotations.sbp_in_index = _grotations.sbp_in_index >= totalActiveVotedProds - 1 ? TOP_PRODUCERS : _grotations.sbp_in_index + 1;
+
+          account_name bp_name = prods[_grotations.bp_out_index].producer_name;
+          account_name sbp_name = prods[_grotations.sbp_in_index].producer_name;
+
+          it_bp = std::find_if(prods.begin(), prods.end(), [&bp_name](const eosio::producer_key &g) {
+            return g.producer_name == bp_name; 
+          });   
+
+          it_sbp = std::find_if(prods.begin(), prods.end(), [&sbp_name](const eosio::producer_key &g) {
+            return g.producer_name == sbp_name; 
+          });
+
+          if(it_bp == prods.end() && it_sbp == prods.end()) {
+            setBPsRotation(0, 0);
+
+            _grotations.bp_out_index = TOP_PRODUCERS;
+            _grotations.sbp_in_index = MAX_PRODUCERS + 1;
+
+            it_bp = prods.end();
+            it_sbp = prods.end();
+
+          } else {
+            if(it_bp != prods.end() && it_sbp == prods.end()) {
+              if(_grotations.sbp_in_index > totalActiveVotedProds - 1) {
+                _grotations.sbp_in_index = TOP_PRODUCERS;
+                 
+                sbp_name = prods[_grotations.sbp_in_index].producer_name;
+                it_sbp = std::find_if(prods.begin(), prods.end(), [&sbp_name](const eosio::producer_key &g) {
+                  return g.producer_name == sbp_name; 
+                });
+              }
+            } else if (it_bp == prods.end() && it_sbp != prods.end()) {
+              if(_grotations.bp_out_index > TOP_PRODUCERS - 1) {
+                _grotations.bp_out_index = 0;
+                
+                bp_name = prods[_grotations.bp_out_index].producer_name;
+                it_bp = std::find_if(prods.begin(), prods.end(), [&bp_name](const eosio::producer_key &g) {
+                  return g.producer_name == bp_name; 
+                });
+              }
+            } else {
+              setBPsRotation(bp_name, sbp_name);
+            }
+          }
+      } 
+      updateRotationTime(block_time);
+      }
+      else {
+        if(_grotations.bp_currently_out != 0 && _grotations.sbp_currently_in != 0) {
+          auto bp_name = _grotations.bp_currently_out;
+          it_bp = std::find_if(prods.begin(), prods.end(), [&bp_name](const eosio::producer_key &g) {
+            return g.producer_name == bp_name; 
+          });
+
+          auto sbp_name = _grotations.sbp_currently_in;
+          it_sbp = std::find_if(prods.begin(), prods.end(), [&sbp_name](const eosio::producer_key &g) {
+            return g.producer_name == sbp_name; 
+          });
+
+          auto _bp_index = std::distance(prods.begin(), it_bp);
+          
+          auto _sbp_index = std::distance(prods.begin(), it_sbp);
+
+          if(it_bp == prods.end() || it_sbp == prods.end()) {
+              setBPsRotation(0, 0);
+
+            if(totalActiveVotedProds < TOP_PRODUCERS) {
+              _grotations.bp_out_index = TOP_PRODUCERS;
+              _grotations.sbp_in_index = MAX_PRODUCERS+1;
+            }
+          } else if (totalActiveVotedProds > TOP_PRODUCERS && (!is_in_range(_bp_index, 0, TOP_PRODUCERS) || !is_in_range(_sbp_index, TOP_PRODUCERS, MAX_PRODUCERS))) {
+              setBPsRotation(0, 0);
+          }
+        }
+    }
+
+      std::vector<eosio::producer_key>  top_producers;
+      
+      //Rotation
+      if(it_bp != prods.end() && it_sbp != prods.end()) {
+        for ( auto pIt = prods.begin(); pIt != prods.end(); ++pIt) {
+          auto i = std::distance(prods.begin(), pIt); 
+          print("\ni-> ", i);
+          if(i > TOP_PRODUCERS - 1) break;
+
+          if(pIt->producer_name == it_bp->producer_name) {
+            print("\nprod sbp added to schedule -> ", name{it_sbp->producer_name});
+            top_producers.emplace_back(*it_sbp);
+          } else {
+            print("\nprod bp added to schedule -> ", name{pIt->producer_name});
+            top_producers.emplace_back(*pIt);
+          } 
+        }
+      } 
+      else {
+        top_producers = prods;
+        if(prods.size() > TOP_PRODUCERS) top_producers.resize(TOP_PRODUCERS);
+        else top_producers.resize(prods.size());
       }
 
       if ( top_producers.size() < _gstate.last_producer_schedule_size ) {
          return;
       }
 
-      /// sort by producer name
+      // sort by producer name
       std::sort( top_producers.begin(), top_producers.end() );
-
-      std::vector<eosio::producer_key> producers;
-
-      producers.reserve(top_producers.size());
-      for( const auto& item : top_producers )
-         producers.push_back(item.first);
-
-      bytes packed_schedule = pack(producers);
+      bytes packed_schedule = pack(top_producers);
 
       if( set_proposed_producers( packed_schedule.data(),  packed_schedule.size() ) >= 0 ) {
+        print("\nschedule was proposed");
+        
+        for( const auto& item : top_producers ){
+         print("\n*producer: ", name{item.producer_name});
+        }
          _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>( top_producers.size() );
       }
    }
@@ -107,7 +234,7 @@ namespace eosiosystem {
    * This function caculates the inverse weight voting. 
    * The maximum weighted vote will be reached if an account votes for the maximum number of registered producers (up to 30 in total).  
    */   
-   double system_contract::inverseVoteWeight(int64_t staked, double amountVotedProducers) {
+   double system_contract::inverseVoteWeight(double staked, double amountVotedProducers) {
      if (amountVotedProducers == 0.0) {
        return 0;
      }
@@ -127,6 +254,11 @@ namespace eosiosystem {
      
      return (k * sin(M_PI_2 * (amountVotedProducers / totalProducers)) + VOTE_VARIATION) * double(staked);
    }
+
+
+   bool system_contract::is_in_range(int32_t index, int32_t low_bound, int32_t up_bound) {
+     return index >= low_bound && index < up_bound;
+   } 
 
    /**
     *  @pre producers must be sorted from lowest to highest and must be registered and active
@@ -150,6 +282,9 @@ namespace eosiosystem {
    }
    
    void system_contract::checkNetworkActivation(){
+     print("\nnetwork activated: ", _gstate.total_activated_stake >= min_activated_stake);
+     print("\nnetwork activation time: ", _gstate.thresh_activated_stake_time);
+
      if( _gstate.total_activated_stake >= min_activated_stake && _gstate.thresh_activated_stake_time == 0 ) {
             _gstate.thresh_activated_stake_time = current_time();
     }
@@ -177,7 +312,7 @@ namespace eosiosystem {
          auto pxy = _voters.find(proxy);
          totalStaked += pxy->proxied_vote_weight;
       }
-      auto inverse_stake = inverseVoteWeight(totalStaked, (double) producers.size());
+      auto inverse_stake = inverseVoteWeight((double )totalStaked, (double) producers.size());
       auto new_vote_weight = inverse_stake;
       
       /**
@@ -337,7 +472,7 @@ namespace eosiosystem {
          totalProds++;
        }
      }
-     auto totalStake = voter.staked + voter.proxied_vote_weight;
+     auto totalStake = double(voter.staked) + voter.proxied_vote_weight;
      double new_weight = inverseVoteWeight(totalStake, totalProds);
     
      if (voter.proxy) {

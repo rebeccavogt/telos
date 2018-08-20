@@ -25,7 +25,6 @@ namespace eosio { namespace chain {
    struct producer_schedule_type {
       uint32_t                                       version = 0; ///< sequentially incrementing version number
       vector<producer_key>                           producers;
-
       public_key_type get_producer_key( account_name p )const {
          for( const auto& i : producers )
             if( i.producer_name == p ) 
