@@ -58,22 +58,22 @@ docker run --name nodeos -v /path-to-data-dir:/opt/eosio/bin/data-dir -p 8888:88
 curl http://127.0.0.1:8888/v1/chain/get_info
 ```
 
-## Start both nodeos and keosd containers
+## Start both nodeos and tkeosd containers
 
 ```bash
 docker volume create --name=nodeos-data-volume
-docker volume create --name=keosd-data-volume
+docker volume create --name=tkeosd-data-volume
 docker-compose up -d
 ```
 
-After `docker-compose up -d`, two services named `nodeosd` and `keosd` will be started. nodeos service would expose ports 8888 and 9876 to the host. keosd service does not expose any port to the host, it is only accessible to cleos when running cleos is running inside the keosd container as described in "Execute cleos commands" section.
+After `docker-compose up -d`, two services named `nodeosd` and `tkeosd` will be started. nodeos service would expose ports 8888 and 9876 to the host. tkeosd service does not expose any port to the host, it is only accessible to cleos when running cleos is running inside the tkeosd container as described in "Execute cleos commands" section.
 
 ### Execute cleos commands
 
 You can run the `cleos` commands via a bash alias.
 
 ```bash
-alias cleos='docker-compose exec keosd /opt/eosio/bin/cleos -u http://nodeosd:8888 --wallet-url http://localhost:8999'
+alias cleos='docker-compose exec tkeosd /opt/eosio/bin/cleos -u http://nodeosd:8888 --wallet-url http://localhost:8999'
 cleos get info
 cleos get account inita
 ```
@@ -84,10 +84,10 @@ Upload sample exchange contract
 cleos set contract exchange contracts/exchange/
 ```
 
-If you don't need keosd afterwards, you can stop the keosd service using
+If you don't need tkeosd afterwards, you can stop the tkeosd service using
 
 ```bash
-docker-compose stop keosd
+docker-compose stop tkeosd
 ```
 
 ### Develop/Build custom contracts
@@ -128,7 +128,7 @@ The data volume created by docker-compose can be deleted as follows:
 
 ```bash
 docker volume rm nodeos-data-volume
-docker volume rm keosd-data-volume
+docker volume rm tkeosd-data-volume
 ```
 
 ### Docker Hub
@@ -152,22 +152,18 @@ services:
     volumes:
       - nodeos-data-volume:/opt/eosio/bin/data-dir
 
-  keosd:
+  tkeosd:
     image: eosio/eos:latest
-<<<<<<< HEAD
-    command: /opt/eosio/bin/keosd --wallet-dir /opt/eosio/bin/data-dir --http-server-address=127.0.0.1:8999
-=======
-    command: /opt/eosio/bin/keosd --wallet-dir /opt/eosio/bin/data-dir --http-server-address=127.0.0.1:8900 --http-alias=localhost:8900 --http-alias=keosd:8900
->>>>>>> v1.2.0
-    hostname: keosd
+    command: /opt/eosio/bin/tkeosd --wallet-dir /opt/eosio/bin/data-dir --http-server-address=127.0.0.1:8999
+    hostname: tkeosd
     links:
       - nodeosd
     volumes:
-      - keosd-data-volume:/opt/eosio/bin/data-dir
+      - tkeosd-data-volume:/opt/eosio/bin/data-dir
 
 volumes:
   nodeos-data-volume:
-  keosd-data-volume:
+  tkeosd-data-volume:
 
 ```
 
@@ -186,9 +182,15 @@ Note: if you want to use the mongo db plugin, you have to enable it in your `dat
 ```
 # create volume
 docker volume create --name=nodeos-data-volume
+<<<<<<< HEAD
 docker volume create --name=keosd-data-volume
 # pull images and start containers
 docker-compose -f docker-compose-eosio-latest.yaml up -d
+=======
+docker volume create --name=tkeosd-data-volume
+# start containers
+docker-compose -f docker-compose-eosio1.0.yaml up -d
+>>>>>>> 7fd6d8b597451309d7fab478433c6d1444b70131
 # get chain info
 curl http://127.0.0.1:8888/v1/chain/get_info
 # get logs
