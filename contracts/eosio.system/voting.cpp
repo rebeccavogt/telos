@@ -20,7 +20,8 @@
 
 #define VOTE_VARIATION 0.1
 #define TWELVE_HOURS_US 43200000000
-#define SIX_MINUTES_US 360000000
+#define SIX_MINUTES_US 360000000 // debug version
+#define SIX_HOURS_US 21600000000
 #define MAX_PRODUCERS 51
 #define TOP_PRODUCERS 21
 
@@ -83,7 +84,7 @@ namespace eosiosystem {
 
    void system_contract::updateRotationTime(block_timestamp block_time){
       _grotations.last_rotation_time = block_time;
-      _grotations.next_rotation_time = block_timestamp(block_time.to_time_point() + time_point(microseconds(SIX_MINUTES_US)));
+      _grotations.next_rotation_time = block_timestamp(block_time.to_time_point() + time_point(microseconds(SIX_HOURS_US)));
    } 
 
    void system_contract::update_elected_producers( block_timestamp block_time ) {
@@ -193,11 +194,14 @@ namespace eosiosystem {
       if(it_bp != prods.end() && it_sbp != prods.end()) {
         for ( auto pIt = prods.begin(); pIt != prods.end(); ++pIt) {
           auto i = std::distance(prods.begin(), pIt); 
+          print("\ni-> ", i);
           if(i > TOP_PRODUCERS - 1) break;
 
           if(pIt->producer_name == it_bp->producer_name) {
+            print("\nprod sbp added to schedule -> ", name{it_sbp->producer_name});
             top_producers.emplace_back(*it_sbp);
           } else {
+            print("\nprod bp added to schedule -> ", name{pIt->producer_name});
             top_producers.emplace_back(*pIt);
           } 
         }
@@ -209,6 +213,7 @@ namespace eosiosystem {
       }
 
       if ( top_producers.size() < _gstate.last_producer_schedule_size ) {
+        print("\ngot here");
          return;
       }
 
