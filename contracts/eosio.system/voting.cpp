@@ -213,7 +213,6 @@ namespace eosiosystem {
       }
 
       if ( top_producers.size() < _gstate.last_producer_schedule_size ) {
-        print("\ngot here");
          return;
       }
 
