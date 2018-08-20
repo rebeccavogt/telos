@@ -1,27 +1,12 @@
-import argparse
-import copy
-import decimal
-import errno
 import subprocess
 import time
-import glob
-import shutil
 import os
-import platform
 from collections import namedtuple
-import re
-import string
-import signal
-import socket
-import datetime
 import inspect
-import sys
-import random
 import json
 import shlex
 from sys import stdout
-
-from core_symbol import CORE_SYMBOL
+import traceback
 
 ###########################################################################################
 class Utils:
@@ -30,14 +15,15 @@ class Utils:
 
     EosClientPath="programs/cleos/cleos"
 
-    EosWalletName="keosd"
-    EosWalletPath="programs/keosd/"+ EosWalletName
+    EosWalletName="tkeosd"
+    EosWalletPath="programs/tkeosd/"+ EosWalletName
 
     EosServerName="nodeos"
     EosServerPath="programs/nodeos/"+ EosServerName
 
     EosLauncherPath="programs/eosio-launcher/eosio-launcher"
     MongoPath="mongo"
+    ShuttingDown=False
 
     @staticmethod
     def Print(*args, **kwargs):
@@ -57,14 +43,11 @@ class Utils:
     SigTermTag="term"
 
     systemWaitTimeout=90
-
-    # mongoSyncTime: nodeos mongodb plugin seems to sync with a 10-15 seconds delay. This will inject
-    #  a wait period before the 2nd DB check (if first check fails)
-    mongoSyncTime=25
+    irreversibleTimeout=60
 
     @staticmethod
-    def setMongoSyncTime(syncTime):
-        Utils.mongoSyncTime=syncTime
+    def setIrreversibleTimeout(timeout):
+        Utils.irreversibleTimeout=timeout
 
     @staticmethod
     def setSystemWaitTimeout(timeout):
@@ -99,16 +82,17 @@ class Utils:
 
     @staticmethod
     def errorExit(msg="", raw=False, errorCode=1):
+        if Utils.ShuttingDown:
+            Utils.Print("ERROR:" if not raw else "", " errorExit called during shutdown, ignoring.  msg=", msg)
+            return
         Utils.Print("ERROR:" if not raw else "", msg)
+        traceback.print_stack(limit=-1)
         exit(errorCode)
 
     @staticmethod
-    def cmdError(name, cmdCode=0, exitNow=False):
+    def cmdError(name, cmdCode=0):
         msg="FAILURE - %s%s" % (name, ("" if cmdCode == 0 else (" returned error code %d" % cmdCode)))
-        if exitNow:
-            Utils.errorExit(msg, True)
-        else:
-            Utils.Print(msg)
+        Utils.Print(msg)
 
     @staticmethod
     def waitForObj(lam, timeout=None):
@@ -154,13 +138,13 @@ class Utils:
     def runCmdArrReturnJson(cmdArr, trace=False, silentErrors=True):
         retStr=Utils.checkOutput(cmdArr)
         jStr=Utils.filterJsonObject(retStr)
-        if trace: Utils.Print ("RAW > %s"% (retStr))
-        if trace: Utils.Print ("JSON> %s"% (jStr))
+        if trace: Utils.Print ("RAW > %s" % (retStr))
+        if trace: Utils.Print ("JSON> %s" % (jStr))
         if not jStr:
             msg="Received empty JSON response"
             if not silentErrors:
                 Utils.Print ("ERROR: "+ msg)
-                Utils.Print ("RAW > %s"% retStr)
+                Utils.Print ("RAW > %s" % retStr)
             raise TypeError(msg)
 
         try:
@@ -168,14 +152,14 @@ class Utils:
             return jsonData
         except json.decoder.JSONDecodeError as ex:
             Utils.Print (ex)
-            Utils.Print ("RAW > %s"% retStr)
-            Utils.Print ("JSON> %s"% jStr)
+            Utils.Print ("RAW > %s" % retStr)
+            Utils.Print ("JSON> %s" % jStr)
             raise
 
     @staticmethod
     def runCmdReturnStr(cmd, trace=False):
         retStr=Utils.checkOutput(cmd.split())
-        if trace: Utils.Print ("RAW > %s"% (retStr))
+        if trace: Utils.Print ("RAW > %s" % (retStr))
         return retStr
 
     @staticmethod
@@ -1208,11 +1192,11 @@ class Node(object):
 Wallet=namedtuple("Wallet", "name password host port")
 # pylint: disable=too-many-instance-attributes
 class WalletMgr(object):
-    __walletLogFile="test_keosd_output.log"
+    __walletLogFile="test_tkeosd_output.log"
     __walletDataDir="test_wallet_0"
 
     # pylint: disable=too-many-arguments
-    # walletd [True|False] True=Launch wallet(keosd) process; False=Manage launch process externally.
+    # walletd [True|False] True=Launch wallet(tkeosd) process; False=Manage launch process externally.
     def __init__(self, walletd, nodeosPort=8888, nodeosHost="localhost", port=8899, host="localhost"):
         self.walletd=walletd
         self.nodeosPort=nodeosPort
@@ -1229,7 +1213,7 @@ class WalletMgr(object):
 
     def launch(self):
         if not self.walletd:
-            Utils.Print("ERROR: Wallet Manager wasn't configured to launch keosd")
+            Utils.Print("ERROR: Wallet Manager wasn't configured to launch tkeosd")
             return False
 
         cmd="%s --data-dir %s --config-dir %s --http-server-address=%s:%d --verbose-http-errors" % (
@@ -1239,7 +1223,7 @@ class WalletMgr(object):
             popen=subprocess.Popen(cmd.split(), stdout=sout, stderr=serr)
             self.__walletPid=popen.pid
 
-        # Give keosd time to warm up
+        # Give tkeosd time to warm up
         time.sleep(1)
         return True
 
@@ -1404,10 +1388,10 @@ class Cluster(object):
     __BiosPort=8788
 
     # pylint: disable=too-many-arguments
-    # walletd [True|False] Is keosd running. If not load the wallet plugin
+    # walletd [True|False] Is tkeosd running. If not load the wallet plugin
     def __init__(self, walletd=False, localCluster=True, host="localhost", port=8888, walletHost="localhost", walletPort=8899, enableMongo=False, mongoHost="localhost", mongoPort=27017, mongoDb="EOStest", defproduceraPrvtKey=None, defproducerbPrvtKey=None, staging=False):
         """Cluster container.
-        walletd [True|False] Is wallet keosd running. If not load the wallet plugin
+        walletd [True|False] Is wallet tkeosd running. If not load the wallet plugin
         localCluster [True|False] Is cluster local to host.
         host: eos server host
         port: eos server port
@@ -2409,7 +2393,7 @@ class TestState(object):
     __killEosInstances=False
     __killWallet=False
     __testSuccessful=False
-    WalletdName="keosd"
+    WalletdName="tkeosd"
     ClientName="cleos"
     cluster=None
     __args=None
