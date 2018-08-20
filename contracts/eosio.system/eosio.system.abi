@@ -1,4 +1,5 @@
 {
+   "TELOS-NOTE": "THIS WAS NOT GENERATED WITH EOSIOCPP",
    "version": "eosio::abi/1.0",
    "types": [{
       "new_type_name": "account_name",
@@ -18,6 +19,17 @@
    }],
    "____comment": "eosio.bios structs: set_account_limits, setpriv, set_global_limits, producer_key, set_producers, require_auth are provided so abi available for deserialization in future.",
    "structs": [{
+      "name": "rotation_info",
+      "base": "",
+      "fields": [
+        {"name":"bp_currently_out",     "type":"account_name"},
+        {"name":"sbp_currently_in",     "type":"account_name"},
+        {"name":"bp_out_index",         "type":"uint32"},
+        {"name":"sbp_in_index",         "type":"uint32"},
+        {"name":"next_rotation_time",   "type":"block_timestamp_type"},
+        {"name":"last_rotation_time",   "type":"block_timestamp_type"}
+      ]
+    },{
       "name": "permission_level",
       "base": "",
       "fields": [
@@ -524,6 +536,12 @@
       "ricardian_contract": ""
     }],
    "tables": [{
+      "name": "rotations",
+      "type": "rotation_info",
+      "index_type": "i64",
+      "key_names" : ["bp_currently_out"],
+      "key_types" : ["uint64"]
+    },{
       "name": "producers",
       "type": "producer_info",
       "index_type": "i64",
