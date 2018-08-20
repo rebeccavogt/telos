@@ -133,7 +133,7 @@ void registry::createwallet(account_name owner) {
     if(b == balances.end() ) {
         balances.emplace(owner, [&]( auto& a ){
             a.owner = owner;
-            a.tokens = asset(int64_t(0), S(2, TTT));
+            a.tokens = asset(int64_t(0), _settings.max_supply.symbol);
         });
 
         //print("\nNew wallet created for ", name{owner});
@@ -227,4 +227,4 @@ void registry::add_allot(account_name owner, account_name recipient, asset token
    }
 }
 
-EOSIO_ABI(registry, (mint)(transfer)(allot)(reclaim)(transferfrom)(createwallet)(deletewallet))
+EOSIO_ABI(telex, (mint)(transfer)(allot)(reclaim)(transferfrom)(createwallet)(deletewallet)(buy)(sell)(cancel))

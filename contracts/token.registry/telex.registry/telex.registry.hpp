@@ -4,73 +4,185 @@
  * 
  * @brief TIP-5 Single Token Exchange Contract Extension
  * @author Craig Branscom
+ * 
+ * 
  */
 
 
-#include <token.registry.hpp>
+#include "../token.registry.hpp"
 
 class telex : public registry {
     public:
 
+        struct registryinfo {
+            asset native;
+            account_name publisher;
+
+            uint64_t primary_key() const { return native.symbol.name(); }
+            uint64_t by_publisher() const { return publisher; }
+        };
+
+        typedef eosio::multi_index<N(registries), registryinfo> registries_table;
+
+        /// @abi table orders
+        struct order {
+            uint64_t key;
+            asset selling;
+            asset buying;
+            account_name maker;
+            account_name fulfiller; //initialized to zero or seller account. will be reset during order match
+
+            uint64_t primary_key() const { return key; }
+            uint64_t by_buy_symbol() const { return buying.symbol.value; }
+            uint64_t by_sell_symbol() const { return selling.symbol.value; }
+            uint64_t by_maker() const { return maker; }
+        };
+
+        typedef multi_index< N(orders), order, 
+            indexed_by< N(buying), const_mem_fun< order, uint64_t, &order::by_buy_symbol>>> orders_table;
+
+
         telex(account_name self) : registry(self) {
-            print("Telex Constructor");
+            
         }
 
         ~telex() {
-            print("Telex Destructor");
+            
         }
 
-        // Selling Native Token
+        /**
+         * @brief Sell Native Token
+         * 
+         * NOTE: Always called to sell native asset
+         */
         void sell(asset held, asset desired, account_name seller) {
             require_auth(seller);
-            
+
+                print("\nSell Action Called...");
+
             orders_table orders(_settings.issuer, seller);
 
-            auto itr = orders.find(seller);
-            //attempt_sell();
+            order s = order{
+                orders.available_primary_key(),
+                held,
+                desired,
+                seller,
+                seller // NOTE: fulfiller field will be changed when order is bought
+            };
+
+            sub_balance(seller, held); // remove tokens from seller's balance
+
+            attempt_sell(s);
         }
 
-        // Buying Native Token
-        void buy(asset native, asset held) {
+        /**
+         * @brief Buy Native Token
+         * 
+         * NOTE: Always called to buy native asset
+         */
+        void buy(asset native, asset held, account_name buyer) {
+            require_auth(buyer);
 
+                print("\nBuy Action Called...");
+
+            orders_table orders(_settings.issuer, buyer);
+            
+            order b = order{
+                orders.available_primary_key(),
+                native,
+                held,
+                buyer,
+                buyer // NOTE: fulfiller field will be changed when order is sold
+            };
+
+            emplace_order(b);
         }
 
-        
+        void cancel() {
+
+        }
 
     private:
 
     protected:
-        inline void emplace_sell() {
+
+        inline void fulfill(order o) {
             
         }
 
-        inline void attempt_sell(asset held, asset desired, account_name seller) {
+        inline void get_contract(order o) {
+            
+        }
 
+        /**
+         * @brief Attempt to match a sell order with a buy order in target contract.
+         */
+        inline void attempt_sell(order o) {
+            registries_table registries(N(eosio.token), o.buying.symbol.name()); // get registered table from master registry
+            auto itr = registries.find(o.buying.symbol.name()); // find quote asset in master registry table
+
+                print("\nSearching Master Registry for ", asset{o.buying} );
+
+            if (itr == registries.end()) {
+                print("\nSymbol not found in Master Registry...");
+                emplace_order(o);
+            } else {
+                auto info = *itr;
+                account_name target = info.publisher;
+                // match order
+
+                    print("\nTarget Contract: ", name{target});
+            }
+        }
+
+        inline void attempt_buy(order o) {
 
         }
 
-        inline void attemt_buy(asset native, asset held, account_name owner) {
+        /**
+         * @brief Emplace an order into the orders table
+         */
+        inline void emplace_order(order o) {
+            orders_table orders(_settings.issuer, o.maker);
 
+            orders.emplace(o.maker, [&]( auto& a ){
+                a.key = o.key;
+                a.selling = o.selling;
+                a.buying = o.buying;
+                a.maker = o.maker;
+                a.fulfiller = o.fulfiller;
+            });
+
+                print("\nOrder Emplaced...");
         }
 
-        /// @abi table orders i64
-        struct order {
-            account_name seller;
-            asset selling;
-            asset buying;
+        /**
+        inline void emplace_buyorder(order o) {
+            buyorders_table buyorders(_settings.issuer, _self);
 
-            uint64_t primary_key() const { return seller; }
-            uint64_t by_symbol() const { return buying.symbol.value; }
-        };
+            buyorders.emplace(o.maker, [&]( auto& a ){
+                a.key = o.key;
+                a.selling = o.selling;
+                a.buying = o.buying;
+                a.maker = o.maker;
+                a.fulfiller = o.fulfiller;
+            });
 
-        typedef multi_index< N(orders), order, 
-            indexed_by< N(buying), const_mem_fun<order, uint64_t, &order::by_symbol>>> orders_table;
-        //orders_table orders;
+                print("\nBuy Order Emplaced...");
+        }
 
-        //typedef multi_index< N(fulfillments), order> fulfillments_table;
-        //fulfillments_table fulfillments;
+        inline void emplace_sellorder(order o) {
+            sellorders_table sellorders(_settings.issuer, _self);
 
+            sellorders.emplace(o.maker, [&]( auto& a ){
+                a.key = o.key;
+                a.selling = o.selling;
+                a.buying = o.buying;
+                a.maker = o.maker;
+                a.fulfiller = o.fulfiller;
+            });
 
+                print("\nSell Order Emplaced...");
+        }
+        */
 };
-
-EOSIO_ABI( telex, (sell)(buy))
