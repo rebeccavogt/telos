@@ -36,6 +36,7 @@ read -d '' genesis << EOF
     "max_inline_action_size": 4096,
     "max_inline_action_depth": 4,
     "max_authority_depth": 6
+  }
 }
 EOF
 
