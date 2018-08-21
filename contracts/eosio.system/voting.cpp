@@ -124,6 +124,10 @@ namespace eosiosystem {
             return g.producer_name == sbp_name; 
           });
 
+
+          print("\n sb_name: ", name{sbp_name});
+          print("\n it_sbp: ", name{it_sbp->producer_name});
+
           if(it_bp == prods.end() && it_sbp == prods.end()) {
             setBPsRotation(0, 0);
 
@@ -172,7 +176,6 @@ namespace eosiosystem {
           });
 
           auto _bp_index = std::distance(prods.begin(), it_bp);
-          
           auto _sbp_index = std::distance(prods.begin(), it_sbp);
 
           if(it_bp == prods.end() || it_sbp == prods.end()) {
@@ -188,6 +191,10 @@ namespace eosiosystem {
         }
     }
 
+      print("\nsbp name: ", name{it_sbp->producer_name});
+      print("\nsbp index: ", _grotations.sbp_in_index);
+      print("\nsbp name on prods array: ", name{prods[_grotations.sbp_in_index].producer_name});  
+
       std::vector<eosio::producer_key>  top_producers;
       
       //Rotation
@@ -199,7 +206,8 @@ namespace eosiosystem {
 
           if(pIt->producer_name == it_bp->producer_name) {
             print("\nprod sbp added to schedule -> ", name{it_sbp->producer_name});
-            top_producers.emplace_back(*it_sbp);
+            if(it_sbp->producer_name == prods[_grotations.sbp_in_index].producer_name) top_producers.emplace_back(*it_sbp);
+            else  top_producers.emplace_back(prods[_grotations.sbp_in_index]);
           } else {
             print("\nprod bp added to schedule -> ", name{pIt->producer_name});
             top_producers.emplace_back(*pIt);
@@ -282,9 +290,6 @@ namespace eosiosystem {
    }
    
    void system_contract::checkNetworkActivation(){
-     print("\nnetwork activated: ", _gstate.total_activated_stake >= min_activated_stake);
-     print("\nnetwork activation time: ", _gstate.thresh_activated_stake_time);
-
      if( _gstate.total_activated_stake >= min_activated_stake && _gstate.thresh_activated_stake_time == 0 ) {
             _gstate.thresh_activated_stake_time = current_time();
     }
