@@ -149,7 +149,7 @@ namespace eosiosystem {
     */
    void native::newaccount( account_name     creator,
                             account_name     newact
-                            /*  no need to parse authorites
+                            /*  no need to parse authorities
                             const authority& owner,
                             const authority& active*/ ) {
 
