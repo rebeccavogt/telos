@@ -34,7 +34,7 @@ The Telos Foundation has created a lightweight, powerful tool that helps with au
 
 3. The `grow spin single` command will spin up a single node, but requires 4 positional arguments: producer name, p2p address, genesis.json path, and node address.
 
-    a. Example: `grow spin single prodname1234 64.169.144.58 path/to/genesis.json stage1_1.telosfoundation.io`
+    a. Example: `grow spin single prodname1234 {your-ip} path/to/genesis.json testnet.telosfoundation.io:6789`
 
     b. There are also 2 optional flags: `--p2p-port` and `--http-port`. These flags have default values of `9876` and `8888`, respectively.
 
@@ -60,7 +60,7 @@ The Telos Foundation has created a lightweight, powerful tool that helps with au
 
     a. `git clone https://github.com/Telos-Foundation/telos`
 
-    b. `git checkout Stage1.1`
+    b. `git checkout stage2.0`
 
     c. `git submodule update --init --recursive`
 
@@ -89,7 +89,7 @@ The Telos Foundation has created a lightweight, powerful tool that helps with au
         http-server-address = 0.0.0.0:{http port}
         p2p-listen-endpoint = 0.0.0.0:{p2p port}
         p2p-server-address = {external IP address}:{p2p port}
-        p2p-peer-address = stage1_1.telosfoundation.io
+        p2p-peer-address = testnet.telosfoundation.io:6789
 
     d. Determine your Plugins. The only required plugin is producer_plugin, but other plugins add extended functionality to your nodes.
 
@@ -143,12 +143,13 @@ The Telos Roadmap is broken into four separate stages. Each stage implements new
     - [x] [Change Key Prefix from EOS to TLOS](https://github.com/Telos-Foundation/telos/issues/26)
 * Stage 1.1
     - [x] [Claim Rewards Improvements](https://github.com/Telos-Foundation/telos/issues/10)
-    - [ ] [Inverse Voting Weights](https://github.com/Telos-Foundation/telos/issues/7)
+    - [x] [Inverse Voting Weights](https://github.com/Telos-Foundation/telos/issues/7)
     - [x] [Changing Default keosd ports](https://github.com/Telos-Foundation/telos/issues/11)
-    - [ ] [Rename keosd](https://github.com/Telos-Foundation/telos/issues/5)
-    - [ ] [Refactor teclos usage data](https://github.com/Telos-Foundation/telos/issues/15)
-    - [ ] [Block Producer Rotations](https://github.com/Telos-Foundation/telos/issues/3)
-    - [ ] [Chain Update/Restart Rehearsal](https://github.com/Telos-Foundation/grow/issues/1)
+    - [x] [Rename keosd](https://github.com/Telos-Foundation/telos/issues/5)
+    - [x] [Refactor teclos usage data](https://github.com/Telos-Foundation/telos/issues/15)
+    - [x] [Block Producer Rotations](https://github.com/Telos-Foundation/telos/issues/3)
+    - [x] [Chain Update/Restart Rehearsal](https://github.com/Telos-Foundation/grow/issues/1)
+    - [x] Upstream merge - v1.2.1
 * Stage 2.0
     - [ ] [Account Arbitatration Contract](https://github.com/Telos-Foundation/telos/issues/27)
     - [ ] Refactor Unit Tests
@@ -162,6 +163,7 @@ The Telos Roadmap is broken into four separate stages. Each stage implements new
         - [ ] [Test 37](https://github.com/Telos-Foundation/telos/issues/24) 
     - [ ] [Adding Faucet to Testnet](https://github.com/Telos-Foundation/telos/issues/28)
     - [ ] [Replay Attack Testing]()
+    - [ ] [Continuous Integration](https://github.com/Telos-Foundation/telos/issues/39)
 * Stage 3.0
     - [ ] [Ratify and Amend Contract](https://github.com/Telos-Foundation/telos/issues/29)
     - [ ] Automatic Block Producer Minimum Enforcement
