@@ -151,7 +151,7 @@ The Telos Roadmap is broken into four separate stages. Each stage implements new
     - [x] [Chain Update/Restart Rehearsal](https://github.com/Telos-Foundation/grow/issues/1)
     - [x] Upstream merge - v1.2.1
 * Stage 2.0
-    - [ ] [Account Arbitatration Contract](https://github.com/Telos-Foundation/telos/issues/27)
+    - [ ] [Account Arbitration Contract](https://github.com/Telos-Foundation/telos/issues/27)
     - [ ] Refactor Unit Tests
         - [ ] [Test 27](https://github.com/Telos-Foundation/telos/issues/17) 
         - [ ] [Test 28](https://github.com/Telos-Foundation/telos/issues/18) 
