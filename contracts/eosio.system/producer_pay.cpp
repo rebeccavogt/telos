@@ -47,8 +47,8 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer)
         return;
     }
         
-    // if (_gstate.last_pervote_bucket_fill == 0) /// start the presses
-    //     _gstate.last_pervote_bucket_fill = current_time();
+    if (_gstate.last_pervote_bucket_fill == 0) /// start the presses
+        _gstate.last_pervote_bucket_fill = current_time();
 
     /**
     * At startup the initial producer may not be one that is registered / elected
