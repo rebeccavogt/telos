@@ -414,9 +414,15 @@ namespace eosiosystem {
                 propagate_weight_change(*voter);
               }
             }
+         } else {
+           //if voter is unvoting, global total_producer_vote_weight should be updated
+           _gstate.total_producer_vote_weight -= voter->last_vote_weight;
+           if(_gstate.total_producer_vote_weight < 0){
+             _gstate.total_producer_vote_weight = 0;
+           }
          }
-      }
-
+      } 
+      
       for( const auto& pd : producer_deltas ) {
          auto pitr = _producers.find( pd.first );
          if( pitr != _producers.end() ) {
