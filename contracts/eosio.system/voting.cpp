@@ -414,9 +414,15 @@ namespace eosiosystem {
                 propagate_weight_change(*voter);
               }
             }
+         } else {
+           //if voter is unvoting, global total_producer_vote_weight should be updated
+           _gstate.total_producer_vote_weight -= voter->last_vote_weight;
+           if(_gstate.total_producer_vote_weight < 0){
+             _gstate.total_producer_vote_weight = 0;
+           }
          }
-      }
-
+      } 
+      
       for( const auto& pd : producer_deltas ) {
          auto pitr = _producers.find( pd.first );
          if( pitr != _producers.end() ) {
@@ -470,15 +476,8 @@ namespace eosiosystem {
    void system_contract::propagate_weight_change(const voter_info &voter) {
      eosio_assert( voter.proxy == 0 || !voter.is_proxy, "account registered as a proxy is not allowed to use a proxy");
      
-     //getting all active producers
-     auto totalProds = 0;
-     for (const auto &prod : _producers) {
-       if(prod.active()) { 
-         totalProds++;
-       }
-     }
      auto totalStake = double(voter.staked) + voter.proxied_vote_weight;
-     double new_weight = inverseVoteWeight(totalStake, totalProds);
+     double new_weight = inverseVoteWeight(totalStake, voter.producers.size());
     
      if (voter.proxy) {
        auto &proxy = _voters.get(voter.proxy, "proxy not found"); // data corruption
@@ -489,7 +488,7 @@ namespace eosiosystem {
        for (auto acnt : voter.producers) {
          auto &pitr = _producers.get(acnt, "producer not found"); // data corruption
          _producers.modify(pitr, 0, [&](auto &p) {
-           p.total_votes = new_weight;
+           p.total_votes += new_weight;
          });
        }
      }

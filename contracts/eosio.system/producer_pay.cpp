@@ -42,13 +42,13 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer)
     
     
     // Until activated stake crosses this threshold no new rewards are paid
-    if (_gstate.total_activated_stake < min_activated_stake){
+    if (_gstate.total_activated_stake < min_activated_stake && _gstate.thresh_activated_stake_time == 0){
         print("\nonblock: network isn't activated");
         return;
     }
         
-    // if (_gstate.last_pervote_bucket_fill == 0) /// start the presses
-    //     _gstate.last_pervote_bucket_fill = current_time();
+    if (_gstate.last_pervote_bucket_fill == 0) /// start the presses
+        _gstate.last_pervote_bucket_fill = current_time();
 
     /**
     * At startup the initial producer may not be one that is registered / elected
