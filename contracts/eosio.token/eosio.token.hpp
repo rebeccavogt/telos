@@ -31,9 +31,9 @@ namespace eosio {
                         asset        quantity,
                         string       memo );
 
-         void subscribe(asset native, account_name publisher);
+         void regtoken(asset native, account_name publisher);
 
-         void unsubscribe(asset native, account_name publisher);
+         void unregtoken(asset native, account_name publisher);
       
          inline asset get_supply( symbol_name sym )const;
          
@@ -55,7 +55,7 @@ namespace eosio {
          };
 
         /// @abi table registries i64
-        struct registryinfo {
+        struct registration {
             asset native;
             account_name publisher;
 
@@ -63,7 +63,7 @@ namespace eosio {
             uint64_t by_publisher() const { return publisher; }
         };
 
-         typedef eosio::multi_index<N(registries), registryinfo> registries_table;
+         typedef eosio::multi_index<N(registries), registration> registries_table;
 
          typedef eosio::multi_index<N(accounts), account> accounts;
          typedef eosio::multi_index<N(stat), currency_stats> stats;

@@ -89,7 +89,7 @@ void token::transfer( account_name from,
  * 
  * 
  */
-void token::subscribe(asset native, account_name publisher) {
+void token::regtoken(asset native, account_name publisher) {
     //require_auth(publisher);
 
     auto sym = native.symbol.name();
@@ -108,7 +108,7 @@ void token::subscribe(asset native, account_name publisher) {
     }
 }
 
-void token::unsubscribe(asset native, account_name publisher) {
+void token::unregtoken(asset native, account_name publisher) {
     //remove entry from table
 }
 
@@ -145,4 +145,4 @@ void token::add_balance( account_name owner, asset value, account_name ram_payer
 
 } /// namespace eosio
 
-EOSIO_ABI( eosio::token, (create)(issue)(transfer)(subscribe))
+EOSIO_ABI( eosio::token, (create)(issue)(transfer)(regtoken)(unregtoken))

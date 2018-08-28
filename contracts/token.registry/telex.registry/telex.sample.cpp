@@ -28,8 +28,7 @@ registry::registry(account_name self) : contract(self), settings(self, self) {
             self,
             asset(int64_t(10000), S(2, TTT)),
             asset(int64_t(0), S(2, TTT)),
-            "Telos Test Token",
-            true
+            "Telos Test Token"
         };
 
         settings.set(_settings, self);
@@ -227,4 +226,4 @@ void registry::add_allot(account_name owner, account_name recipient, asset token
    }
 }
 
-EOSIO_ABI(telex, (mint)(transfer)(allot)(reclaim)(transferfrom)(createwallet)(deletewallet)(buy)(sell)(cancel))
+EOSIO_ABI(telex, (mint)(transfer)(allot)(reclaim)(transferfrom)(createwallet)(deletewallet)(marketorder)(cancelorder))

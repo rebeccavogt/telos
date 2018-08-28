@@ -50,10 +50,9 @@ class registry : public contract {
             asset max_supply;
             asset supply;
             string name;
-            bool is_initialized;
 
             uint64_t primary_key() const { return issuer; }
-            EOSLIB_SERIALIZE(setting, (issuer)(max_supply)(supply)(name)(is_initialized))
+            EOSLIB_SERIALIZE(setting, (issuer)(max_supply)(supply)(name))
         };
         
         //@abi table balances i64

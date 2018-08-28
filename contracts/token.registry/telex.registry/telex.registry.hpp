@@ -14,7 +14,15 @@
 class telex : public registry {
     public:
 
-        struct registryinfo {
+        telex(account_name self) : registry(self) {
+            
+        }
+
+        ~telex() {
+            
+        }
+
+        struct registration {
             asset native;
             account_name publisher;
 
@@ -22,15 +30,15 @@ class telex : public registry {
             uint64_t by_publisher() const { return publisher; }
         };
 
-        typedef eosio::multi_index<N(registries), registryinfo> registries_table;
+        typedef eosio::multi_index<N(registries), registration> registries_table;
 
         /// @abi table orders
         struct order {
-            uint64_t key;
+            uint64_t key; //not used
             asset selling;
             asset buying;
             account_name maker;
-            account_name fulfiller; //initialized to zero or seller account. will be reset during order match
+            account_name taker; //initialized to zero, will be reset during order match
 
             uint64_t primary_key() const { return key; }
             uint64_t by_buy_symbol() const { return buying.symbol.value; }
@@ -40,25 +48,43 @@ class telex : public registry {
 
         typedef multi_index< N(orders), order, 
             indexed_by< N(buying), const_mem_fun< order, uint64_t, &order::by_buy_symbol>>> orders_table;
+            // TODO: add selling index
 
+        void marketorder(asset sell, asset buy, account_name maker) {
+            require_auth(maker);
+            eosio_assert(sell.symbol.name() == _settings.max_supply.symbol.name(), "selling asset must be native token");
 
-        telex(account_name self) : registry(self) {
-            
-        }
+            orders_table orders(_settings.issuer, buy.symbol.name());
 
-        ~telex() {
-            
+            order m = order{
+                orders.available_primary_key(),
+                sell,
+                buy,
+                maker,
+                maker // NOTE: fulfiller field will be changed when order is sold
+            };
+
+            auto t = find_target(m);
+
+            if (t == 0) {
+                print("\nCreating Market...");
+
+                //emplace_order(m);
+            } else {
+                print("\nt: ", name{t});
+
+                //attempt_fill(m);
+            }
         }
 
         /**
          * @brief Sell Native Token
          * 
          * NOTE: Always called to sell native asset
-         */
+         *
         void sell(asset held, asset desired, account_name seller) {
             require_auth(seller);
-
-                print("\nSell Action Called...");
+            eosio_assert(held.symbol.name() != desired.symbol.name(), "Buying and Selling asset cannot be same symbol");
 
             orders_table orders(_settings.issuer, seller);
 
@@ -70,20 +96,17 @@ class telex : public registry {
                 seller // NOTE: fulfiller field will be changed when order is bought
             };
 
-            sub_balance(seller, held); // remove tokens from seller's balance
 
-            attempt_sell(s);
         }
 
-        /**
+        
          * @brief Buy Native Token
          * 
          * NOTE: Always called to buy native asset
-         */
+         *
         void buy(asset native, asset held, account_name buyer) {
             require_auth(buyer);
-
-                print("\nBuy Action Called...");
+            eosio_assert(native.symbol.name() != held.symbol.name(), "Buying and Selling asset cannot be same symbol");
 
             orders_table orders(_settings.issuer, buyer);
             
@@ -95,10 +118,19 @@ class telex : public registry {
                 buyer // NOTE: fulfiller field will be changed when order is sold
             };
 
-            emplace_order(b);
-        }
+            if (find_target(b) == 0) { // not found in Master Registry
+                emplace_order(b);
+            } else {
+                sub_balance(buyer, held);
 
-        void cancel() {
+            }
+            
+
+            //emplace_order(b);
+        }
+        */
+
+        void cancelorder() {
 
         }
 
@@ -106,18 +138,10 @@ class telex : public registry {
 
     protected:
 
-        inline void fulfill(order o) {
-            
-        }
-
-        inline void get_contract(order o) {
-            
-        }
-
         /**
-         * @brief Attempt to match a sell order with a buy order in target contract.
+         * @brief
          */
-        inline void attempt_sell(order o) {
+        account_name find_target(order o) {
             registries_table registries(N(eosio.token), o.buying.symbol.name()); // get registered table from master registry
             auto itr = registries.find(o.buying.symbol.name()); // find quote asset in master registry table
 
@@ -125,19 +149,16 @@ class telex : public registry {
 
             if (itr == registries.end()) {
                 print("\nSymbol not found in Master Registry...");
-                emplace_order(o);
+                return 0;
             } else {
                 auto info = *itr;
                 account_name target = info.publisher;
-                // match order
-
-                    print("\nTarget Contract: ", name{target});
+                print("\nSymbol found...Target Contract: ", name{target});
+                return target;
             }
         }
 
-        inline void attempt_buy(order o) {
 
-        }
 
         /**
          * @brief Emplace an order into the orders table
@@ -153,36 +174,19 @@ class telex : public registry {
                 a.fulfiller = o.fulfiller;
             });
 
-                print("\nOrder Emplaced...");
+            print("\nOrder Emplaced...");
+        }
+
+        inline void fulfill(order o) {
+            
         }
 
         /**
-        inline void emplace_buyorder(order o) {
-            buyorders_table buyorders(_settings.issuer, _self);
+         * @brief 
+         */
+        void attempt_fulfill(order o) {
+            //auto t = find_target(o);
 
-            buyorders.emplace(o.maker, [&]( auto& a ){
-                a.key = o.key;
-                a.selling = o.selling;
-                a.buying = o.buying;
-                a.maker = o.maker;
-                a.fulfiller = o.fulfiller;
-            });
 
-                print("\nBuy Order Emplaced...");
         }
-
-        inline void emplace_sellorder(order o) {
-            sellorders_table sellorders(_settings.issuer, _self);
-
-            sellorders.emplace(o.maker, [&]( auto& a ){
-                a.key = o.key;
-                a.selling = o.selling;
-                a.buying = o.buying;
-                a.maker = o.maker;
-                a.fulfiller = o.fulfiller;
-            });
-
-                print("\nSell Order Emplaced...");
-        }
-        */
 };

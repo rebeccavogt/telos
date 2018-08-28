@@ -27,8 +27,7 @@ registry::registry(account_name self) : contract(self), settings(self, self) {
             self,
             asset(int64_t(10000), S(2, TTT)),
             asset(int64_t(0), S(2, TTT)),
-            "Telos Test Token",
-            true
+            "Telos Test Token"
         };
 
         settings.set(_settings, self);

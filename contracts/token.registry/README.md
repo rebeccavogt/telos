@@ -53,33 +53,3 @@ The following is a walkthrough of the TIP-5 Token Registry Standard actions:
 * `deletewallet` DeleteWallet is called to delete a zero-balance entry in the balances table.
 
     It is critical to ensure a wallet entry is only deleted if it has a balance of exactly zero. Deleting wallets with balances in them is the equivalent of burning those tokens and not removing them from the maximum supply. Future TIP extentions will introduce token burning features that account for this as well as a variable max supply.
-
-
-
-
-
-
-
-
-
-
-### Setup Master Registry
-teclos set contract eosio.token ./ eosio.token.wasm eosio.token.abi
-
-### Setup Telex A
-teclos set contract prodname1 ./ telex.sample.wasm telex.sample.abi
-teclos push action prodname1 createwallet '{"owner": "prodname1"}' -p prodname1@active
-teclos push action prodname2 createwallet '{"owner": "prodname2"}' -p prodname2@active
-teclos push action prodname1 mint '{"recipient": "prodname1", "tokens": "10.00 TTT"}' -p prodname1@active
-teclos push action eosio.token subscribe '{"publisher": "prodname1", "native": "0.00 TTT"}' -p prodname1@active
-
-### Setup Telex B
-teclos set contract prodname2 ./ telex.sample2.wasm telex.sample2.abi
-teclos push action prodname2 createwallet '{"owner": "prodname1"}' -p prodname1@active
-teclos push action prodname2 createwallet '{"owner": "prodname2"}' -p prodname2@active
-teclos push action prodname2 mint '{"recipient": "prodname2", "tokens": "10.00 UUU"}' -p prodname2@active
-teclos push action eosio.token subscribe '{"publisher": "prodname2", "native": "0.00 UUU"}' -p prodname2@active
-
-### Testing
-teclos push action prodname2 buy '{"native": "1.00 TTT", "held": "1.00 UUU", "buyer": "prodname2"}' -p prodname2@active
-teclos push action prodname1 sell '{"held": "1.00 TTT", "desired": "1.00 UUU", "seller": "prodname1"}' -p prodname1@active
