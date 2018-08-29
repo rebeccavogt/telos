@@ -869,7 +869,6 @@ struct controller_impl {
 
    void start_block( block_timestamp_type when, uint16_t confirm_block_count, controller::block_status s ) {
       EOS_ASSERT( !pending, block_validate_exception, "pending block already exists" );
-
       auto guard_pending = fc::make_scoped_exit([this](){
          pending.reset();
       });
@@ -939,8 +938,6 @@ struct controller_impl {
       guard_pending.cancel();
    } // start_block
 
-
-
    void sign_block( const std::function<signature_type( const digest_type& )>& signer_callback  ) {
       auto p = pending->_pending_block_state;
 
@@ -950,6 +947,7 @@ struct controller_impl {
    } /// sign_block
 
    void apply_block( const signed_block_ptr& b, controller::block_status s ) { try {
+       
       try {
          EOS_ASSERT( b->block_extensions.size() == 0, block_validate_exception, "no supported extensions" );
          start_block( b->timestamp, b->confirmed, s );
@@ -1118,7 +1116,6 @@ struct controller_impl {
          pending.reset();
       }
    }
-
 
    bool should_enforce_runtime_limits()const {
       return false;
@@ -1587,7 +1584,7 @@ void controller::pop_block() {
    my->pop_block();
 }
 
-int64_t controller::set_proposed_producers( vector<producer_key> producers ) {
+int64_t controller::set_proposed_producers( vector<producer_key> producers) {
    const auto& gpo = get_global_properties();
    auto cur_block_num = head_block_num() + 1;
 
@@ -1631,18 +1628,21 @@ int64_t controller::set_proposed_producers( vector<producer_key> producers ) {
    return version;
 }
 
+//NOTE: Currently active producer schedule
 const producer_schedule_type&    controller::active_producers()const {
    if ( !(my->pending) )
       return  my->head->active_schedule;
    return my->pending->_pending_block_state->active_schedule;
 }
 
+//NOTE: pending producer schedule that will soon become active
 const producer_schedule_type&    controller::pending_producers()const {
    if ( !(my->pending) )
       return  my->head->pending_schedule;
    return my->pending->_pending_block_state->pending_schedule;
 }
 
+//NOTE: schedule set by voting.cpp in eosio.system contract
 optional<producer_schedule_type> controller::proposed_producers()const {
    const auto& gpo = get_global_properties();
    if( !gpo.proposed_schedule_block_num.valid() )

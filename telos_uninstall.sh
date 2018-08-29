@@ -1,6 +1,6 @@
 #! /bin/bash
 
-binaries=(cleos
+binaries=(teclos
           eosio-abigen
           eosio-launcher
           eosio-s2wasm

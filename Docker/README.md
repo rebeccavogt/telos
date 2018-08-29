@@ -20,10 +20,10 @@ cd eos/Docker
 docker build . -t eosio/eos
 ```
 
-The above will build off the most recent commit to the master branch by default. If you would like to target a specific branch/tag, you may use a build argument. For example, if you wished to generate a docker image based off of the v1.2.1 tag, you could do the following:
+The above will build off the most recent commit to the master branch by default. If you would like to target a specific branch/tag, you may use a build argument. For example, if you wished to generate a docker image based off of the v1.2.2 tag, you could do the following:
 
 ```bash
-docker build -t eosio/eos:v1.2.1 --build-arg branch=v1.2.1 .
+docker build -t eosio/eos:v1.2.2 --build-arg branch=v1.2.2 .
 ```
 
 By default, the symbol in eosio.system is set to SYS. You can override this using the symbol argument while building the docker image.
@@ -154,9 +154,8 @@ services:
 
   tkeosd:
     image: eosio/eos:latest
-    command: /opt/eosio/bin/tkeosd --wallet-dir /opt/eosio/bin/data-dir --http-server-address=127.0.0.1:8900 --http-alias=localhost:8900 --http-alias=tkeosd:8900
+    command: /opt/eosio/bin/tkeosd --wallet-dir /opt/eosio/bin/data-dir --http-server-address=127.0.0.1:8999
     hostname: tkeosd
-
     links:
       - nodeosd
     volumes:

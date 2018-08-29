@@ -24,7 +24,6 @@ services:
       - nodeosd
     volumes:
       - tkeosd-data-volume:/opt/eosio/bin/data-dir
-    stop_grace_period: 10m
 
 volumes:
  nodeos-data-volume:
