@@ -8,6 +8,7 @@ from TestHelper import TestHelper
 
 import decimal
 import re
+import time
 
 ###############################################################
 # nodeos_run_test
@@ -67,6 +68,7 @@ try:
     if localTest and not dontLaunch:
         cluster.killall(allInstances=killAll)
         cluster.cleanup()
+        time.sleep(5)
         Print("Stand up cluster")
         if cluster.launch(prodCount=prodCount, onlyBios=onlyBios, dontKill=dontKill, dontBootstrap=dontBootstrap, p2pPlugin=p2pPlugin) is False:
             cmdError("launcher")
