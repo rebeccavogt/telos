@@ -151,7 +151,8 @@ The Telos Roadmap is broken into four separate stages. Each stage implements new
     - [x] [Chain Update/Restart Rehearsal](https://github.com/Telos-Foundation/grow/issues/1)
     - [x] Upstream merge - v1.2.1
 * Stage 2.0
-    - [ ] [Account Arbitration Contract](https://github.com/Telos-Foundation/telos/issues/27)
+    - [ ] [Ratify and Amend Contract](https://github.com/Telos-Foundation/telos/issues/29)
+    - [ ] [Worker Proposal Contract](https://github.com/Telos-Foundation/telos/issues/30)
     - [ ] Refactor Unit Tests
         - [ ] [Test 27](https://github.com/Telos-Foundation/telos/issues/17) 
         - [ ] [Test 28](https://github.com/Telos-Foundation/telos/issues/18) 
@@ -161,11 +162,11 @@ The Telos Roadmap is broken into four separate stages. Each stage implements new
         - [ ] [Test 35](https://github.com/Telos-Foundation/telos/issues/22) 
         - [ ] [Test 36](https://github.com/Telos-Foundation/telos/issues/23) 
         - [ ] [Test 37](https://github.com/Telos-Foundation/telos/issues/24) 
-    - [ ] [Adding Faucet to Testnet](https://github.com/Telos-Foundation/telos/issues/28)
-    - [ ] [Replay Attack Testing]()
+    - [x] [Adding Faucet to Testnet](https://github.com/Telos-Foundation/telos/issues/28)
+    - [x] [Replay Attack Testing]()
     - [ ] [Continuous Integration](https://github.com/Telos-Foundation/telos/issues/39)
 * Stage 3.0
-    - [ ] [Ratify and Amend Contract](https://github.com/Telos-Foundation/telos/issues/29)
+    - [ ] [Account Arbitration Contract](https://github.com/Telos-Foundation/telos/issues/27)
     - [ ] Automatic Block Producer Minimum Enforcement
     - [ ] [Block Producer Adjudication Contract](https://github.com/Telos-Foundation/telos/issues/30)
 * Stage 4.0
