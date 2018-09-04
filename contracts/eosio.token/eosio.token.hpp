@@ -30,10 +30,6 @@ namespace eosio {
                         account_name to,
                         asset        quantity,
                         string       memo );
-
-         void regtoken(asset native, account_name publisher);
-
-         void unregtoken(asset native, account_name publisher);
       
          inline asset get_supply( symbol_name sym )const;
          

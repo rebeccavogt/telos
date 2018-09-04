@@ -84,34 +84,6 @@ void token::transfer( account_name from,
     add_balance( to, quantity, from );
 }
 
-/**
- * @brief Register A New Token with Master Registry
- * 
- * 
- */
-void token::regtoken(asset native, account_name publisher) {
-    //require_auth(publisher);
-
-    auto sym = native.symbol.name();
-    registries_table registries(N(eosio.token), sym); // maybe eosio.token?
-    auto existing = registries.find(sym);
-
-    if (existing == registries.end()) {
-        registries.emplace(publisher, [&]( auto& a ){ // maybe have publisher pay for space?
-            a.native = native;
-            a.publisher = publisher;
-        });
-
-            print("\nEmplaced Registry...");
-    } else {
-            print("\nRegistry Already Exists...");
-    }
-}
-
-void token::unregtoken(asset native, account_name publisher) {
-    //remove entry from table
-}
-
 void token::sub_balance( account_name owner, asset value ) {
    accounts from_acnts( _self, owner );
 
@@ -145,4 +117,4 @@ void token::add_balance( account_name owner, asset value, account_name ram_payer
 
 } /// namespace eosio
 
-EOSIO_ABI( eosio::token, (create)(issue)(transfer)(regtoken)(unregtoken))
+EOSIO_ABI( eosio::token, (create)(issue)(transfer))

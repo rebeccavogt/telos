@@ -226,4 +226,4 @@ void registry::add_allot(account_name owner, account_name recipient, asset token
    }
 }
 
-EOSIO_ABI(telex, (mint)(transfer)(allot)(reclaim)(transferfrom)(createwallet)(deletewallet)(marketorder)(cancelorder))
+EOSIO_ABI(telex, (mint)(transfer)(allot)(reclaim)(transferfrom)(createwallet)(deletewallet)(marketorder)(cancelorder)(collectorder)(fulfill))
