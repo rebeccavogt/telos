@@ -164,8 +164,11 @@ The Telos Roadmap is broken into four separate stages. Each stage implements new
         - [ ] [Test 37](https://github.com/Telos-Foundation/telos/issues/24) 
     - [x] [Adding Faucet to Testnet](https://github.com/Telos-Foundation/telos/issues/28)
     - [x] [Replay Attack Testing]()
+    - [ ] [Calculate Missed Blocks](https://github.com/Telos-Foundation/telos/issues/53)
     - [ ] [Continuous Integration](https://github.com/Telos-Foundation/telos/issues/39)
 * Stage 3.0
+    - [ ] [Rewrite Regproducer to include bp.json Information](https://github.com/Telos-Foundation/telos/issues/55)
+    - [ ] [Automatic Block Producer Removal](https://github.com/Telos-Foundation/telos/issues/52)
     - [ ] [Account Arbitration Contract](https://github.com/Telos-Foundation/telos/issues/27)
     - [ ] Automatic Block Producer Minimum Enforcement
     - [ ] [Block Producer Adjudication Contract](https://github.com/Telos-Foundation/telos/issues/30)
