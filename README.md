@@ -68,7 +68,7 @@ The Telos Foundation has created a lightweight, powerful tool that helps with au
 
     a. `./telos_build.sh`
 
-    b. `cd build && sudo make install`
+    b. `sudo ./telos_install.sh`
 
 3. Set up config.ini file
 
