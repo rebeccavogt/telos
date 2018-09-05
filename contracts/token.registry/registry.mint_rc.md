@@ -1,4 +1,4 @@
-# CONTRACT FOR registry::mint
+#CONTRACT FOR registry::mint
 
 ## ACTION NAME: mint
 
