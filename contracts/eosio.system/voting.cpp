@@ -253,6 +253,11 @@ namespace eosiosystem {
          totalProducers++;
        }
      }
+
+     if(totalProducers == 0){
+        return 0;
+     }
+
      // 30 max producers allowed to vote
      if(totalProducers > 30) {
        totalProducers = 30;
@@ -313,13 +318,13 @@ namespace eosiosystem {
       eosio_assert( !proxy || !voter->is_proxy, "account registered as a proxy is not allowed to use a proxy" );
 
       auto totalStaked = voter->staked;
-      if(proxy){
-         auto pxy = _voters.find(proxy);
-         totalStaked += pxy->proxied_vote_weight;
+      if(voter->is_proxy){
+         totalStaked += voter->proxied_vote_weight;
       }
+
       auto inverse_stake = inverseVoteWeight((double )totalStaked, (double) producers.size());
       auto new_vote_weight = inverse_stake;
-      
+
       /**
        * The first time someone votes we calculate and set last_vote_weight, since they cannot unstake until
        * after total_activated_stake hits threshold, we can use last_vote_weight to determine that this is
@@ -465,6 +470,7 @@ namespace eosiosystem {
          _voters.modify( pitr, 0, [&]( auto& p ) {
           p.is_proxy = isproxy;
         });    
+         update_votes(pitr->owner, pitr->proxy, pitr->producers, true);
       } else {
          _voters.emplace( proxy, [&]( auto& p ) {
             p.owner  = proxy;
@@ -476,7 +482,10 @@ namespace eosiosystem {
    void system_contract::propagate_weight_change(const voter_info &voter) {
      eosio_assert( voter.proxy == 0 || !voter.is_proxy, "account registered as a proxy is not allowed to use a proxy");
      
-     auto totalStake = double(voter.staked) + voter.proxied_vote_weight;
+     auto totalStake = double(voter.staked);
+     if(voter.is_proxy){
+        totalStake += voter.proxied_vote_weight;
+     } 
      double new_weight = inverseVoteWeight(totalStake, voter.producers.size());
     
      if (voter.proxy) {
