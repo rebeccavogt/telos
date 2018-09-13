@@ -1533,9 +1533,14 @@ BOOST_FIXTURE_TEST_CASE(multiple_producer_pay, eosio_system_tester, * boost::uni
 
    // give a chance for everyone to produce blocks
    {
+      // why is there a need for such a high number of blocks for everyone to produce ???
+      produce_blocks(51 * 24 + 20);
       // produce_blocks(23 * 12 + 20); 
-      // ?? why isn't rotation messing this upp ???
-      produce_blocks(51 * 50);
+
+      // for (uint32_t i = 0; i < producer_names.size(); ++i) {
+      //    std::cout<<"["<<producer_names[i]<<"]: "<<get_producer_info(producer_names[i])["unpaid_blocks"].as<uint32_t>()<<std::endl;
+      // }
+
       bool all_21_produced = true;
       for (uint32_t i = 0; i < 21; ++i) {
             // std::cout<<"P : "<<get_producer_info(producer_names[i])["unpaid_blocks"].as<uint32_t>()<<std::endl;
@@ -1870,6 +1875,11 @@ BOOST_FIXTURE_TEST_CASE(producers_upgrade_system_contract, eosio_system_tester) 
 
 BOOST_FIXTURE_TEST_CASE(producer_onblock_check, eosio_system_tester) try {
 
+   // min_activated_stake_part = 28'570'987'0000;
+   const asset half_min_activated_stake = core_from_string("14285493.5000");
+   const asset quarter_min_activated_stake = core_from_string("7142746.7500"); 
+   const asset eight_min_activated_stake = core_from_string("3571373.3750"); 
+
    const asset large_asset = core_from_string("80.0000");
    create_account_with_resources( N(producvotera), config::system_account_name, core_from_string("1.0000"), false, large_asset, large_asset );
    create_account_with_resources( N(producvoterb), config::system_account_name, core_from_string("1.0000"), false, large_asset, large_asset );
@@ -1890,19 +1900,17 @@ BOOST_FIXTURE_TEST_CASE(producer_onblock_check, eosio_system_tester) try {
    BOOST_REQUIRE_EQUAL(0, get_producer_info( producer_names.front() )["total_votes"].as<double>());
    BOOST_REQUIRE_EQUAL(0, get_producer_info( producer_names.back() )["total_votes"].as<double>());
 
-   std::cout<<"TAS : "<<get_global_state()["total_activated_stake"].as_double()<<std::endl;
-
-   transfer(config::system_account_name, "producvotera", core_from_string("2856098.0000"), config::system_account_name);
-   BOOST_REQUIRE_EQUAL(success(), stake("producvotera", core_from_string("1428049.0000"), core_from_string("1428049.0000") ));
+   transfer(config::system_account_name, "producvotera", half_min_activated_stake, config::system_account_name);
+   BOOST_REQUIRE_EQUAL(success(), stake("producvotera", quarter_min_activated_stake, quarter_min_activated_stake ));
    BOOST_REQUIRE_EQUAL(success(), vote( N(producvotera), vector<account_name>(producer_names.begin(), producer_names.begin()+10)));
-   
-   std::cout<<"TAS : "<<get_global_state()["total_activated_stake"].as_double()<<std::endl;
+
    BOOST_CHECK_EQUAL( wasm_assert_msg( "cannot undelegate bandwidth until the chain is activated (at least 15% of all tokens participate in voting)" ),
                       unstake( "producvotera", core_from_string("50.0000"), core_from_string("50.0000") ) );
 
    // give a chance for everyone to produce blocks
    {
       produce_blocks(21 * 12);
+      
       bool all_21_produced = true;
       for (uint32_t i = 0; i < 21; ++i) {
          if (0 == get_producer_info(producer_names[i])["unpaid_blocks"].as<uint32_t>()) {
@@ -1931,17 +1939,24 @@ BOOST_FIXTURE_TEST_CASE(producer_onblock_check, eosio_system_tester) try {
    }
 
    // stake across 15% boundary
-   transfer(config::system_account_name, "producvoterb", core_from_string("100000000.0000"), config::system_account_name);
-   BOOST_REQUIRE_EQUAL(success(), stake("producvoterb", core_from_string("4000000.0000"), core_from_string("4000000.0000")));
-   transfer(config::system_account_name, "producvoterc", core_from_string("100000000.0000"), config::system_account_name);
-   BOOST_REQUIRE_EQUAL(success(), stake("producvoterc", core_from_string("2000000.0000"), core_from_string("2000000.0000")));
+   transfer(config::system_account_name, "producvoterb", half_min_activated_stake, config::system_account_name);
+   BOOST_REQUIRE_EQUAL(success(), stake("producvoterb", quarter_min_activated_stake, quarter_min_activated_stake));
+
+   transfer(config::system_account_name, "producvoterc", quarter_min_activated_stake, config::system_account_name);
+   BOOST_REQUIRE_EQUAL(success(), stake("producvoterc", eight_min_activated_stake, eight_min_activated_stake));
 
    BOOST_REQUIRE_EQUAL(success(), vote( N(producvoterb), vector<account_name>(producer_names.begin(), producer_names.begin()+21)));
    BOOST_REQUIRE_EQUAL(success(), vote( N(producvoterc), vector<account_name>(producer_names.begin(), producer_names.end())));
 
    // give a chance for everyone to produce blocks
    {
-      produce_blocks(21 * 12);
+      // produce_blocks(21 * 12);
+      // ?? and why is there a need for such a high number of blocks for everyone to produce ?? 
+      produce_blocks(21 * 24);
+      // for (uint32_t i = 0; i < producer_names.size(); ++i) {
+      //    std::cout<<"["<<producer_names[i]<<"]: "<<get_producer_info(producer_names[i])["unpaid_blocks"].as<uint32_t>()<<std::endl;
+      // }
+
       bool all_21_produced = true;
       for (uint32_t i = 0; i < 21; ++i) {
          if (0 == get_producer_info(producer_names[i])["unpaid_blocks"].as<uint32_t>()) {
@@ -2325,8 +2340,8 @@ BOOST_FIXTURE_TEST_CASE( multiple_namebids, eosio_system_tester ) try {
 
    produce_block();
    // stake but but not enough to go live
-   stake_with_transfer( config::system_account_name, "bob",  core_from_string( "35000000.0000" ), core_from_string( "35000000.0000" ) );
-   stake_with_transfer( config::system_account_name, "carl", core_from_string( "35000000.0000" ), core_from_string( "35000000.0000" ) );
+   stake_with_transfer( config::system_account_name, "bob",  core_from_string( "3500000.0000" ), core_from_string( "3500000.0000" ) );
+   stake_with_transfer( config::system_account_name, "carl", core_from_string( "3500000.0000" ), core_from_string( "3500000.0000" ) );
    BOOST_REQUIRE_EQUAL( success(), vote( N(bob), { N(producer) } ) );
    BOOST_REQUIRE_EQUAL( success(), vote( N(carl), { N(producer) } ) );
 
@@ -2381,8 +2396,8 @@ BOOST_FIXTURE_TEST_CASE( multiple_namebids, eosio_system_tester ) try {
    BOOST_REQUIRE_EXCEPTION( create_account_with_resources( N(prefd), N(david) ),
                             fc::exception, fc_assert_exception_message_is( not_closed_message ) );
 
-   // stake enough to go above the 15% threshold
-   stake_with_transfer( config::system_account_name, "alice", core_from_string( "10000000.0000" ), core_from_string( "10000000.0000" ) );
+   // stake enough to go above the 15% threshold ~ total of ~~30M = 16 + 14 above (minstake to activate ~29M)
+   stake_with_transfer( config::system_account_name, "alice", core_from_string( "8000000.0000" ), core_from_string( "8000000.0000" ) );
    BOOST_REQUIRE_EQUAL(0, get_producer_info("producer")["unpaid_blocks"].as<uint32_t>());
    BOOST_REQUIRE_EQUAL( success(), vote( N(alice), { N(producer) } ) );
 
@@ -2488,7 +2503,13 @@ BOOST_FIXTURE_TEST_CASE( vote_producers_in_and_out, eosio_system_tester ) try {
 
    // give a chance for everyone to produce blocks
    {
-      produce_blocks(23 * 12 + 20);
+      // produce_blocks(23 * 12 + 20);
+      // ?? why is there a need for such a high number of blocks for everyone to produce ?? 
+      produce_blocks(51 * 24 + 20);
+      // for (uint32_t i = 0; i < producer_names.size(); ++i) {
+      //    std::cout<<"["<<producer_names[i]<<"]: "<<get_producer_info(producer_names[i])["unpaid_blocks"].as<uint32_t>()<<std::endl;
+      // }
+
       bool all_21_produced = true;
       for (uint32_t i = 0; i < 21; ++i) {
          if (0 == get_producer_info(producer_names[i])["unpaid_blocks"].as<uint32_t>()) {
@@ -2505,20 +2526,34 @@ BOOST_FIXTURE_TEST_CASE( vote_producers_in_and_out, eosio_system_tester ) try {
    }
 
    {
-      produce_block(fc::hours(7));
+      
+      // for (uint32_t i = 0; i < producer_names.size(); ++i) {
+      //    std::cout<<"["<<producer_names[i]<<"]: "<<get_producer_info(producer_names[i])["unpaid_blocks"].as<uint32_t>()<<std::endl;
+      // }
+      // std::cout<<"============"<<std::endl;
+      // for (uint32_t i = 0; i < producer_names.size(); ++i) {
+      //    std::cout<<"["<<producer_names[i]<<"]: "<<get_producer_info(producer_names[i])["unpaid_blocks"].as<uint32_t>()<<std::endl;
+      // }
+
+      // produce_block(fc::hours(7)); // this would trigger a rotation and the next checks would fail
+      produce_block(fc::hours(3));
       const uint32_t voted_out_index = 20;
       const uint32_t new_prod_index  = 23;
+      // the new weight calculation gives bigger weight for more voted producers
+      vector<account_name> v = vector<account_name>(producer_names.begin(), producer_names.begin()+(voted_out_index-1)); 
+      v.emplace_back(producer_names[new_prod_index]);
+
       BOOST_REQUIRE_EQUAL(success(), stake("producvoterd", core_from_string("40000000.0000"), core_from_string("40000000.0000")));
-      BOOST_REQUIRE_EQUAL(success(), vote(N(producvoterd), { producer_names[new_prod_index] }));
+      BOOST_REQUIRE_EQUAL(success(), vote(N(producvoterd), v)); 
       BOOST_REQUIRE_EQUAL(0, get_producer_info(producer_names[new_prod_index])["unpaid_blocks"].as<uint32_t>());
-      produce_blocks(4 * 12 * 21);
+      produce_blocks(4 * 24 * 21); 
       BOOST_REQUIRE(0 < get_producer_info(producer_names[new_prod_index])["unpaid_blocks"].as<uint32_t>());
       const uint32_t initial_unpaid_blocks = get_producer_info(producer_names[voted_out_index])["unpaid_blocks"].as<uint32_t>();
-      produce_blocks(2 * 12 * 21);
+      produce_blocks(2 * 24 * 21);
       BOOST_REQUIRE_EQUAL(initial_unpaid_blocks, get_producer_info(producer_names[voted_out_index])["unpaid_blocks"].as<uint32_t>());
       produce_block(fc::hours(24));
       BOOST_REQUIRE_EQUAL(success(), vote(N(producvoterd), { producer_names[voted_out_index] }));
-      produce_blocks(2 * 12 * 21);
+      produce_blocks(2 * 24 * 21);
       BOOST_REQUIRE(fc::crypto::public_key() != fc::crypto::public_key(get_producer_info(producer_names[voted_out_index])["producer_key"].as_string()));
       BOOST_REQUIRE_EQUAL(success(), push_action(producer_names[voted_out_index], N(claimrewards), mvo()("owner", producer_names[voted_out_index])));
    }

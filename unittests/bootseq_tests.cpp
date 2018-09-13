@@ -62,13 +62,12 @@ const uint32_t seconds_per_30days = 30 * 24 * 3600;
 
 const uint64_t one_token_balance = 1'0000ll;
 const uint64_t one_hundred_token_balance = 100'0000ll;
-const uint64_t b1_balance        = 100'000'000'0000ll;
 const uint64_t voter2_balance    = floor( min_activated_stake * 10 / activation_threshold );
 const uint64_t voter3_balance    = floor( min_activated_stake *  1 / activation_threshold );
 const uint64_t voter4_balance    = min_activated_stake - voter2_balance - voter3_balance;
 const uint64_t voter5_balance    = floor( min_activated_stake *  3 / activation_threshold );
 const uint64_t one_part_balance  = floor( min_activated_stake *  1 / activation_threshold );
-const uint64_t mases_balance = max_supply_count - b1_balance - voter2_balance - voter3_balance - voter4_balance - voter5_balance - 24 * one_part_balance - one_hundred_token_balance - 2 * one_token_balance; 
+const uint64_t mases_balance = max_supply_count - voter2_balance - voter3_balance - voter4_balance - voter5_balance - 24 * one_part_balance - one_hundred_token_balance - 2 * one_token_balance; 
 
 const uint64_t amount_spent_on_ram = 1000;
 
@@ -79,7 +78,6 @@ struct genesis_account {
 };
 
 std::vector<genesis_account> test_genesis( {
-  {N(b1),        b1_balance},
   {N(voter2),    voter2_balance},
   {N(voter3),    voter3_balance},
   {N(voter4),    voter4_balance},
@@ -246,8 +244,8 @@ BOOST_FIXTURE_TEST_CASE( bootseq_test, bootseq_tester ) {
 
 
         // Create SYS tokens in eosio.token, set its manager as eosio
-        auto max_supply = core_from_string("10000000000.0000"); /// 1x larger than 1B initial tokens
-        auto initial_supply = core_from_string("1000000000.0000"); /// 1x larger than 1B initial tokens
+        auto max_supply = core_from_string(ten_times_max_supply_string); 
+        auto initial_supply = core_from_string(max_supply_string); 
 
         create_currency(N(eosio.token), config::system_account_name, max_supply);
         // Issue the genesis supply of 1 billion SYS tokens to eosio.system
@@ -364,28 +362,7 @@ BOOST_FIXTURE_TEST_CASE( bootseq_test, bootseq_tester ) {
         claim_rewards(N(runnerup1));
         BOOST_TEST(get_balance(N(runnerup1)).get_amount() > 0);
 
-        const auto first_june_2018 = fc::seconds(1527811200); // 2018-06-01
-        const auto first_june_2028 = fc::seconds(1843430400); // 2028-06-01
-        // Ensure that now is yet 10 years after 2018-06-01 yet
-        BOOST_REQUIRE(control->head_block_time().time_since_epoch() < first_june_2028);
-
-        // This should thrown an error, since block one can only unstake all his stake after 10 years
-
-        BOOST_REQUIRE_THROW(undelegate_bandwidth(N(b1), N(b1), core_from_string("49999500.0000"), core_from_string("49999500.0000")), eosio_assert_message_exception);
-
-        // Skip 10 years
-        produce_block(first_june_2028 - control->head_block_time().time_since_epoch());
-
-        // Block one should be able to unstake all his stake now
-        undelegate_bandwidth(N(b1), N(b1), core_from_string("49999500.0000"), core_from_string("49999500.0000"));
-
-        return;
-        produce_blocks(7000); /// produce blocks until virutal bandwidth can acomadate a small user
-        wlog("minow" );
-        votepro( N(minow1), {N(p1), N(p2)} );
-
-
-        // TODO: Complete this test
+        // TODO: Add more to this test
     } FC_LOG_AND_RETHROW()
 }
 
