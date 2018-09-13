@@ -96,4 +96,62 @@ void trail::unregvoter(account_name voter) {
     print("\nVoterID Successfully Erased");
 }
 
-EOSIO_ABI(trail, (regtoken)(unregtoken)(regvoter)(unregvoter))
+void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, uint16_t direction, uint64_t weight, account_name voter) {
+    //require_auth(voter);
+
+    print("\nAddReceipt Called...");
+
+    voters_table voters(_self, voter);
+    auto v = voters.find(voter);
+    eosio_assert(v != voters.end(), "Voter Doesn't Exist");
+
+    auto vo = *v;
+
+    voteinfo new_vi = voteinfo{ //creating new voteinfo struct
+        vote_code,
+        vote_scope,
+        vote_key,
+        direction,
+        weight
+    };
+
+    bool found = false;
+    uint64_t idx = 0;
+
+    auto itr = vo.votes_list.begin();
+
+    for (voteinfo vi : vo.votes_list) { //Checking for existing voteinfo struct
+
+        if (vi.vote_code == vote_code && vi.vote_scope == vote_scope && vi.vote_key == vote_key) { //Found existing
+            found = true;
+            print("\nExisting Receipt Found....Updating");
+
+            //vo.votes_list[idx] = new_vi;
+            auto h = vo.votes_list.erase(itr);
+            auto i = vo.votes_list.insert(itr, new_vi);
+
+            print("\nidx: ", idx);
+
+            break;
+        }
+
+        idx++;
+        itr++;
+    }
+
+    if (found == false) {
+
+        vo.votes_list.push_back(new_vi);
+
+        voters.modify(v, 0, [&]( auto& a ) {
+            a.votes_list = vo.votes_list;
+        });
+    } else {
+
+        voters.modify(v, 0, [&]( auto& a ) {
+            a.votes_list = vo.votes_list;
+        });
+    }
+}
+
+EOSIO_ABI(trail, (regtoken)(unregtoken)(regvoter)(unregvoter)(addreceipt))

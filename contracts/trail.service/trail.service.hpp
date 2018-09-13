@@ -27,6 +27,8 @@ class trail : public contract {
 
         void unregvoter(account_name voter);
 
+        void addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, uint16_t direction, uint64_t weight, account_name voter);
+
     protected:
 
         /// @abi table registries i64
@@ -38,10 +40,10 @@ class trail : public contract {
             uint64_t by_publisher() const { return publisher; }
         };
 
-        struct voteinfo {
+        struct voteinfo { //TODO: add checksum?
             uint64_t vote_code; // code of contract receiving vote
             uint64_t vote_scope; // scope of contract receiving vote
-            uint64_t vote_key; // key to retrieve voted object
+            uint64_t vote_key; // key to retrieve voted object in external contract
             uint16_t direction; // 0 = abstain, 1 = yes, 2 = no TODO: use enum? 
             uint64_t weight; // weight of votes applied
         };

@@ -36,7 +36,6 @@ void ratifyamend::propose(string title, string ipfs_url, uint64_t document_id, u
     uint64_t prop_id = proposals.available_primary_key();
     uint32_t prop_time = now();
 
-    //TODO: update with proposal struct
     proposals.emplace(proposer, [&]( auto& a ){
         a.id = prop_id;
         a.document_id = document_id;
@@ -57,92 +56,92 @@ void ratifyamend::propose(string title, string ipfs_url, uint64_t document_id, u
 void ratifyamend::vote(uint64_t proposal_id, uint16_t vote, account_name voter) {
     require_auth(voter);
     eosio_assert(vote >= 0 && vote <= 2, "Invalid Vote. [0 = ABSTAIN, 1 = YES, 2 = NO]");
-    
 
-    //-----------VoterID-----------
-
-    voters_table voters(N(trailservice), voter); //TODO: change code to trail.service account
+    voters_table voters(N(trailservice), voter);
     auto v = voters.find(voter);
 
-    eosio_assert(v != voters.end(), "Voter Not Found");
-    print("\nVoter Found");
-
+    eosio_assert(v != voters.end(), "VoterID Not Found");
+    
+    print("\nVoterID Found");
     auto vo = *v;
-
-    voteinfo new_vi = voteinfo{
-        _self,
-        voter,
-        proposal_id,
-        vote,
-        1
-    };
-
 
     proposals_table proposals(_self, _self);
     auto p = proposals.find(proposal_id);
-
     eosio_assert(p != proposals.end(), "Proposal Not Found");
+    
     print("\nProposal Found");
-
     auto po = *p;
 
-
-
-
     if (vo.votes_list.empty()) {
-        print("\nVoteInfo Stack Empty...Inserting Struct");
-        vo.votes_list.push_back(new_vi);
 
-        voters.modify(v, 0, [&]( auto& a ) {
-            a.votes_list = vo.votes_list;
-        });
+        print("\nVoteInfo Stack Empty...Calling TrailService to update VoterID");
+
+        action(permission_level{ voter, N(active) }, N(trailservice), N(addreceipt), make_tuple(
+    	    _self,      
+    	    _self,
+    	    po.id,
+            vote,
+            uint64_t(1),
+            voter
+	    )).send();
+
+        print("\nVoterID Successfully Updated");
     } else {
-        //search for existing voteinfo with matching proposal id
-        //insert new voteinfo struct into vector if not found
+
+        print("\nSearching receipts list for existing VoteInfo...");
 
         bool found = false;
 
         for (voteinfo receipt : vo.votes_list) {
             if (receipt.vote_key == proposal_id) {
 
-                print("\nVoterInfo Struct Found");
+                print("\nVoteInfo receipt found");
                 found = true;
 
-                //remove existing vote from proposal
                 switch (receipt.direction) { //TODO: remove by old weight, not just decrement
-                    case 0 : po.abstain_count--;
-                    case 1 : po.yes_count--;
-                    case 2 : po.no_count--;
+                    case 0 : po.abstain_count--; break;
+                    case 1 : po.yes_count--; break;
+                    case 2 : po.no_count--; break;
                 }
 
-                receipt.direction = vote;
-                receipt.weight = 1; //TODO: Get true vote weight
+                print("\nCalling TrailService to update VoterID...");
 
-                vo.votes_list[proposal_id] = receipt;
+                action(permission_level{ voter, N(active) }, N(trailservice), N(addreceipt), make_tuple(
+    	            _self,      
+    	            _self,
+    	            po.id,
+                    vote,
+                    uint64_t(1),
+                    voter
+	            )).send();
 
-                voters.modify(v, 0, [&]( auto& a ) {
-                    a.votes_list = vo.votes_list;
-                });
+                print("\nVoterID Successfully Updated");
 
-                //break; //necessary? may help reduce computation
+                break; //necessary? may help reduce computation
             }
         }
 
         if (found == false) {
-            vo.votes_list.push_back(new_vi);
+            print("\nVoteInfo not found in list. Calling TrailService to insert...");
 
-            voters.modify(v, 0, [&]( auto& a ) {
-                a.votes_list = vo.votes_list;
-            });
+            action(permission_level{ voter, N(active) }, N(trailservice), N(addreceipt), make_tuple(
+    	        _self,      
+    	        _self,
+    	        po.id,
+                vote,
+                uint64_t(1),
+                voter
+	        )).send();
+
+            print("\nVoterID Successfully Updated");
         }
     }
-    
 
     //TODO: increase by new vote weight, not just increment
     switch (vote) {
-        case 0 : po.abstain_count++;
-        case 1 : po.yes_count++;
-        case 2 : po.no_count++;
+        case 0 : po.abstain_count++; break;
+        case 1 : po.yes_count++; break;
+        case 2 : po.no_count++; break;
     }
 
     proposals.modify(p, 0, [&]( auto& a ) {
@@ -153,11 +152,14 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t vote, account_name voter) 
 
     string vote_type;
     switch (vote) {
-        case 0 : vote_type = "ABSTAIN";
-        case 1 : vote_type = "YES";
-        case 2 : vote_type = "NO";
+        case 0 : vote_type = "ABSTAIN"; break;
+        case 1 : vote_type = "YES"; break;
+        case 2 : vote_type = "NO"; break;
     }
+
+    print("\n\nVOTE SUCCESSFUL");
     print("\nYour Vote: ", vote_type);
+    print("\nVote Weight: ", 1); //TODO: update with real weight of vote cast
 }
 
 
