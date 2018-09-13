@@ -31,6 +31,13 @@ ratifyamend::~ratifyamend() {
 void ratifyamend::propose(string title, string ipfs_url, uint64_t document_id, uint64_t clause_id, account_name proposer) {
     require_auth(proposer);
 
+    action(permission_level{ proposer, N(active) }, N(eosio.token), N(transfer), make_tuple( //NOTE: susceptible to ram-drain bug
+    	proposer,
+        N(trailservice),
+        asset(int64_t(1000000), S(4, TLOS)),
+        std::string("Ratify/Amend Proposal Fee")
+	)).send();
+
     proposals_table proposals(_self, _self);
 
     uint64_t prop_id = proposals.available_primary_key();
@@ -50,7 +57,6 @@ void ratifyamend::propose(string title, string ipfs_url, uint64_t document_id, u
 
     print("\nProposal Emplaced");
     print("\nProposal ID: ", prop_id);
-
 }
 
 void ratifyamend::vote(uint64_t proposal_id, uint16_t vote, account_name voter) {

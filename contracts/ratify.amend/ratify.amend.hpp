@@ -35,7 +35,7 @@ class ratifyamend : public contract {
         };
 
         /// @abi table proposals i64
-        struct proposal { //TODO: implement expiration, proposal_time, and fee
+        struct proposal { //TODO: implement expiration
             uint64_t id;
             uint64_t document_id;
             uint64_t clause_id;
