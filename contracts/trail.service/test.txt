@@ -1,45 +1,25 @@
 
 teclos set account permission prodnamexz55 active '{"threshold": 1,"keys": [{"key": "","weight": 1}],"accounts": [{"permission":{"actor":"prodname","permission":"eosio.code"},"weight":1}]}' owner -p prodnamexz55
 
+'{"title": "Test Doc", "clauses": ["ipfs://test0", "ipfs://test1"]}'
+
 '{"title": "Test Title", "ipfs_url": "ipfs://plsworknow", "document_id": "0", "clause_id": "0", "proposer": "prodname"}'
 
 '{"proposal_id": "0", "vote": "1", "voter": "prodname"}'
 
 --------------------
 
-[(prodnameykyo,vote)->prodnameykyo]: CONSOLE OUTPUT BEGIN =====================
 
-
-
-Environment Thresholds Updated
-
-VoterID Found
-
-Proposal Found
-
-VoteInfo Stack Empty...Calling TrailService to update VoterID
-
-VoterID Successfully Updated
-
-
-
-VOTE SUCCESSFUL
-
-Your Vote: YES
-
-Vote Weight: 1
-
-[(prodnameykyo,vote)->prodnameykyo]: CONSOLE OUTPUT END   =====================
-
-2018-09-12T18:59:46.004 thread-0   apply_context.cpp:28          print_debug          ]
-
-[(trailservice,addreceipt)->trailservice]: CONSOLE OUTPUT BEGIN =====================
-
-
-
-AddReceipt Called...
-
-[(trailservice,addreceipt)->trailservice]: CONSOLE OUTPUT END   =====================
 
 ------------------
 
+{
+    "title": "Test Doc",
+    "clauses": [
+            "ipfs://test0",
+            "ipfs://test1"
+    ]
+}
+{ "array" : ["1", "2", "3", "4"]}
+
+{"title": "Test Doc","clauses": ["ipfs://test0","ipfs://test1"]}

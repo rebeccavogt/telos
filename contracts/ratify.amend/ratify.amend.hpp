@@ -16,9 +16,13 @@ class ratifyamend : public contract {
         ~ratifyamend();
 
         // ABI Actions
+        void insertdoc(string title, vector<string> clauses);
+
         void propose(string title, string ipfs_url, uint64_t document_id, uint64_t clause_id, account_name proposer);
 
         void vote(uint64_t proposal_id, uint16_t vote, account_name voter);
+
+        void close(uint64_t proposal_id);
 
     protected:
 
@@ -28,7 +32,7 @@ class ratifyamend : public contract {
         struct document {
             uint64_t id;
             string title;
-            vector<string> clauses;
+            vector<string> clauses; //vector of ipfs urls
 
             uint64_t primary_key() const { return id; }
             EOSLIB_SERIALIZE(document, (id)(title)(clauses))
@@ -45,20 +49,21 @@ class ratifyamend : public contract {
             uint64_t no_count;
             uint64_t abstain_count;
             account_name proposer;
+            uint32_t expiration;
+            string status; // "OPEN", "PASSED", "FAILED"
 
             uint64_t primary_key() const { return id; }
-            EOSLIB_SERIALIZE(proposal, (id)(document_id)(clause_id)(title)(ipfs_url)(yes_count)(no_count)(abstain_count)(proposer))
+            EOSLIB_SERIALIZE(proposal, (id)(document_id)(clause_id)(title)(ipfs_url)(yes_count)(no_count)(abstain_count)(proposer)(expiration)(status))
         };
 
         /// @abi table threshold
         struct threshold {
             account_name publisher;
             uint64_t quorum_threshold;
-            uint64_t pass_threshold;
             uint32_t expiration_length;
 
             uint64_t primary_key() const { return publisher; }
-            EOSLIB_SERIALIZE(threshold, (publisher)(quorum_threshold)(pass_threshold)(expiration_length))
+            EOSLIB_SERIALIZE(threshold, (publisher)(quorum_threshold)(expiration_length))
         };
 
     typedef multi_index<N(documents), document> documents_table;
