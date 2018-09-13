@@ -46,6 +46,16 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer)
         print("\nonblock: network isn't activated");
         return;
     }
+
+    // iterate and fix the total_producer_vote_weight = _producers(sum) if < 0 
+    // for the current issue on the testnet : this should be removed once the fix is applied
+    if (_gstate.total_producer_vote_weight <= -0.1){ // -0.1 threshold for floating point calc ?
+        print("\n Negative total_weight_vote fix applied !");
+        _gstate.total_producer_vote_weight = 0;
+        for (const auto &prod : _producers) {
+            _gstate.total_producer_vote_weight += prod.total_votes;
+        }
+    }
         
     if (_gstate.last_pervote_bucket_fill == 0) /// start the presses
         _gstate.last_pervote_bucket_fill = current_time();

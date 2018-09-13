@@ -342,8 +342,9 @@ namespace eosiosystem {
           checkNetworkActivation();
       } else if(voter->last_vote_weight <= 0.0 && proxy && voting) {
         auto prx = _voters.find(proxy);
-        if(prx->last_vote_weight > 0){
+        if(prx != _voters.end() && prx->last_vote_weight > 0){
           _gstate.total_activated_stake += voter->staked;
+
           checkNetworkActivation();
         }
       } else if(producers.size() == 0 && !proxy && voting ) {
@@ -358,6 +359,7 @@ namespace eosiosystem {
 
       //Voter from second vote
       if ( voter->last_vote_weight > 0 ) {
+        print("\n from second vote");
            
          //if voter account has set proxy to a other voter account
          if( voter->proxy ) { 
@@ -419,15 +421,16 @@ namespace eosiosystem {
                 propagate_weight_change(*voter);
               }
             }
-         } else {
-           //if voter is unvoting, global total_producer_vote_weight should be updated
-           _gstate.total_producer_vote_weight -= voter->last_vote_weight;
-           if(_gstate.total_producer_vote_weight < 0){
-             _gstate.total_producer_vote_weight = 0;
-           }
-         }
-      } 
-      
+         } 
+         //else { // this is handled automatically with the producer delta below
+        //    //if voter is unvoting, global total_producer_vote_weight should be updated
+        //    _gstate.total_producer_vote_weight -= voter->last_vote_weight;
+        //    if(_gstate.total_producer_vote_weight < 0){
+        //      _gstate.total_producer_vote_weight = 0;
+        //    }
+        //  }
+      }
+
       for( const auto& pd : producer_deltas ) {
          auto pitr = _producers.find( pd.first );
          if( pitr != _producers.end() ) {
@@ -498,6 +501,7 @@ namespace eosiosystem {
          auto &pitr = _producers.get(acnt, "producer not found"); // data corruption
          _producers.modify(pitr, 0, [&](auto &p) {
            p.total_votes += new_weight;
+           _gstate.total_producer_vote_weight += new_weight;
          });
        }
      }
