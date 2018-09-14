@@ -1883,6 +1883,67 @@ BOOST_FIXTURE_TEST_CASE(producer_onblock_check, eosio_system_tester) try {
 
 } FC_LOG_AND_RETHROW()
 
+BOOST_FIXTURE_TEST_CASE( voter_and_proxy_actions_affect_producers_and_totals, eosio_system_tester, * boost::unit_test::tolerance(1e+6) ) try {
+   create_accounts_with_resources( { N(donald111111), N(defproducer1), N(defproducer2), N(defproducer3) } );
+   BOOST_REQUIRE_EQUAL( success(), regproducer( "defproducer1", 1) );
+   BOOST_REQUIRE_EQUAL( success(), regproducer( "defproducer2", 2) );
+   BOOST_REQUIRE_EQUAL( success(), regproducer( "defproducer3", 3) );
+   
+   //alice1111111 becomes a producer
+   BOOST_REQUIRE_EQUAL( success(), push_action( N(alice1111111), N(regproxy), mvo()
+                                                ("proxy",  "alice1111111")
+                                                ("isproxy", true)
+                        )
+   );
+
+   //bob111111111 becomes a producer
+   BOOST_REQUIRE_EQUAL( success(), push_action( N(bob111111111), N(regproxy), mvo()
+                                                ("proxy",  "bob111111111")
+                                                ("isproxy", true)
+                        )
+   );
+
+   REQUIRE_MATCHING_OBJECT( proxy( "alice1111111" ), get_voter_info( "alice1111111" ) );
+   REQUIRE_MATCHING_OBJECT( proxy( "bob111111111" ), get_voter_info( "bob111111111" ) );
+
+   //alice1111111 makes stake and votes
+   issue( "alice1111111", core_from_string("1000.0000"),  config::system_account_name );
+   BOOST_REQUIRE_EQUAL( success(), stake( "alice1111111", core_from_string("30.0001"), core_from_string("20.0001") ) );
+   BOOST_REQUIRE_EQUAL( success(), vote( N(alice1111111), { N(defproducer1), N(defproducer2) } ) );
+   auto expected_value = stake2votes(core_from_string("50.0002"),2,4);
+   BOOST_TEST_REQUIRE( expected_value == get_producer_info( "defproducer1" )["total_votes"].as_double() );
+   BOOST_TEST_REQUIRE( expected_value == get_producer_info( "defproducer2" )["total_votes"].as_double() );
+   BOOST_REQUIRE_EQUAL( 0, get_producer_info( "defproducer3" )["total_votes"].as_double() );
+
+   //donald111111 makes bob his proxy
+   issue( "donald111111", core_from_string("1000.0000"),  config::system_account_name );
+   BOOST_REQUIRE_EQUAL( success(), stake( "donald111111", core_from_string("5.0000"), core_from_string("5.0000") ) );
+   BOOST_REQUIRE_EQUAL( success(), vote( N(donald111111), vector<account_name>(), "bob111111111" ) );
+
+   //bob111111111 bob stakes and votes
+   issue( "bob111111111", core_from_string("1000.0000"),  config::system_account_name );
+   BOOST_REQUIRE_EQUAL( success(), stake( "bob111111111", core_from_string("20.0001"), core_from_string("20.0001") ) );
+   BOOST_REQUIRE_EQUAL( success(), vote( N(bob111111111), { N(defproducer1), N(defproducer2) } ) );
+   expected_value = stake2votes(core_from_string("50.0002"),2,4) * 2;
+   BOOST_TEST_REQUIRE( expected_value == get_producer_info( "defproducer1" )["total_votes"].as_double() );
+   BOOST_TEST_REQUIRE( expected_value == get_producer_info( "defproducer2" )["total_votes"].as_double() );
+   BOOST_REQUIRE_EQUAL( 0, get_producer_info( "defproducer3" )["total_votes"].as_double() );
+
+   auto initial_activated_stake = get_global_state()["total_activated_stake"].as_int64();
+
+   //donald111111 switches to alice as his proxy 
+   BOOST_REQUIRE_EQUAL( success(), vote( N(donald111111), vector<account_name>(), "alice1111111" ) );
+   BOOST_TEST_REQUIRE( expected_value == get_producer_info( "defproducer1" )["total_votes"].as_double() );
+   BOOST_TEST_REQUIRE( expected_value == get_producer_info( "defproducer2" )["total_votes"].as_double() );
+   BOOST_REQUIRE_EQUAL( 0, get_producer_info( "defproducer3" )["total_votes"].as_double() );
+
+   expected_value = expected_value * 2; // 2 producers with same weight
+   BOOST_TEST_REQUIRE(get_global_state()["total_producer_vote_weight"].as_double() == expected_value);
+   // switching between proxies should not increase the total activated stake forever
+   BOOST_TEST_REQUIRE(get_global_state()["total_activated_stake"].as_int64() == initial_activated_stake);
+
+} FC_LOG_AND_RETHROW()
+
 BOOST_FIXTURE_TEST_CASE( voters_actions_affect_proxy_and_producers, eosio_system_tester, * boost::unit_test::tolerance(1e+6) ) try {
    cross_15_percent_threshold();
 

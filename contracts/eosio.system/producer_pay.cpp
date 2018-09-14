@@ -40,21 +40,11 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer)
 
     require_auth(N(eosio));
     
+    recalculate_votes();
     
     // Until activated stake crosses this threshold no new rewards are paid
     if (_gstate.total_activated_stake < min_activated_stake && _gstate.thresh_activated_stake_time == 0){
-        print("\nonblock: network isn't activated");
         return;
-    }
-
-    // iterate and fix the total_producer_vote_weight = _producers(sum) if < 0 
-    // for the current issue on the testnet : this should be removed once the fix is applied
-    if (_gstate.total_producer_vote_weight <= -0.1){ // -0.1 threshold for floating point calc ?
-        print("\n Negative total_weight_vote fix applied !");
-        _gstate.total_producer_vote_weight = 0;
-        for (const auto &prod : _producers) {
-            _gstate.total_producer_vote_weight += prod.total_votes;
-        }
     }
         
     if (_gstate.last_pervote_bucket_fill == 0) /// start the presses
@@ -96,6 +86,45 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer)
                     b.high_bid = -b.high_bid;
                 });
             }
+        }
+    }
+}
+
+void system_contract::recalculate_votes(){
+    // fix type 1 : fixes just total vote weight
+    // iterate and fix the total_producer_vote_weight = _producers(sum) if < 0 
+    // for the current issue on the testnet : this should be removed once the fix is applied
+    // if (_gstate.total_producer_vote_weight <= -0.1){ // -0.1 threshold for floating point calc ?
+    //     print("\n Negative total_weight_vote fix applied !");
+    //     _gstate.total_producer_vote_weight = 0;
+    //     for (const auto &prod : _producers) {
+    //         _gstate.total_producer_vote_weight += prod.total_votes;
+    //     }
+    // }
+
+    // fix type 2 : fixes proxied weights too
+    if (_gstate.total_producer_vote_weight <= -0.1){ // -0.1 threshold for floating point calc ?
+        _gstate.total_producer_vote_weight = 0;
+        _gstate.total_activated_stake = 0;
+        boost::container::flat_map<account_name, bool> processed_proxies;
+        for(const auto &voter : _voters){
+            if(voter.proxy && !processed_proxies[voter.proxy]){
+                auto proxy = _voters.find(voter.proxy);
+                _voters.modify( proxy, 0, [&]( auto& av ) {
+                    av.last_vote_weight = 0;
+                    av.last_stake = 0;
+                    av.proxied_vote_weight = 0;
+                });
+                processed_proxies[voter.proxy] = true;
+            }
+            if(!voter.is_proxy || !processed_proxies[voter.owner]){
+                _voters.modify( voter, 0, [&]( auto& av ) {
+                    av.last_vote_weight = 0;
+                    av.last_stake = 0;
+                    av.proxied_vote_weight = 0;
+                });
+            }
+            update_votes(voter.owner, voter.proxy, voter.producers, true);
         }
     }
 }
