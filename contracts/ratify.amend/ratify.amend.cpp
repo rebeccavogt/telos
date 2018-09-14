@@ -8,8 +8,9 @@ ratifyamend::ratifyamend(account_name self) : contract(self), thresh(self, self)
 
         thresh_struct = threshold{
             _self, //publisher
+            0, //total_voters
             0, //initial quorum_threshold
-            120 //expiration_length in seconds
+            300 //expiration_length in seconds (5,000,000 default = ~58 days)
         };
 
         thresh.set(thresh_struct, _self);
@@ -58,7 +59,9 @@ void ratifyamend::propose(string title, string ipfs_url, uint64_t document_id, u
     auto doc_struct = *d;
 
     eosio_assert(doc_struct.clauses.size() >= clause_id, "Clause Not Found"); //TODO: consider revising to vector.at()
+    print("\nClause Found");
 
+    //NOTE: 100.0000 TLOS fee, refunded if proposal passes
     action(permission_level{ proposer, N(active) }, N(eosio.token), N(transfer), make_tuple( //NOTE: susceptible to ram-drain bug
     	proposer,
         N(trailservice),
@@ -82,7 +85,7 @@ void ratifyamend::propose(string title, string ipfs_url, uint64_t document_id, u
         a.abstain_count = 0;
         a.proposer = proposer;
         a.expiration = prop_time + thresh_struct.expiration_length;
-        a.status = "OPEN";
+        a.status = 0;
     });
 
     print("\nProposal Emplaced");
@@ -210,22 +213,32 @@ void ratifyamend::close(uint64_t proposal_id) { // TODO: add calling account?
     auto po = *p;
 
     eosio_assert(po.expiration <= now(), "Voting Window Still Open");
-    eosio_assert(po.status == "OPEN", "Proposal Already Closed");
+    eosio_assert(po.status == 0, "Proposal Already Closed");
 
-    auto total_votes = (po.yes_count + po.no_count + po.abstain_count);
-    auto pass_thresh = (((po.yes_count + po.no_count) / 3) * 2) + 1; // 2/3 +1
+    uint64_t total_votes = (po.yes_count + po.no_count + po.abstain_count);
+    uint64_t pass_thresh = ((po.yes_count + po.no_count) / 3) * 2; // 66.67% of total votes
+
+    //Refund Thresholds. Checked if Proposal Fails
+    uint64_t q_refund_thresh = thresh_struct.total_voters / 25; //4% of all voters //NOTE: moving window, consider saving total voters at proposal time?
+    uint64_t p_refund_thresh = total_votes / 4; //25% of votes
 
     print("\npass_thresh: ", pass_thresh);
+    print("\nnow: ", now());
 
-    if (total_votes >= thresh_struct.quorum_threshold) {
+
+    if (total_votes >= thresh_struct.quorum_threshold && total_votes != uint64_t(0)) {
+
+        print("\nPassed Quorum Check");
         
         if (po.yes_count >= pass_thresh) {
+
+            print("\nPass Thresh Passed...Updating Prop and Refunding Proposer");
             
             proposals.modify(p, 0, [&]( auto& a ) {
-                a.status = "PASSED";
+                a.status = 1;
             });
 
-            action(permission_level{ po.proposer, N(active) }, N(eosio.token), N(transfer), make_tuple( //NOTE: susceptible to ram-drain bug
+            action(permission_level{ _self, N(active) }, N(eosio.token), N(transfer), make_tuple( //NOTE: susceptible to ram-drain bug
     	        N(trailservice),
                 po.proposer,
                 asset(int64_t(1000000), S(4, TLOS)),
@@ -236,19 +249,49 @@ void ratifyamend::close(uint64_t proposal_id) { // TODO: add calling account?
             print("\nRefund Sent to Proposer");
         } else {
 
+            print("\nFailed Pass Thresh Check");
+
             proposals.modify(p, 0, [&]( auto& a ) {
-                a.status = "FAILED";
+                a.status = 2;
             });
 
             print("\nProposal Failed Due To Insufficient YES Votes");
+
+            if (po.yes_count >= p_refund_thresh && total_votes >= q_refund_thresh) {
+                print("\nRefund Threshold Reached...Refunding Fee");
+
+                action(permission_level{ _self, N(active) }, N(eosio.token), N(transfer), make_tuple( //NOTE: susceptible to ram-drain bug
+    	            N(trailservice),
+                    po.proposer,
+                    asset(int64_t(1000000), S(4, TLOS)),
+                    std::string("Ratify/Amend Proposal Fee Refund")
+	            )).send();
+
+                print("\nFee Refunded");
+            }
         }
     } else {
+
+        print("\nFailed Quorum Check");
         
         proposals.modify(p, 0, [&]( auto& a ) {
-            a.status = "FAILED";
+            a.status = 2;
         });
 
         print("\nProposal Failed Due To Insufficient Quorum");
+
+        if (po.yes_count >= p_refund_thresh && total_votes >= q_refund_thresh) {
+            print("\nRefund Threshold Reached...Refunding Fee");
+
+            action(permission_level{ _self, N(active) }, N(eosio.token), N(transfer), make_tuple( //NOTE: susceptible to ram-drain bug
+    	        N(trailservice),
+                po.proposer,
+                asset(int64_t(1000000), S(4, TLOS)),
+                std::string("Ratify/Amend Proposal Fee Refund")
+	        )).send();
+
+            print("\nFee Refunded");
+        }
     }
     
 }
@@ -259,10 +302,10 @@ void ratifyamend::update_thresh() { //NOTE: tentative values
     environment e = env.get();
 
     uint64_t new_quorum = e.total_voters / 4; //25% of all registered voters
-    //uint64_t new_pass = (new_quorum / 2) + 1; // 50% + 1 of quorum
+    uint64_t new_total_voters = e.total_voters;
 
     thresh_struct.quorum_threshold = new_quorum;
-    //thresh_struct.pass_threshold = new_pass;
+    thresh_struct.total_voters = new_total_voters;
 
     print("\nEnvironment Thresholds Updated");
 }

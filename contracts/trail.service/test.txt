@@ -13,13 +13,13 @@ teclos set account permission prodnamexz55 active '{"threshold": 1,"keys": [{"ke
 
 ------------------
 
-{
-    "title": "Test Doc",
-    "clauses": [
-            "ipfs://test0",
-            "ipfs://test1"
-    ]
-}
-{ "array" : ["1", "2", "3", "4"]}
+RATIFYAMEND TESTS:
 
-{"title": "Test Doc","clauses": ["ipfs://test0","ipfs://test1"]}
+#create 25 accounts
+
+#do for each account
+teclos push action trailservice regvoter '{"voter": "..."}' -p ... 
+
+#ran by ratifyamend account
+teclos push action ... insertdoc '{"title": "Test Doc", "clauses": ["ipfs://test0", "ipfs://test1", "..."]}' -p ... 
+

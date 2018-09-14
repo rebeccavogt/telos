@@ -50,7 +50,7 @@ class ratifyamend : public contract {
             uint64_t abstain_count;
             account_name proposer;
             uint32_t expiration;
-            string status; // "OPEN", "PASSED", "FAILED"
+            uint64_t status; // 0 = OPEN, 1 = PASSED, 2 = FAILED
 
             uint64_t primary_key() const { return id; }
             EOSLIB_SERIALIZE(proposal, (id)(document_id)(clause_id)(title)(ipfs_url)(yes_count)(no_count)(abstain_count)(proposer)(expiration)(status))
@@ -59,6 +59,7 @@ class ratifyamend : public contract {
         /// @abi table threshold
         struct threshold {
             account_name publisher;
+            uint64_t total_voters;
             uint64_t quorum_threshold;
             uint32_t expiration_length;
 
