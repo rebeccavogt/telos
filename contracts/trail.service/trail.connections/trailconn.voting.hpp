@@ -5,18 +5,21 @@
 #include <eosiolib/types.hpp>
 #include <eosiolib/singleton.hpp>
 
-struct voteinfo {
-    uint64_t vote_code; // code of contract receiving vote
+using namespace std;
+using namespace eosio;
+
+struct votereceipt {
+    uint64_t vote_code; // code of contract receiving vote //TODO: change to account_name type?
     uint64_t vote_scope; // scope of contract receiving vote
-    uint64_t vote_key; // key to retrieve voted object
+    uint64_t vote_key; // primary key to retrieve voted object
     uint16_t direction; // 0 = abstain, 1 = yes, 2 = no TODO: use enum? 
     uint64_t weight; // weight of votes applied
 };
 
-struct voterid {
+struct voterid { //TODO: separate tlos_weight into liquid and staked?
     account_name voter;
-    vector<voteinfo> votes_list;
-    uint64_t tlos_weight;
+    vector<votereceipt> receipt_list; //list of all vote receipts
+    uint64_t tlos_weight; //quantity of TLOS tokens, liquid and staked
 
     uint64_t primary_key() const { return voter; }
     EOSLIB_SERIALIZE(voterid, (voter)(votes_list)(tlos_weight))

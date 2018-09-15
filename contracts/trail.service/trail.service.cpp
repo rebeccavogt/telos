@@ -87,7 +87,10 @@ void trail::unregvoter(account_name voter) {
 
     eosio_assert(v != voters.end(), "Voter Doesn't Exist");
 
-    //TODO: dont erase until all votes have been rescinded or are past expiration
+    auto vid = *v;
+
+    //NOTE: dont erase until all votes have been rescinded, or past exp
+    eosio_assert(vid.votes_list.size() == 0, "Can't Delete Until All Votes Rescinded");    
 
     voters.erase(v);
 
@@ -154,4 +157,8 @@ void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_ke
     }
 }
 
-EOSIO_ABI(trail, (regtoken)(unregtoken)(regvoter)(unregvoter)(addreceipt))
+void rmvreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, account_name voter) {
+
+}
+
+EOSIO_ABI(trail, (regtoken)(unregtoken)(regvoter)(unregvoter)(addreceipt)(rmvreceipt))

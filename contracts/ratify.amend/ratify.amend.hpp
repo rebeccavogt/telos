@@ -5,6 +5,8 @@
 #include <eosiolib/types.hpp>
 #include <eosiolib/singleton.hpp>
 
+#include <../trail.service/trail.connections/trailconn.voting.hpp>
+
 using namespace std;
 using namespace eosio;
 
@@ -21,6 +23,8 @@ class ratifyamend : public contract {
         void propose(string title, string ipfs_url, uint64_t document_id, uint64_t clause_id, account_name proposer);
 
         void vote(uint64_t proposal_id, uint16_t vote, account_name voter);
+
+        void unvote(uint64_t proposal_id, account_name voter);
 
         void close(uint64_t proposal_id);
 
@@ -76,6 +80,7 @@ class ratifyamend : public contract {
 
     //---------------------Definitions from trailservice---------------------
 
+    /**
     struct voteinfo {
         uint64_t vote_code; // code of contract receiving vote
         uint64_t vote_scope; // scope of contract receiving vote
@@ -105,4 +110,5 @@ class ratifyamend : public contract {
 
     typedef multi_index<N(voters), voterid> voters_table;
     typedef singleton<N(environment), environment> environment_singleton;
+    */
 };

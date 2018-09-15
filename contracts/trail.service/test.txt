@@ -7,6 +7,8 @@ teclos set account permission prodnamexz55 active '{"threshold": 1,"keys": [{"ke
 
 '{"proposal_id": "0", "vote": "1", "voter": "prodname"}'
 
+
+
 --------------------
 
 
@@ -15,11 +17,22 @@ teclos set account permission prodnamexz55 active '{"threshold": 1,"keys": [{"ke
 
 RATIFYAMEND TESTS:
 
-#create 25 accounts
+#create 10 accounts, A - J
 
-#do for each account
+#do for 9 accounts
 teclos push action trailservice regvoter '{"voter": "..."}' -p ... 
 
-#ran by ratifyamend account
-teclos push action ... insertdoc '{"title": "Test Doc", "clauses": ["ipfs://test0", "ipfs://test1", "..."]}' -p ... 
+#do for  accounts
+teclos set account permission ... active '{"threshold": 1,"keys": [{"key": "...","weight": 1}],"accounts": [{"permission":{"actor":"...target contract...","permission":"eosio.code"},"weight":1}]}' owner -p ...
 
+#ran by ratifyamend account
+teclos push action ... insertdoc '{"title": "...", "clauses": ["...", "...", "..."]}' -p ... 
+
+#ran by anyone
+teclos push action ... propose '{"title": "...", "ipfs_url": "...", "document_id": "...", "clause_id": "...", "proposer": "..."}' -p ...
+
+#ran by registered voter
+teclos push action ... vote '{"proposal_id": "...", "vote": "...", "voter": "..."}' -p ...
+
+#ran by registered voter
+teclos push action ... close '{"proposal_id": "..."}' -p ...

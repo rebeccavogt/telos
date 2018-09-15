@@ -113,7 +113,7 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t vote, account_name voter) 
 
     eosio_assert(po.expiration > now(), "Proposal Has Expired");
 
-    if (vo.votes_list.empty()) {
+    if (vo.receipt_list.empty()) {
 
         print("\nVoteInfo Stack Empty...Calling TrailService to update VoterID");
 
@@ -133,13 +133,13 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t vote, account_name voter) 
 
         bool found = false;
 
-        for (voteinfo receipt : vo.votes_list) {
-            if (receipt.vote_key == proposal_id) {
+        for (votereceipt r : vo.receipt_list) {
+            if (r.vote_key == proposal_id) {
 
                 print("\nVoteInfo receipt found");
                 found = true;
 
-                switch (receipt.direction) { //TODO: remove by old weight, not just decrement
+                switch (r.direction) { //TODO: remove by old weight, not just decrement
                     case 0 : po.abstain_count--; break;
                     case 1 : po.yes_count--; break;
                     case 2 : po.no_count--; break;
@@ -203,7 +203,50 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t vote, account_name voter) 
     print("\nVote Weight: ", 1); //TODO: update with real weight of vote cast
 }
 
-void ratifyamend::close(uint64_t proposal_id) { // TODO: add calling account?
+void ratifyamend::unvote(uint64_t proposal_id, account_name voter) {
+    voters_table voters(N(trailservice), voter);
+    auto v = voters.find(voter);
+
+    eosio_assert(v != voters.end(), "VoterID Not Found");
+    
+    print("\nVoterID Found");
+    auto vo = *v;
+
+    eosio_assert(vo.receipt_list.size() > 0, "No votes in list to unvote");
+
+    proposals_table proposals(_self, _self);
+    auto p = proposals.find(proposal_id);
+    eosio_assert(p != proposals.end(), "Proposal Not Found");
+    
+    print("\nProposal Found");
+    auto po = *p;
+
+    bool found = false;
+    auto itr = vo.receipt_list.begin();
+
+    for (votereceipt r : vo.receipt_list) {
+        if (r.vote_key == proposal_id) {
+            found = true;
+
+            //TODO: inline action call to trailservice rmvreceipt
+
+            print("\nReceipt Erased");
+
+            break;
+        }
+
+        itr++;
+    }
+
+    eosio_assert(found, "VoteInfo Struct doesn't exist"); //consider changing to itr != vo.votes_list.end()
+
+    if (po.status == 0) {
+        //TODO: remove vote weight from proposal, since its still open
+    }
+
+}
+
+void ratifyamend::close(uint64_t proposal_id) { // TODO: remove voteinfo after closing? YES, only way to decrement votes_list... DO IN UNVOTE
     
     proposals_table proposals(_self, _self);
     auto p = proposals.find(proposal_id);
@@ -215,7 +258,7 @@ void ratifyamend::close(uint64_t proposal_id) { // TODO: add calling account?
     eosio_assert(po.expiration <= now(), "Voting Window Still Open");
     eosio_assert(po.status == 0, "Proposal Already Closed");
 
-    uint64_t total_votes = (po.yes_count + po.no_count + po.abstain_count);
+    uint64_t total_votes = (po.yes_count + po.no_count + po.abstain_count); //total votes cast on proposal
     uint64_t pass_thresh = ((po.yes_count + po.no_count) / 3) * 2; // 66.67% of total votes
 
     //Refund Thresholds. Checked if Proposal Fails
@@ -310,4 +353,4 @@ void ratifyamend::update_thresh() { //NOTE: tentative values
     print("\nEnvironment Thresholds Updated");
 }
 
-EOSIO_ABI( ratifyamend, (insertdoc)(propose)(vote)(close))
+EOSIO_ABI( ratifyamend, (insertdoc)(propose)(vote)(unvote)(close))
