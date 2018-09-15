@@ -40,6 +40,25 @@ const uint32_t blocks_per_hour = 2 * 3600;
 const uint64_t useconds_per_day = 24 * 3600 * uint64_t(1000000);
 const uint64_t useconds_per_year = seconds_per_year * 1000000ll;
 
+bool system_contract::crossed_missed_blocks_threshold(uint32_t amountBlocksMissed) {
+    //6hrs
+    auto timeframe = (_grotations.next_rotation_time.to_time_point() - _grotations.last_rotation_time.to_time_point()).to_seconds();
+    print("\nrotation time to seconds: ", timeframe);
+
+    //get_active_producers returns the number of bytes populated
+    account_name prods[21];
+    uint32_t totalProds = get_active_producers(prods, sizeof(account_name) * 21) / 8;
+    //Total blocks that can be produced in a cycle
+    auto maxBlocksPerCycle = (totalProds - 1) * MAX_BLOCK_PER_CYCLE;
+    //total block that can be produced in the current timeframe
+    auto totalBlocksPerTimeframe = (maxBlocksPerCycle * timeframe) / (maxBlocksPerCycle / 2);
+    //max blocks that can be produced by a single producer in a timeframe
+    auto maxBlocksPerProducer = (totalBlocksPerTimeframe * MAX_BLOCK_PER_CYCLE) / maxBlocksPerCycle;
+    //15% is the max allowed missed blocks per single producer
+    auto thresholdMissedBlocks = maxBlocksPerProducer * 0.15;
+
+    return amountBlocksMissed > thresholdMissedBlocks;
+}
 
 void system_contract::set_producer_block_produced(account_name producer, uint32_t amount) {
   auto pitr = _producers.find(producer);
@@ -51,15 +70,26 @@ void system_contract::set_producer_block_produced(account_name producer, uint32_
 
 void system_contract::set_producer_block_missed(account_name producer, uint32_t amount) {
   auto pitr = _producers.find(producer);
-  if (pitr != _producers.end()) _producers.modify(pitr, 0, [&](auto &p) { p.missed_blocks += amount; });
+  if (pitr != _producers.end() && pitr->active()) {
+    _producers.modify(pitr, 0, [&](auto &p) {
+        p.missed_blocks += amount;
+        if(crossed_missed_blocks_threshhold(p.missed_blocks)) p.deactivate();
+    });
+  }
 }
 
 void system_contract::update_producer_blocks(account_name producer, uint32_t amountBlocksProduced, uint32_t amountBlocksMissed) {
   auto pitr = _producers.find(producer);
-  if (pitr != _producers.end()) _producers.modify(pitr, 0, [&](auto &p) { p.blocks_per_cycle += amountBlocksProduced; p.missed_blocks += amountBlocksMissed;});
+  if (pitr != _producers.end() && pitr->active()) {
+      _producers.modify(pitr, 0, [&](auto &p) { 
+        p.blocks_per_cycle += amountBlocksProduced; 
+        p.missed_blocks += amountBlocksMissed;
+        if(crossed_missed_blocks_threshhold(p.missed_blocks)) p.deactivate();
+      });
+  }
 }
 
-void system_contract::checkMissedBlocks(block_timestamp timestamp, account_name producer) {
+void system_contract::check_missed_blocks(block_timestamp timestamp, account_name producer) {
     if(_grotations.current_bp == 0) _grotations.last_time_block_produced = timestamp;
     else {
         //12 == 6s
@@ -77,13 +107,14 @@ void system_contract::checkMissedBlocks(block_timestamp timestamp, account_name 
             else {
                 auto lastPitr = _producers.find(_grotations.current_bp);
                 if (lastPitr != _producers.end()) {
-                    //get current schedule to identify who are the producers that missed blocks
+                    
                     account_name producers_schedule[21];
                     uint32_t bytes_populated = get_active_producers(producers_schedule, sizeof(account_name)*21);
+                    
                     auto currentProducerIndex = std::distance(producers_schedule, std::find(producers_schedule, producers_schedule + 21, producer));
-
+                    
                     auto totalMissedBlocks = std::fabs(producedTimeDiff - 1 - lastPitr->blocks_per_cycle);
-            
+
                     //last producer didn't miss blocks    
                     if(totalMissedBlocks == 0) {
                         //set zero to last producer blocks_per_cycle 
@@ -100,7 +131,7 @@ void system_contract::checkMissedBlocks(block_timestamp timestamp, account_name 
                                 auto lastProdTotalMissedBlocks = MAX_BLOCK_PER_CYCLE - lastPitr->blocks_per_cycle;
                                 if(lastProdTotalMissedBlocks > 0) set_producer_block_missed(producers_schedule[currentProducerIndex - 1], lastProdTotalMissedBlocks);
                                 
-                                update_producer_blocks(producer, 1, totalCurrentProdMissedBlocks - lastProdTotalMissedBlocks); //set_producer_block_missed(producer, totalCurrentProdMissedBlocks);
+                                update_producer_blocks(producer, 1, totalCurrentProdMissedBlocks - lastProdTotalMissedBlocks);
                             }  else set_producer_block_produced(producer, 1);
                             
                             for(int i = 0; i <= totalProdsMissedBlocks; i++) {
@@ -127,7 +158,6 @@ void system_contract::checkMissedBlocks(block_timestamp timestamp, account_name 
 }
 
 void system_contract::onblock(block_timestamp timestamp, account_name producer) {
- 
     require_auth(N(eosio));
     
     // Until activated stake crosses this threshold no new rewards are paid
@@ -150,10 +180,11 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer) 
         });
     }
 
-    checkMissedBlocks(timestamp, producer);
+    check_missed_blocks(timestamp, producer);
 
     // Only update block producers once every minute, block_timestamp is in half seconds
     if (timestamp.slot - _gstate.last_producer_schedule_update.slot > 120) {
+
         update_elected_producers(timestamp);
 
         // Used in bidding for account names

@@ -109,6 +109,16 @@ namespace eosiosystem {
       vector<eosio::producer_key>::iterator it_sbp = prods.end();
 
       if (_grotations.next_rotation_time <= block_time) {
+        // restart all missed blocks to bps and sbps
+        for (int i = 0; i < prods.size(); i++) {
+          auto pitr = _producers.find(prods[i].producer_name);
+          if (pitr != _producers.end() && pitr->active()) {
+            _producers.modify(pitr, 0, [&](auto &p) { 
+              p.missed_blocks = 0;
+            });  
+          }
+        }
+
         if (totalActiveVotedProds > TOP_PRODUCERS) {
           _grotations.bp_out_index = _grotations.bp_out_index >= TOP_PRODUCERS - 1 ? 0 : _grotations.bp_out_index + 1;
           _grotations.sbp_in_index = _grotations.sbp_in_index >= totalActiveVotedProds - 1 ? TOP_PRODUCERS : _grotations.sbp_in_index + 1;
@@ -220,9 +230,9 @@ namespace eosiosystem {
         else top_producers.resize(prods.size());
       }
 
-      if ( top_producers.size() < _gstate.last_producer_schedule_size ) {
-         return;
-      }
+      // if ( top_producers.size() < _gstate.last_producer_schedule_size ) {
+      //    return;
+      // }
 
       // sort by producer name
       std::sort( top_producers.begin(), top_producers.end() );

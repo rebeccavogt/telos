@@ -271,13 +271,16 @@ namespace eosiosystem {
 
          bool is_in_range(int32_t index, int32_t low_bound, int32_t up_bound);
 
-         void checkMissedBlocks(block_timestamp timestamp, account_name producer);
+         void check_missed_blocks(block_timestamp timestamp, account_name producer);
 
          void set_producer_block_produced(account_name producer, uint32_t amount);
 
          void set_producer_block_missed(account_name producer, uint32_t amount);
 
          void update_producer_blocks(account_name producer, uint32_t amountBlocksProduced, uint32_t amountBlocksMissed);
+
+         bool crossed_missed_blocks_threshold(uint32_t amountBlocksMissed);
+         
    };
 
 } /// eosiosystem
