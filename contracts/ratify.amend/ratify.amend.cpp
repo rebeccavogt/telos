@@ -88,7 +88,7 @@ void ratifyamend::propose(string title, string ipfs_url, uint64_t document_id, u
         a.status = 0;
     });
 
-    print("\nProposal Emplaced");
+    print("\nProposal Emplacement: SUCCESS");
     print("\nProposal ID: ", prop_id);
 }
 
@@ -202,27 +202,30 @@ void ratifyamend::unvote(uint64_t proposal_id, account_name voter) {
     eosio_assert(v != voters.end(), "VoterID Not Found");
     
     print("\nVoterID Found");
-    auto vo = *v;
+    auto vid = *v;
 
-    eosio_assert(vo.receipt_list.size() > 0, "No votes in list to unvote");
+    eosio_assert(vid.receipt_list.size() > 0, "No votes in list to unvote");
 
     proposals_table proposals(_self, _self);
     auto p = proposals.find(proposal_id);
     eosio_assert(p != proposals.end(), "Proposal Not Found");
     
     print("\nProposal Found");
-    auto po = *p;
+    auto prop = *p;
 
-    bool found = false;
-    auto itr = vo.receipt_list.begin();
+    auto itr = vid.receipt_list.begin();
+    int64_t weight = 0;
+    uint16_t direction;
 
-    for (votereceipt r : vo.receipt_list) {
+    for (votereceipt r : vid.receipt_list) {
         if (r.vote_key == proposal_id) {
-            found = true;
 
             //TODO: inline action call to trailservice rmvreceipt
 
-            print("\nReceipt Erased");
+            weight = r.weight;
+            direction = r.direction;
+
+            print("\nReceipt removed");
 
             break;
         }
@@ -230,12 +233,29 @@ void ratifyamend::unvote(uint64_t proposal_id, account_name voter) {
         itr++;
     }
 
-    eosio_assert(found, "VoteInfo Struct doesn't exist"); //consider changing to itr != vo.votes_list.end()
+    eosio_assert(itr != vid.receipt_list.end(), "Receipt doesn't exist");
 
-    if (po.status == 0) {
-        //TODO: remove vote weight from proposal, since its still open
+    if (prop.status == 0) {
+
+        switch (direction) {
+            case 0 : prop.no_count = (prop.no_count - uint64_t(weight)); break;
+            case 1 : prop.yes_count = (prop.yes_count - uint64_t(weight)); break;
+            case 2 : prop.abstain_count = (prop.abstain_count - uint64_t(weight)); break;
+        }
+
+        proposals.modify(p, 0, [&]( auto& a ) {
+            a.no_count = prop.no_count;
+            a.yes_count = prop.yes_count;
+            a.abstain_count = prop.abstain_count;
+        });
     }
 
+    action(permission_level{ voter, N(active) }, N(trailservice), N(rmvreceipt), make_tuple(
+    	_self,      
+    	_self,
+    	prop.id,
+        voter
+	)).send();
 }
 
 void ratifyamend::close(uint64_t proposal_id) { // TODO: remove votereceipt after closing? YES, only way to decrement votes_list... DO IN UNVOTE
@@ -273,7 +293,7 @@ void ratifyamend::close(uint64_t proposal_id) { // TODO: remove votereceipt afte
                 a.status = 1;
             });
 
-            action(permission_level{ _self, N(active) }, N(eosio.token), N(transfer), make_tuple( //NOTE: susceptible to ram-drain bug
+            action(permission_level{ _self, N(eosio.code) }, N(eosio.token), N(transfer), make_tuple( //NOTE: susceptible to ram-drain bug
     	        N(trailservice),
                 po.proposer,
                 asset(int64_t(1000000), S(4, TLOS)),
@@ -295,7 +315,7 @@ void ratifyamend::close(uint64_t proposal_id) { // TODO: remove votereceipt afte
             if (po.yes_count >= p_refund_thresh && total_votes >= q_refund_thresh) {
                 print("\nRefund Threshold Reached...Refunding Fee");
 
-                action(permission_level{ _self, N(active) }, N(eosio.token), N(transfer), make_tuple( //NOTE: susceptible to ram-drain bug
+                action(permission_level{ _self, N(eosio.code) }, N(eosio.token), N(transfer), make_tuple( //NOTE: susceptible to ram-drain bug
     	            N(trailservice),
                     po.proposer,
                     asset(int64_t(1000000), S(4, TLOS)),
@@ -306,8 +326,6 @@ void ratifyamend::close(uint64_t proposal_id) { // TODO: remove votereceipt afte
             }
         }
     } else {
-
-        print("\nFailed Quorum Check");
         
         proposals.modify(p, 0, [&]( auto& a ) {
             a.status = 2;
@@ -315,10 +333,10 @@ void ratifyamend::close(uint64_t proposal_id) { // TODO: remove votereceipt afte
 
         print("\nProposal Failed Due To Insufficient Quorum");
 
-        if (po.yes_count >= p_refund_thresh && total_votes >= q_refund_thresh) {
+        if (po.yes_count >= p_refund_thresh && total_votes >= q_refund_thresh && p_refund_thresh > 0 && q_refund_thresh > 0) {
             print("\nRefund Threshold Reached...Refunding Fee");
 
-            action(permission_level{ _self, N(active) }, N(eosio.token), N(transfer), make_tuple( //NOTE: susceptible to ram-drain bug
+            action(permission_level{ _self, N(eosio.code) }, N(eosio.token), N(transfer), make_tuple( //NOTE: susceptible to ram-drain bug
     	        N(trailservice),
                 po.proposer,
                 asset(int64_t(1000000), S(4, TLOS)),
