@@ -477,7 +477,7 @@ void producer_plugin::set_program_options(
           "   KEY:<data>      \tis a string form of a valid EOSIO private key which maps to the provided public key\n\n"
           "   TKEOSD:<data>    \tis the URL where keosd is available and the approptiate wallet(s) are unlocked")
          ("tkeosd-provider-timeout", boost::program_options::value<int32_t>()->default_value(5),
-          "Limits the maximum time (in milliseconds) that is allowd for sending blocks to a keosd provider for signing")
+          "Limits the maximum time (in milliseconds) that is allowd for sending blocks to a tkeosd provider for signing")
          ("greylist-account", boost::program_options::value<vector<string>>()->composing()->multitoken(),
           "account that can not access to extended CPU/NET virtual resources")
          ("produce-time-offset-us", boost::program_options::value<int32_t>()->default_value(0),

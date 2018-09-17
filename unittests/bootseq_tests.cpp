@@ -1,3 +1,4 @@
+#include <typeinfo>
 #include <boost/test/unit_test.hpp>
 #include <eosio/testing/tester.hpp>
 #include <eosio/chain/abi_serializer.hpp>
@@ -77,6 +78,7 @@ struct genesis_account {
    uint64_t     initial_balance;
 };
 
+// Updated voter weights based on https://docs.google.com/document/d/1K8w_Kd8Vmk_L0tAK56ETfAWlqgLo7r7Ae3JX25A5zVk/edit?usp=sharing
 std::vector<genesis_account> test_genesis( {
   {N(voter2),    voter2_balance},
   {N(voter3),    voter3_balance},
@@ -254,6 +256,7 @@ BOOST_FIXTURE_TEST_CASE( bootseq_test, bootseq_tester ) {
         auto actual = get_balance(config::system_account_name);
         BOOST_REQUIRE_EQUAL(initial_supply, actual);
 
+
         // Create genesis accounts
         for( const auto& a : test_genesis ) {
            create_account( a.aname, config::system_account_name );
@@ -312,6 +315,7 @@ BOOST_FIXTURE_TEST_CASE( bootseq_test, bootseq_tester ) {
         // No producers will be set, since the total activated stake is less than min_activated_stake
         produce_blocks_for_n_rounds(2); // 2 rounds since new producer schedule is set when the first block of next round is irreversible
         auto active_schedule = control->head_block_state()->active_schedule;
+
         BOOST_TEST(active_schedule.producers.size() == 1);
         BOOST_TEST(active_schedule.producers.front().producer_name == "eosio");
 
@@ -357,12 +361,26 @@ BOOST_FIXTURE_TEST_CASE( bootseq_test, bootseq_tester ) {
 
         // Spend some time so the producer pay pool is filled by the inflation rate
         produce_min_num_of_blocks_to_spend_time_wo_inactive_prod(fc::seconds(seconds_per_30days)); // 30 days
-
-        // Since the total activated stake is larger than min_activated_stake, pool should be filled reward should be bigger than zero
+        // Since the total activated stake is larger than 28,570,987.35, pool should be filled reward should be bigger than zero
         claim_rewards(N(runnerup1));
         BOOST_TEST(get_balance(N(runnerup1)).get_amount() > 0);
 
-        // TODO: Add more to this test
+        const auto first_june_2018 = fc::seconds(1527811200); // 2018-06-01
+        const auto first_june_2028 = fc::seconds(1843430400); // 2028-06-01
+        // Ensure that now is yet 10 years after 2018-06-01 yet
+        BOOST_REQUIRE(control->head_block_time().time_since_epoch() < first_june_2028);
+
+        // This should thrown an error, since block one can only unstake all his stake after 10 years
+        BOOST_REQUIRE_THROW(undelegate_bandwidth(N(b1), N(b1), core_from_string("9523567.2134"), core_from_string("9523567.2134")), eosio_assert_message_exception);
+        // Skip 10 years
+        produce_block(first_june_2028 - control->head_block_time().time_since_epoch());
+        // Block one should be able to unstake all his stake now
+        undelegate_bandwidth(N(b1), N(b1), core_from_string("9523567.2134"), core_from_string("9523567.2134"));
+
+        return;
+        produce_blocks(7000); /// produce blocks until virutal bandwidth can acomadate a small user
+        wlog("minow" );
+        votepro( N(minow1), {N(p1), N(p2)} );
     } FC_LOG_AND_RETHROW()
 }
 

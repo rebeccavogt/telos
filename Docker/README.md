@@ -182,15 +182,9 @@ Note: if you want to use the mongo db plugin, you have to enable it in your `dat
 ```
 # create volume
 docker volume create --name=nodeos-data-volume
-<<<<<<< HEAD
-docker volume create --name=keosd-data-volume
+docker volume create --name=tkeosd-data-volume
 # pull images and start containers
 docker-compose -f docker-compose-eosio-latest.yaml up -d
-=======
-docker volume create --name=tkeosd-data-volume
-# start containers
-docker-compose -f docker-compose-eosio1.0.yaml up -d
->>>>>>> 7fd6d8b597451309d7fab478433c6d1444b70131
 # get chain info
 curl http://127.0.0.1:8888/v1/chain/get_info
 # get logs
