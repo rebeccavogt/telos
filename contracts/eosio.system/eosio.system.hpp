@@ -75,6 +75,7 @@ namespace eosiosystem {
       std::string           url;
       uint32_t              unpaid_blocks = 0;
       uint32_t              missed_blocks = 0;
+      uint32_t              blocks_per_cycle = 0;
       uint64_t              last_claim_time = 0;
       uint16_t              location = 0;
 
@@ -85,7 +86,7 @@ namespace eosiosystem {
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
       EOSLIB_SERIALIZE( producer_info, (owner)(total_votes)(producer_key)(is_active)(url)
-                        (unpaid_blocks)(missed_blocks)(last_claim_time)(location) )
+                        (unpaid_blocks)(missed_blocks)(blocks_per_cycle)(last_claim_time)(location) )
    };
 
    struct rotation_info {
@@ -95,6 +96,11 @@ namespace eosiosystem {
       uint32_t               sbp_in_index;
       block_timestamp        next_rotation_time;
       block_timestamp        last_rotation_time;
+      account_name           current_bp; 
+      block_timestamp        last_time_block_produced;
+
+      EOSLIB_SERIALIZE( rotation_info, (bp_currently_out)(sbp_currently_in)(bp_out_index)(sbp_in_index)(next_rotation_time)
+                        (last_rotation_time)(current_bp)(last_time_block_produced) )
    };
 
    struct voter_info {
@@ -268,8 +274,16 @@ namespace eosiosystem {
 
          bool is_in_range(int32_t index, int32_t low_bound, int32_t up_bound);
 
-         
+         void check_missed_blocks(block_timestamp timestamp, account_name producer);
 
+         void set_producer_block_produced(account_name producer, uint32_t amount);
+
+         void set_producer_block_missed(account_name producer, uint32_t amount);
+
+         void update_producer_blocks(account_name producer, uint32_t amountBlocksProduced, uint32_t amountBlocksMissed);
+
+         bool crossed_missed_blocks_threshold(uint32_t amountBlocksMissed);
+         
    };
 
 } /// eosiosystem
