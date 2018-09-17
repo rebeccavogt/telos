@@ -1,3 +1,14 @@
+/**
+ * The ratify/amend contract is used to submit proposals for ratifying and amending major documents in the Telos Network. Users register their
+ * account through the Trail Service, where they will be issued a VoterID card that tracks and stores their vote participation. Once registered,
+ * users can then cast votes equal to their weight of liquid TLOS on proposals to update individual clauses within a document. Submitting a 
+ * proposal requires a deposit of 100.0000 TLOS. Deposit will be refunded if proposal reaches a minimum threshold of participation and acceptance
+ * by registered voters (even if the proposal itself fails to pass).
+ * 
+ * @author Craig Branscom
+ * @copyright defined in telos/LICENSE.txt
+ */
+
 #include <../trail.service/trail.connections/trailconn.voting.hpp> //Import trailservice voting data definitions
 
 #include <eosiolib/eosio.hpp>
@@ -13,38 +24,44 @@ using namespace eosio;
 class ratifyamend : public contract {
     public:
 
-        /**
-         * Constructor
-        */
         ratifyamend(account_name self);
 
-        /**
-         * Destructor
-        */
         ~ratifyamend();
 
         /**
          * Creates a new document and inserts it into the documents table.
+         * @param title - string representation of document title
+         * @param clauses - vector of strings representing ipfs urls to the text of each clause
         */
         void insertdoc(string title, vector<string> clauses);
 
         /**
-         * Creates a new proposal and inserts it into the proposals table.
+         * Creates a new proposal and inserts it into the proposals table. Overwrites an existing clause.
+         * @param title - string representation of proposal title
+         * @param ipfs_url - ipfs url of proposal text
+         * @param document_id - id of document being edited
+         * @param clause_id - id of clause in document to overwrite
+         * @param proposer - account name submitting proposal
         */
         void propose(string title, string ipfs_url, uint64_t document_id, uint64_t clause_id, account_name proposer);
 
         /**
          * Casts a vote in a certain direction on a proposal, by the weight of the voter's tlos tokens.
+         * @param proposal_id - id of proposal to vote on
+         * @param vote - direction of vote (0 = NO, 1 = YES, 2 = ABSTAIN)
         */
         void vote(uint64_t proposal_id, uint16_t vote, account_name voter);
 
         /**
          * Removes a vote from the proposal matching the given proposal id.
+         * @param proposal_id - id of proposal from which to rescinf vote
+         * @param voter - account name that cast vote being removed
         */
         void unvote(uint64_t proposal_id, account_name voter);
 
         /**
          * Closes a proposal and declares a PASS or FAIL if its past its expiration, and not already closed.
+         * @param proposal_id - proposal to close
         */
         void close(uint64_t proposal_id);
 
@@ -97,38 +114,4 @@ class ratifyamend : public contract {
     typedef singleton<N(threshold), threshold> threshold_singleton;
     threshold_singleton thresh_singleton;
     threshold thresh_struct;
-
-    //---------------------Definitions from trailservice---------------------
-
-    /**
-    struct voteinfo {
-        uint64_t vote_code; // code of contract receiving vote
-        uint64_t vote_scope; // scope of contract receiving vote
-        uint64_t vote_key; // key to retrieve voted object
-        uint16_t direction; // 0 = abstain, 1 = yes, 2 = no TODO: use enum? 
-        uint64_t weight; // weight of votes applied
-    };
-
-    struct voterid {
-        account_name voter;
-        vector<voteinfo> votes_list;
-        uint64_t tlos_weight;
-
-        uint64_t primary_key() const { return voter; }
-        EOSLIB_SERIALIZE(voterid, (voter)(votes_list)(tlos_weight))
-    };
-
-    struct environment {
-        account_name publisher;
-
-        uint64_t total_tokens;
-        uint64_t total_voters;
-
-        uint64_t primary_key() const { return publisher; }
-        EOSLIB_SERIALIZE(environment, (publisher)(total_tokens)(total_voters))
-    };
-
-    typedef multi_index<N(voters), voterid> voters_table;
-    typedef singleton<N(environment), environment> environment_singleton;
-    */
 };

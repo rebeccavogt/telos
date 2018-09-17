@@ -1,6 +1,5 @@
 #include "ratify.amend.hpp"
 
-//#include <eosiolib/eosio.hpp>
 #include <eosiolib/print.hpp>
 
 ratifyamend::ratifyamend(account_name self) : contract(self), thresh_singleton(self, self) {
@@ -117,7 +116,7 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
 
         print("\nVoteInfo Stack Empty...Calling TrailService to update VoterID");
 
-        action(permission_level{ voter, N(active) }, N(trailservice), N(addreceipt), make_tuple( //TODO: likely wrong authority...
+        action(permission_level{ voter, N(active) }, N(trailservice), N(addreceipt), make_tuple(
     	    _self,      
     	    _self,
     	    prop.id,
@@ -219,9 +218,6 @@ void ratifyamend::unvote(uint64_t proposal_id, account_name voter) {
 
     for (votereceipt r : vid.receipt_list) {
         if (r.vote_key == proposal_id) {
-
-            //TODO: inline action call to trailservice rmvreceipt
-
             weight = r.weight;
             direction = r.direction;
 
@@ -273,7 +269,7 @@ void ratifyamend::close(uint64_t proposal_id) {
     uint64_t total_votes = (po.yes_count + po.no_count + po.abstain_count); //total votes cast on proposal
     uint64_t pass_thresh = ((po.yes_count + po.no_count) / 3) * 2; // 66.67% of total votes
 
-    //Refund Thresholds. Checked if Proposal Fails
+    //refund thresholds
     uint64_t q_refund_thresh = thresh_struct.total_voters / 25; //4% of all voters //NOTE: moving window, consider saving total voters at proposal time?
     uint64_t p_refund_thresh = total_votes / 4; //25% of votes
 
