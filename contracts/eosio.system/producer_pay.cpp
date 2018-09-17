@@ -106,6 +106,11 @@ void system_contract::recalculate_votes(){
     if (_gstate.total_producer_vote_weight <= -0.1){ // -0.1 threshold for floating point calc ?
         _gstate.total_producer_vote_weight = 0;
         _gstate.total_activated_stake = 0;
+        for(auto producer = _producers.begin(); producer != _producers.end(); ++producer){
+            _producers.modify(producer, 0, [&](auto &p) {
+                p.total_votes = 0;
+            });
+        }
         boost::container::flat_map<account_name, bool> processed_proxies;
         for (auto voter = _voters.begin(); voter != _voters.end(); ++voter) {
             if(voter->proxy && !processed_proxies[voter->proxy]){
