@@ -107,24 +107,25 @@ void system_contract::recalculate_votes(){
         _gstate.total_producer_vote_weight = 0;
         _gstate.total_activated_stake = 0;
         boost::container::flat_map<account_name, bool> processed_proxies;
-        for(const auto &voter : _voters){
-            if(voter.proxy && !processed_proxies[voter.proxy]){
-                auto proxy = _voters.find(voter.proxy);
+        for (auto voter = _voters.begin(); voter != _voters.end(); ++voter) {
+            if(voter->proxy && !processed_proxies[voter->proxy]){
+                auto proxy = _voters.find(voter->proxy);
                 _voters.modify( proxy, 0, [&]( auto& av ) {
                     av.last_vote_weight = 0;
                     av.last_stake = 0;
                     av.proxied_vote_weight = 0;
                 });
-                processed_proxies[voter.proxy] = true;
+                processed_proxies[voter->proxy] = true;
             }
-            if(!voter.is_proxy || !processed_proxies[voter.owner]){
+            if(!voter->is_proxy || !processed_proxies[voter->owner]){
                 _voters.modify( voter, 0, [&]( auto& av ) {
                     av.last_vote_weight = 0;
                     av.last_stake = 0;
                     av.proxied_vote_weight = 0;
                 });
+                processed_proxies[voter->owner] = true;
             }
-            update_votes(voter.owner, voter.proxy, voter.producers, true);
+            update_votes(voter->owner, voter->proxy, voter->producers, true);
         }
     }
 }
