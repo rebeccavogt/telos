@@ -276,7 +276,6 @@ void ratifyamend::close(uint64_t proposal_id) {
     print("\npass_thresh: ", pass_thresh);
     print("\nnow: ", now());
 
-
     if (total_votes >= thresh_struct.quorum_threshold && total_votes != uint64_t(0)) {
 
         print("\nPassed Quorum Check");
