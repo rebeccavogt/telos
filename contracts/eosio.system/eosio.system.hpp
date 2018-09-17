@@ -108,6 +108,7 @@ namespace eosiosystem {
       account_name                proxy = 0; /// the proxy set by the voter, if any
       std::vector<account_name>   producers; /// the producers approved by this voter if no proxy set
       int64_t                     staked = 0;
+      int64_t                 last_stake = 0;
 
       /**
        *  Every time a vote is cast we must first "undo" the last vote weight, before casting the
@@ -131,7 +132,7 @@ namespace eosiosystem {
       uint64_t primary_key()const { return owner; }
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
-      EOSLIB_SERIALIZE( voter_info, (owner)(proxy)(producers)(staked)(last_vote_weight)(proxied_vote_weight)(is_proxy)(reserved1)(reserved2)(reserved3) )
+      EOSLIB_SERIALIZE( voter_info, (owner)(proxy)(producers)(staked)(last_stake)(last_vote_weight)(proxied_vote_weight)(is_proxy)(reserved1)(reserved2)(reserved3) )
    };
 
    typedef eosio::multi_index< N(voters), voter_info>  voters_table;
@@ -243,6 +244,8 @@ namespace eosiosystem {
         
       private:
          
+         void recalculate_votes();
+
          void updateRotationTime(block_timestamp block_time);
 
          void setBPsRotation(account_name bpOut, account_name sbpIn);
