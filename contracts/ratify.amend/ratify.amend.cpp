@@ -139,9 +139,9 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
                 found = true;
 
                 switch (r.direction) {
-                    case 0 : prop.no_count - uint64_t(r.weight); break;
-                    case 1 : prop.yes_count - uint64_t(r.weight); break;
-                    case 2 : prop.abstain_count - uint64_t(r.weight); break;
+                    case 0 : prop.no_count = (prop.no_count - uint64_t(r.weight)); break;
+                    case 1 : prop.yes_count = (prop.yes_count - uint64_t(r.weight)); break;
+                    case 2 : prop.abstain_count = (prop.abstain_count - uint64_t(r.weight)); break;
                 }
 
                 print("\nCalling TrailService to update VoterID...");
@@ -176,12 +176,12 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
     }
 
     string vote_type;
+    int64_t new_weight = get_liquid_tlos(voter);
 
-    //TODO: increase by new vote weight, not just increment
     switch (direction) {
-        case 0 : prop.no_count++; vote_type = "NO"; break;
-        case 1 : prop.yes_count++; vote_type = "YES"; break;
-        case 2 : prop.abstain_count++; vote_type = "ABSTAIN"; break;
+        case 0 : prop.no_count = (prop.no_count + uint64_t(new_weight)); vote_type = "NO"; break;
+        case 1 : prop.yes_count = (prop.yes_count + uint64_t(new_weight)); vote_type = "YES"; break;
+        case 2 : prop.abstain_count = (prop.abstain_count + uint64_t(new_weight)); vote_type = "ABSTAIN"; break;
     }
 
     proposals.modify(p, 0, [&]( auto& a ) {
@@ -192,7 +192,7 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
 
     print("\n\nVote: SUCCESSFUL");
     print("\nYour Vote: ", vote_type);
-    //print("\nVote Weight: ", ; //TODO: update with real weight of vote cast
+    print("\nVote Weight: ", new_weight);
 }
 
 void ratifyamend::unvote(uint64_t proposal_id, account_name voter) {
