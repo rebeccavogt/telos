@@ -1,3 +1,5 @@
+#include <../trail.service/trail.connections/trailconn.voting.hpp> //Import trailservice voting data definitions
+
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/permission.hpp>
 #include <eosiolib/asset.hpp>
@@ -5,27 +7,45 @@
 #include <eosiolib/types.hpp>
 #include <eosiolib/singleton.hpp>
 
-#include <../trail.service/trail.connections/trailconn.voting.hpp>
-
 using namespace std;
 using namespace eosio;
 
 class ratifyamend : public contract {
     public:
 
+        /**
+         * Constructor
+        */
         ratifyamend(account_name self);
 
+        /**
+         * Destructor
+        */
         ~ratifyamend();
 
-        // ABI Actions
+        /**
+         * Creates a new document and inserts it into the documents table.
+        */
         void insertdoc(string title, vector<string> clauses);
 
+        /**
+         * Creates a new proposal and inserts it into the proposals table.
+        */
         void propose(string title, string ipfs_url, uint64_t document_id, uint64_t clause_id, account_name proposer);
 
+        /**
+         * Casts a vote in a certain direction on a proposal, by the weight of the voter's tlos tokens.
+        */
         void vote(uint64_t proposal_id, uint16_t vote, account_name voter);
 
+        /**
+         * Removes a vote from the proposal matching the given proposal id.
+        */
         void unvote(uint64_t proposal_id, account_name voter);
 
+        /**
+         * Closes a proposal and declares a PASS or FAIL if its past its expiration, and not already closed.
+        */
         void close(uint64_t proposal_id);
 
     protected:
@@ -43,7 +63,7 @@ class ratifyamend : public contract {
         };
 
         /// @abi table proposals i64
-        struct proposal { //TODO: implement expiration
+        struct proposal {
             uint64_t id;
             uint64_t document_id;
             uint64_t clause_id;
@@ -75,7 +95,7 @@ class ratifyamend : public contract {
     typedef multi_index<N(proposals), proposal> proposals_table;
 
     typedef singleton<N(threshold), threshold> threshold_singleton;
-    threshold_singleton thresh;
+    threshold_singleton thresh_singleton;
     threshold thresh_struct;
 
     //---------------------Definitions from trailservice---------------------

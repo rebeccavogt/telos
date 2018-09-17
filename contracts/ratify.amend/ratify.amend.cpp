@@ -1,30 +1,30 @@
 #include "ratify.amend.hpp"
 
-#include <eosiolib/eosio.hpp>
+//#include <eosiolib/eosio.hpp>
 #include <eosiolib/print.hpp>
 
-ratifyamend::ratifyamend(account_name self) : contract(self), thresh(self, self) {
-    if (!thresh.exists()) {
+ratifyamend::ratifyamend(account_name self) : contract(self), thresh_singleton(self, self) {
+    if (!thresh_singleton.exists()) {
 
         thresh_struct = threshold{
             _self, //publisher
             0, //total_voters
             0, //initial quorum_threshold
-            300 //expiration_length in seconds (5,000,000 default = ~58 days)
+            300 //expiration_length in seconds (default is 5,000,000 or ~58 days)
         };
 
-        thresh.set(thresh_struct, _self);
+        thresh_singleton.set(thresh_struct, _self);
     } else {
 
-        thresh_struct = thresh.get();     
+        thresh_struct = thresh_singleton.get();     
         update_thresh();
-        thresh.set(thresh_struct, _self);
+        thresh_singleton.set(thresh_struct, _self);
     }
 }
 
 ratifyamend::~ratifyamend() {
-    if (thresh.exists()) {
-        thresh.set(thresh_struct, _self);
+    if (thresh_singleton.exists()) {
+        thresh_singleton.set(thresh_struct, _self);
     }
 }
 
@@ -41,8 +41,8 @@ void ratifyamend::insertdoc(string title, vector<string> clauses) {
         a.clauses = clauses;
     });
 
-    print("\nDocument Emplaced");
-    print("\nDocument ID: ", doc_id);
+    print("\nDocument Insertion: SUCCESS");
+    print("\nAssigned Document ID: ", doc_id);
 }
 
 void ratifyamend::propose(string title, string ipfs_url, uint64_t document_id, uint64_t clause_id, account_name proposer) {
@@ -92,9 +92,9 @@ void ratifyamend::propose(string title, string ipfs_url, uint64_t document_id, u
     print("\nProposal ID: ", prop_id);
 }
 
-void ratifyamend::vote(uint64_t proposal_id, uint16_t vote, account_name voter) {
+void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name voter) {
     require_auth(voter);
-    eosio_assert(vote >= 0 && vote <= 2, "Invalid Vote. [0 = ABSTAIN, 1 = YES, 2 = NO]");
+    eosio_assert(direction >= 0 && direction <= 2, "Invalid Vote. [0 = NO, 1 = YES, 2 = ABSTAIN]");
 
     voters_table voters(N(trailservice), voter);
     auto v = voters.find(voter);
@@ -102,27 +102,26 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t vote, account_name voter) 
     eosio_assert(v != voters.end(), "VoterID Not Found");
     
     print("\nVoterID Found");
-    auto vo = *v;
+    auto vid = *v;
 
     proposals_table proposals(_self, _self);
     auto p = proposals.find(proposal_id);
     eosio_assert(p != proposals.end(), "Proposal Not Found");
     
     print("\nProposal Found");
-    auto po = *p;
+    auto prop = *p;
 
-    eosio_assert(po.expiration > now(), "Proposal Has Expired");
+    eosio_assert(prop.expiration > now(), "Proposal Has Expired");
 
-    if (vo.receipt_list.empty()) {
+    if (vid.receipt_list.empty()) {
 
         print("\nVoteInfo Stack Empty...Calling TrailService to update VoterID");
 
         action(permission_level{ voter, N(active) }, N(trailservice), N(addreceipt), make_tuple( //TODO: likely wrong authority...
     	    _self,      
     	    _self,
-    	    po.id,
-            vote,
-            uint64_t(1),
+    	    prop.id,
+            direction,
             voter
 	    )).send();
 
@@ -133,16 +132,16 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t vote, account_name voter) 
 
         bool found = false;
 
-        for (votereceipt r : vo.receipt_list) {
+        for (votereceipt r : vid.receipt_list) {
             if (r.vote_key == proposal_id) {
 
                 print("\nVoteInfo receipt found");
                 found = true;
 
-                switch (r.direction) { //TODO: remove by old weight, not just decrement
-                    case 0 : po.abstain_count--; break;
-                    case 1 : po.yes_count--; break;
-                    case 2 : po.no_count--; break;
+                switch (r.direction) {
+                    case 0 : prop.no_count - uint64_t(r.weight); break;
+                    case 1 : prop.yes_count - uint64_t(r.weight); break;
+                    case 2 : prop.abstain_count - uint64_t(r.weight); break;
                 }
 
                 print("\nCalling TrailService to update VoterID...");
@@ -150,15 +149,14 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t vote, account_name voter) 
                 action(permission_level{ voter, N(active) }, N(trailservice), N(addreceipt), make_tuple(
     	            _self,      
     	            _self,
-    	            po.id,
-                    vote,
-                    uint64_t(1),
+    	            prop.id,
+                    direction,
                     voter
 	            )).send();
 
                 print("\nVoterID Successfully Updated");
 
-                break; //necessary? may help reduce computation
+                break;
             }
         }
 
@@ -168,9 +166,8 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t vote, account_name voter) 
             action(permission_level{ voter, N(active) }, N(trailservice), N(addreceipt), make_tuple(
     	        _self,      
     	        _self,
-    	        po.id,
-                vote,
-                uint64_t(1),
+    	        prop.id,
+                direction,
                 voter
 	        )).send();
 
@@ -178,29 +175,24 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t vote, account_name voter) 
         }
     }
 
+    string vote_type;
+
     //TODO: increase by new vote weight, not just increment
-    switch (vote) {
-        case 0 : po.abstain_count++; break;
-        case 1 : po.yes_count++; break;
-        case 2 : po.no_count++; break;
+    switch (direction) {
+        case 0 : prop.no_count++; vote_type = "NO"; break;
+        case 1 : prop.yes_count++; vote_type = "YES"; break;
+        case 2 : prop.abstain_count++; vote_type = "ABSTAIN"; break;
     }
 
     proposals.modify(p, 0, [&]( auto& a ) {
-        a.abstain_count = po.abstain_count;
-        a.yes_count = po.yes_count;
-        a.no_count = po.no_count;
+        a.no_count = prop.no_count;
+        a.yes_count = prop.yes_count;
+        a.abstain_count = prop.abstain_count;
     });
 
-    string vote_type;
-    switch (vote) {
-        case 0 : vote_type = "ABSTAIN"; break;
-        case 1 : vote_type = "YES"; break;
-        case 2 : vote_type = "NO"; break;
-    }
-
-    print("\n\nVOTE SUCCESSFUL");
+    print("\n\nVote: SUCCESSFUL");
     print("\nYour Vote: ", vote_type);
-    print("\nVote Weight: ", 1); //TODO: update with real weight of vote cast
+    //print("\nVote Weight: ", ; //TODO: update with real weight of vote cast
 }
 
 void ratifyamend::unvote(uint64_t proposal_id, account_name voter) {
@@ -246,7 +238,7 @@ void ratifyamend::unvote(uint64_t proposal_id, account_name voter) {
 
 }
 
-void ratifyamend::close(uint64_t proposal_id) { // TODO: remove voteinfo after closing? YES, only way to decrement votes_list... DO IN UNVOTE
+void ratifyamend::close(uint64_t proposal_id) { // TODO: remove votereceipt after closing? YES, only way to decrement votes_list... DO IN UNVOTE
     
     proposals_table proposals(_self, _self);
     auto p = proposals.find(proposal_id);
@@ -350,7 +342,7 @@ void ratifyamend::update_thresh() { //NOTE: tentative values
     thresh_struct.quorum_threshold = new_quorum;
     thresh_struct.total_voters = new_total_voters;
 
-    print("\nEnvironment Thresholds Updated");
+    print("\nEnvironment Thresholds updated");
 }
 
 EOSIO_ABI( ratifyamend, (insertdoc)(propose)(vote)(unvote)(close))
