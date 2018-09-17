@@ -258,7 +258,7 @@ void ratifyamend::unvote(uint64_t proposal_id, account_name voter) {
 	)).send();
 }
 
-void ratifyamend::close(uint64_t proposal_id) { // TODO: remove votereceipt after closing? YES, only way to decrement votes_list... DO IN UNVOTE
+void ratifyamend::close(uint64_t proposal_id) {
     
     proposals_table proposals(_self, _self);
     auto p = proposals.find(proposal_id);
@@ -349,9 +349,9 @@ void ratifyamend::close(uint64_t proposal_id) { // TODO: remove votereceipt afte
     
 }
 
-void ratifyamend::update_thresh() { //NOTE: tentative values
+void ratifyamend::update_thresh() {
 
-    environment_singleton env(N(trailservice), N(trailservice)); //TODO: change code to trailservice account
+    environment_singleton env(N(trailservice), N(trailservice));
     environment e = env.get();
 
     uint64_t new_quorum = e.total_voters / 4; //25% of all registered voters
