@@ -14,18 +14,19 @@
 namespace eosiosystem
 {
 using namespace eosio;
+
 /**
-    * TELOS CHANGES:
-    *
-    * 1. Updated continuous_rate (inflation rate) to 2.5% --- DONE
-    * 2. Added producer_rate constant for BP/Standby payout --- DONE
-    * 3. Updated min_activated_stake to reflect TELOS 15% activation threshold --- DONE
-    * 4. Added worker_proposal_rate constant for Worker Proposal Fund --- DONE
-    * 5. Added min_unpaid_blocks_threshold constant for producer payout qualification --- DONE
-    *
-    * NOTE: A full breakdown of the calculated token supply and 15% activation threshold
-    * can be found at: https://docs.google.com/document/d/1K8w_Kd8Vmk_L0tAK56ETfAWlqgLo7r7Ae3JX25A5zVk/edit?usp=sharing
-    */
+* TELOS CHANGES:
+*
+* 1. Updated continuous_rate (inflation rate) to 2.5% --- DONE
+* 2. Added producer_rate constant for BP/Standby payout --- DONE
+* 3. Updated min_activated_stake to reflect TELOS 15% activation threshold --- DONE
+* 4. Added worker_proposal_rate constant for Worker Proposal Fund --- DONE
+* 5. Added min_unpaid_blocks_threshold constant for producer payout qualification --- DONE
+*
+* NOTE: A full breakdown of the calculated token supply and 15% activation threshold
+* can be found at: https://docs.google.com/document/d/1K8w_Kd8Vmk_L0tAK56ETfAWlqgLo7r7Ae3JX25A5zVk/edit?usp=sharing
+*/
 const int64_t min_activated_stake = 28'570'987'3500; // calculated from max TLOS supply of 190,473,249 (fluctuating value until mainnet activation)
 const double continuous_rate = 0.025;                // 2.5% annual inflation rate
 const double producer_rate = 0.01;                   // 1% TLOS rate to BP/Standby
@@ -209,6 +210,27 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer) 
             }
         }
     }
+
+    //add to producers to payments table
+    if (_gstate.last_claimrewards + blocks_per_day <= timestamp.slot) { //172800 blocks in a day 
+        claimrewards(producer); //probably wrong...
+    }
+
+    //execute every 5 minutes, should run through all 51 within 4.5 hours
+    if (timestamp.slot - _gstate.last_claimrewards > 300) {
+        payments_table payments(_self, _self);
+        auto p = payments.begin();
+
+        //get first object from payments table
+        if (p != payments.end()) { //maybe just do for loop and break after first iteration?
+            auto first = *p;
+
+            INLINE_ACTION_SENDER(eosio::token, transfer)
+            (N(eosio.token), {N(eosio.bpay), N(active)}, {N(eosio.bpay), first.bp, first.pay, std::string("Automatic Producer/Standby Payment")});
+
+            payments.erase(p);
+        }
+    }
 }
 
 void system_contract::recalculate_votes(){
@@ -263,21 +285,22 @@ void system_contract::recalculate_votes(){
     * 2. Updated to_worker_proposals (Worker Proposal Fund) to reflect new payout structure (remaining 60% of inflation) --- DONE
     * 3. Implement debugging logs with print() --- DONE
     *
-    * TODO: Fix issue where the claimrewards debug output is shown twice
     */
 
-void system_contract::claimrewards(const account_name &owner)
-{
-    require_auth(owner);
+void system_contract::claimrewards(const account_name &owner) {
+    require_auth(N(eosio)); //can only come from bp's onblock call
+    //require_auth(owner);
+
+    //TODO: add asserts so claimrewards can't be called except from onblock
 
     const auto &prod = _producers.get(owner);
-    eosio_assert(prod.active(), "producer does not have an active key");
+    //eosio_assert(prod.active(), "producer does not have an active key");
 
     eosio_assert(_gstate.total_activated_stake >= min_activated_stake,
                  "cannot claim rewards until the chain is activated (at least 15% of all tokens participate in voting)");
 
     auto ct = current_time();
-    eosio_assert(ct - prod.last_claim_time > useconds_per_day, "already claimed rewards within past day");
+    //eosio_assert(ct - prod.last_claim_time > useconds_per_day, "already claimed rewards within past day");
 
     const asset token_supply = token(N(eosio.token)).get_supply(symbol_type(system_token_symbol).name());
     const auto usecs_since_last_fill = ct - _gstate.last_pervote_bucket_fill;
@@ -286,8 +309,8 @@ void system_contract::claimrewards(const account_name &owner)
     {
         auto new_tokens = static_cast<int64_t>((continuous_rate * double(token_supply.amount) * double(usecs_since_last_fill)) / double(useconds_per_year));
 
-        auto to_producers = (new_tokens / 5) * 2;
-        auto to_workers = new_tokens - to_producers;
+        auto to_producers = (new_tokens / 5) * 2; //40% to producers
+        auto to_workers = new_tokens - to_producers; //60% to WP's
 
         INLINE_ACTION_SENDER(eosio::token, issue)
         (N(eosio.token), {{N(eosio), N(active)}}, {N(eosio), asset(new_tokens), "Issue new TLOS tokens"});
@@ -300,65 +323,73 @@ void system_contract::claimrewards(const account_name &owner)
 
         _gstate.perblock_bucket += to_producers;
         _gstate.last_pervote_bucket_fill = ct;
-
-        //print("\nMinted Tokens: ", new_tokens);
-        //print("\n   >Worker Fund: ", to_workers);
-        //print("\n   >Producer Fund: ", to_producers);
     }
 
-    //Sort _producers table
+    //sort producers table
     auto sortedProds = _producers.get_index<N(prototalvote)>();
 
-    uint32_t count = 0;
-    uint32_t index = 0;
+    uint32_t sharecount = 0;
 
-    // NOTE: Loop stops after 51st iteration. Counting farther than 51 is unnecessary when calculating payouts.
+    //calculate shares, should be between 2 and 72 shares
     for (const auto &item : sortedProds)
     {
-        if (item.active()) { //Only count activated producers
-            auto prodName = name{item.owner};
-	        count++;
-
-            if (owner == item.owner) {
-                index = count;
-                print("\nProducer Found: ", prodName);
-                //print("\nIndex: ", index);
-            }
-
-            if (count >= 51) {
-                break;
+        if (item.active()) { //only count activated producers
+            if (sharecount <= 42) {
+                sharecount += 2; //top producers count as double shares
+            } else if (sharecount >= 43 && sharecount < 72) {
+                sharecount++;
+            } else {
+                break; //no need to count past 72 shares
             }
         }
     }
 
-    //print("\nTotal Count = ", count);
+    auto shareValue = (_gstate.perblock_bucket / sharecount);
+    payments_table payments(_self, _self);
+    int32_t index = 0;
 
-    uint32_t numProds = 0;
-    uint32_t numStandbys = 0;
-    int64_t totalShares = 0;
+    //Loop through producers and add payment to payments table
+    for (const auto &prod : sortedProds) {
 
-    // Calculate totalShares
-    // TEST: Extensive testing to ensure no precision is lost during calculation of claimed rewards.
-    if (count <= 21)
-    {
-        totalShares = (count * uint32_t(2));
-        numProds = count;
-        numStandbys = 0;
-    } else {
-        totalShares = (count + 21);
-        numProds = 21;
-        numStandbys = (count - 21);
+        if (_gstate.total_unpaid_blocks <= 0) { //skips producer, since they have nothing to claim
+            continue;
+        }
+
+        int64_t pay_amount = 0;
+        index++;
+        auto itr = payments.find(prod.owner); //search for existing prod?
+
+        //maybe also check for active() status?
+        
+        if (index <= 21 && prod.unpaid_blocks >= min_unpaid_blocks_threshold) {
+            pay_amount = (shareValue * int64_t(2));
+        } else if (index <= 21 && prod.unpaid_blocks <= min_unpaid_blocks_threshold) {
+            pay_amount = shareValue;
+        } else if (index >= 22 && index <= 51) {
+            pay_amount = shareValue;
+        } else {
+            pay_amount = 0; //edge case where outside top 51
+        }
+
+        _gstate.perblock_bucket -= pay_amount;
+        _gstate.total_unpaid_blocks -= prod.unpaid_blocks;
+
+        _producers.modify(prod, 0, [&](auto &p) {
+            p.last_claim_time = ct;
+            p.unpaid_blocks = 0;
+        });
+        
+        if (itr == payments.end()) {
+            payments.emplace(prod.owner, [&]( auto& a ) { //maybe have eosio pay?
+                a.bp = prod.owner;
+                a.pay = asset(pay_amount);
+            });
+        } else { //should never run, all payments should be resolved by the time the next payment snapshot happens
+            payments.modify(itr, 0, [&]( auto& a ) {
+                a.pay += asset(pay_amount);
+            });
+        }
     }
-
-    //print("\nnumProds: ", numProds);
-    //print("\nnumStandbys: ", numStandbys);
-    //print("\n_gstate.perblock_bucket: ", asset(_gstate.perblock_bucket));
-    //print("\ntotalShares: ", totalShares);
-
-    auto shareValue = (_gstate.perblock_bucket / totalShares);
-    //print("\nshareValue: ", asset(shareValue));
-
-    int64_t pay_amount = 0;
 
     /**
      * RATIONALE: Minimum Unpaid Blocks Threshold
@@ -373,33 +404,6 @@ void system_contract::claimrewards(const account_name &owner)
      * claimrewards and take a producer's share of the payout.
      */
 
-    // Determine if an account is a Producer or Standby, and calculate shares accordingly
-    if (_gstate.total_unpaid_blocks > 0)
-    {
-        if (index <= 21 && prod.unpaid_blocks >= min_unpaid_blocks_threshold) {
-            pay_amount = (shareValue * int64_t(2));
-            print("\nCaller is a Producer @ ", index);
-            print("\nUnpaid blocks: ", prod.unpaid_blocks);
-            print("\nPayment: ", asset(pay_amount));
-        } else if (index <= 21 && prod.unpaid_blocks <= min_unpaid_blocks_threshold) {
-            pay_amount = shareValue;
-            print("\nCaller is a Producer @ ", index);
-            print("\nUnpaid blocks: ", prod.unpaid_blocks);
-            print("\nCaller doesn't meet minimum unpaid blocks threshold of: ", min_unpaid_blocks_threshold);
-            print("\nPayment: ", asset(pay_amount));
-        } else if (index >= 22 && index <= 51) {
-            pay_amount = shareValue;
-            print("\nCaller is a Standby @ ", index);
-            print("\nUnpaid blocks: ", prod.unpaid_blocks);
-            print("\nPayment: ", asset(pay_amount));
-        } else {
-            pay_amount = 0;
-            print("\nCaller is outside Top 51 @ ", index);
-            print("\nUnpaid blocks: ", prod.unpaid_blocks);
-            print("\nPayment: ", asset(pay_amount));
-        }
-    }
-
     /**
      * TODO: Implement Missed Block Deductions
      *
@@ -412,19 +416,19 @@ void system_contract::claimrewards(const account_name &owner)
      * 9 TLOS for their work, but the other 3 will remain in the bucket.
      */
 
-    _gstate.perblock_bucket -= pay_amount;
-    _gstate.total_unpaid_blocks -= prod.unpaid_blocks;
+    //_gstate.perblock_bucket -= pay_amount;
+    //_gstate.total_unpaid_blocks -= prod.unpaid_blocks;
 
-    _producers.modify(prod, 0, [&](auto &p) {
-        p.last_claim_time = ct;
-        p.unpaid_blocks = 0;
-    });
+    //_producers.modify(prod, 0, [&](auto &p) {
+        //p.last_claim_time = ct;
+        //p.unpaid_blocks = 0;
+    //});
 
-    if (pay_amount > 0)
-    {
-        INLINE_ACTION_SENDER(eosio::token, transfer)
-        (N(eosio.token), {N(eosio.bpay), N(active)}, {N(eosio.bpay), owner, asset(pay_amount), std::string("Producer/Standby Payment")});
-    }
+    //if (pay_amount > 0)
+    //{
+        //INLINE_ACTION_SENDER(eosio::token, transfer)
+        //(N(eosio.token), {N(eosio.bpay), N(active)}, {N(eosio.bpay), owner, asset(pay_amount), std::string("Producer/Standby Payment")});
+    //}
 }
 
 } //namespace eosiosystem

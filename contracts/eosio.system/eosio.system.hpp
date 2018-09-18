@@ -52,6 +52,7 @@ namespace eosiosystem {
       uint16_t             last_producer_schedule_size = 0;
       double               total_producer_vote_weight = 0; /// the sum of all producer votes
       block_timestamp      last_name_close;
+      uint32_t             last_claimrewards;
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
       EOSLIB_SERIALIZE_DERIVED( eosio_global_state, eosio::blockchain_parameters,
@@ -64,8 +65,7 @@ namespace eosiosystem {
    /**
     * TELOS CHANGES:
     * 
-    * 1. Added missed_blocks field, used for counting missed blocks and
-    *    adjusting producer payout accordingly.
+    * 1. Added missed_blocks field, used for counting missed blocks.
     */
    struct producer_info {
       account_name          owner;
@@ -134,6 +134,17 @@ namespace eosiosystem {
       // explicit serialization macro is not necessary, used here only to improve compilation time
       EOSLIB_SERIALIZE( voter_info, (owner)(proxy)(producers)(staked)(last_stake)(last_vote_weight)(proxied_vote_weight)(is_proxy)(reserved1)(reserved2)(reserved3) )
    };
+
+   //tracks automated claimreward payments
+   struct payment {
+     account_name bp;
+     asset pay;
+
+     uint64_t primary_key() const { return bp; }
+     EOSLIB_SERIALIZE(payment, (bp)(pay))
+   };
+
+   typedef eosio::multi_index<N(payments), payment> payments_table;
 
    typedef eosio::multi_index< N(voters), voter_info>  voters_table;
 
