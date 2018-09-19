@@ -89,25 +89,25 @@ void system_contract::update_producer_blocks(account_name producer, uint32_t amo
 }
 
 void system_contract::check_missed_blocks(block_timestamp timestamp, account_name producer) {
-    if(_grotations.current_bp == 0) {
+    if(_grotations.last_onblock_caller == 0) {
         _grotations.last_time_block_produced = timestamp;
-        _grotations.current_bp = producer;
+        _grotations.last_onblock_caller = producer;
         set_producer_block_produced(producer, 1);
         return;
     }
   
     //12 == 6s
     auto producedTimeDiff = timestamp.slot - _grotations.last_time_block_produced.slot;
-    if(producedTimeDiff == 1 && producer == _grotations.current_bp) set_producer_block_produced(producer, producedTimeDiff); 
-    else if(producedTimeDiff == 1 && producer != _grotations.current_bp) {
+    if(producedTimeDiff == 1 && producer == _grotations.last_onblock_caller) set_producer_block_produced(producer, producedTimeDiff); 
+    else if(producedTimeDiff == 1 && producer != _grotations.last_onblock_caller) {
         //set zero to last producer blocks_per_cycle 
-        set_producer_block_produced(_grotations.current_bp, RESET_BLOCKS_PRODUCED);
+        set_producer_block_produced(_grotations.last_onblock_caller, RESET_BLOCKS_PRODUCED);
         //update current producer blocks_per_cycle 
         set_producer_block_produced(producer, producedTimeDiff);
     } 
-    else if(producedTimeDiff > 1 && producer == _grotations.current_bp) update_producer_blocks(producer, 1, producedTimeDiff - 1);
+    else if(producedTimeDiff > 1 && producer == _grotations.last_onblock_caller) update_producer_blocks(producer, 1, producedTimeDiff - 1);
     else {
-        auto lastPitr = _producers.find(_grotations.current_bp);
+        auto lastPitr = _producers.find(_grotations.last_onblock_caller);
         if (lastPitr == _producers.end()) return;
             
         account_name producers_schedule[21];
@@ -120,7 +120,7 @@ void system_contract::check_missed_blocks(block_timestamp timestamp, account_nam
         //last producer didn't miss blocks    
         if(totalMissedSlots == 0) {
             //set zero to last producer blocks_per_cycle 
-            set_producer_block_produced(_grotations.current_bp, RESET_BLOCKS_PRODUCED);
+            set_producer_block_produced(_grotations.last_onblock_caller, RESET_BLOCKS_PRODUCED);
 
             update_producer_blocks(producers_schedule[currentProducerIndex - 1], RESET_BLOCKS_PRODUCED, producedTimeDiff - 1);
             
@@ -146,16 +146,16 @@ void system_contract::check_missed_blocks(block_timestamp timestamp, account_nam
                     set_producer_block_missed(prod, MAX_BLOCK_PER_CYCLE);                       
                 }
 
-                set_producer_block_produced(_grotations.current_bp, RESET_BLOCKS_PRODUCED);
+                set_producer_block_produced(_grotations.last_onblock_caller, RESET_BLOCKS_PRODUCED);
             } else {
-                set_producer_block_produced(_grotations.current_bp, RESET_BLOCKS_PRODUCED);
+                set_producer_block_produced(_grotations.last_onblock_caller, RESET_BLOCKS_PRODUCED);
                 update_producer_blocks(producer, 1, totalMissedSlots);
             }
         }
     }    
 
     _grotations.last_time_block_produced = timestamp;
-    _grotations.current_bp = producer;
+    _grotations.last_onblock_caller = producer;
 }
 
 void system_contract::onblock(block_timestamp timestamp, account_name producer) {

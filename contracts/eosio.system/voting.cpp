@@ -21,6 +21,7 @@
 #define VOTE_VARIATION 0.1
 #define TWELVE_HOURS_US 43200000000
 #define SIX_MINUTES_US 360000000 // debug version
+#define TWELVE_MINUTES_US 720000000
 #define SIX_HOURS_US 21600000000
 #define MAX_PRODUCERS 51
 #define TOP_PRODUCERS 21
@@ -84,7 +85,7 @@ namespace eosiosystem {
 
    void system_contract::updateRotationTime(block_timestamp block_time){
       _grotations.last_rotation_time = block_time;
-      _grotations.next_rotation_time = block_timestamp(block_time.to_time_point() + time_point(microseconds(SIX_HOURS_US)));
+      _grotations.next_rotation_time = block_timestamp(block_time.to_time_point() + time_point(microseconds(TWELVE_MINUTES_US)));
    } 
    //TODO: Add _grotations.is_rotation_active, that way this feature can be toggled.
    void system_contract::update_elected_producers( block_timestamp block_time ) {

@@ -22,15 +22,15 @@
       "name": "rotation_info",
       "base": "",
       "fields": [
-        {"name":"is_rotation_active",      "type":"bool"},
-        {"name":"bp_currently_out",     "type":"account_name"},
-        {"name":"sbp_currently_in",     "type":"account_name"},
-        {"name":"bp_out_index",         "type":"uint32"},
-        {"name":"sbp_in_index",         "type":"uint32"},
-        {"name":"next_rotation_time",   "type":"block_timestamp_type"},
-        {"name":"last_rotation_time",   "type":"block_timestamp_type"},
-        {"name":"is_kick_active",   "type":"bool"},
-        {"name":"current_bp",                 "type":"account_name"},
+        {"name":"is_rotation_active",         "type":"bool"},
+        {"name":"bp_currently_out",           "type":"account_name"},
+        {"name":"sbp_currently_in",           "type":"account_name"},
+        {"name":"bp_out_index",               "type":"uint32"},
+        {"name":"sbp_in_index",               "type":"uint32"},
+        {"name":"next_rotation_time",         "type":"block_timestamp_type"},
+        {"name":"last_rotation_time",         "type":"block_timestamp_type"},
+        {"name":"is_kick_active",             "type":"bool"},
+        {"name":"last_onblock_caller",        "type":"account_name"},
         {"name":"last_time_block_produced",   "type":"block_timestamp_type"}
       ]
     },{

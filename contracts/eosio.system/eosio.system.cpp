@@ -98,11 +98,13 @@ namespace eosiosystem {
          });
    }
 
-   void system_contract::setrotate(bool state) {
+   void system_contract::setrotate( bool state ) {
+      require_auth( _self );
       _grotations.is_rotation_active = state;
    }
 
-   void system_contract::setkick(bool state) {
+   void system_contract::setkick( bool state ) {
+      require_auth( _self );
       _grotations.is_kick_active = state;
    }
 

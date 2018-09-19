@@ -101,11 +101,11 @@ namespace eosiosystem {
       //NOTE: This might not be the best place for this information
 
       bool                   is_kick_active = true;
-      account_name           current_bp; //TODO: This name is ambiguous 
+      account_name           last_onblock_caller; //TODO: This name is ambiguous maybe
       block_timestamp        last_time_block_produced;
 
       EOSLIB_SERIALIZE( rotation_info, (is_rotation_active)(bp_currently_out)(sbp_currently_in)(bp_out_index)(sbp_in_index)(next_rotation_time)
-                        (last_rotation_time)(is_kick_active)(current_bp)(last_time_block_produced) )
+                        (last_rotation_time)(is_kick_active)(last_onblock_caller)(last_time_block_produced) )
    };
 
    struct voter_info {
