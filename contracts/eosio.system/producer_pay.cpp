@@ -346,6 +346,10 @@ void system_contract::claimrewards(const account_name &owner) {
 
     for (const auto &prod : sortedprods) {
 
+        if (!prod.active()) { //skip inactive producers
+            continue;
+        }
+
         int64_t pay_amount = 0;
         index++;
         
@@ -367,7 +371,7 @@ void system_contract::claimrewards(const account_name &owner) {
             p.unpaid_blocks = 0;
         });
 
-        auto itr = payments.find(prod.owner); //check for active()?
+        auto itr = payments.find(prod.owner);
         
         if (itr == payments.end()) {
             payments.emplace(prod.owner, [&]( auto& a ) { //have eosio pay? no issues so far...
