@@ -99,12 +99,12 @@ namespace eosiosystem {
    }
 
    void system_contract::setrotate( bool state ) {
+      eosio_assert(false, "This action isn't implemented currently");
       require_auth( _self );
       _grotations.is_rotation_active = state;
    }
 
    void system_contract::setkick( bool state ) {
-      eosio_assert(false, "This action isn't implemented currently");
       require_auth( _self );
       _grotations.is_kick_active = state;
    }
