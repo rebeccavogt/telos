@@ -20,7 +20,7 @@ namespace eosiosystem {
       //print( "construct system\n" );
       _gstate = _global.exists() ? _global.get() : get_default_parameters();
       _grotations = _rotations.get_or_create(_self, rotation_info{
-        0, 0, 21, 75, block_timestamp(), block_timestamp(), 0, block_timestamp()
+        true, 0, 0, 21, 75, block_timestamp(), block_timestamp(), true, 0, block_timestamp()
       });
       auto itr = _rammarket.find(S(4,RAMCORE));
 
@@ -96,6 +96,14 @@ namespace eosiosystem {
       _producers.modify( prod, 0, [&](auto& p) {
             p.deactivate();
          });
+   }
+
+   void system_contract::setrotate(bool state) {
+      _grotations.is_rotation_active = state;
+   }
+
+   void system_contract::setkick(bool state) {
+      _grotations.is_kick_active = state;
    }
 
    void system_contract::bidname( account_name bidder, account_name newname, asset bid ) {
@@ -192,7 +200,7 @@ EOSIO_ABI( eosiosystem::system_contract,
      // native.hpp (newaccount definition is actually in eosio.system.cpp)
      (newaccount)(updateauth)(deleteauth)(linkauth)(unlinkauth)(canceldelay)(onerror)
      // eosio.system.cpp
-     (setram)(setparams)(setpriv)(rmvproducer)(bidname)
+     (setram)(setparams)(setpriv)(rmvproducer)(bidname)(setkick)(setrotate)
      // delegate_bandwidth.cpp
      (buyrambytes)(buyram)(sellram)(delegatebw)(undelegatebw)(refund)
      // voting.cpp

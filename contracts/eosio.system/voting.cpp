@@ -86,7 +86,7 @@ namespace eosiosystem {
       _grotations.last_rotation_time = block_time;
       _grotations.next_rotation_time = block_timestamp(block_time.to_time_point() + time_point(microseconds(SIX_HOURS_US)));
    } 
-
+   //TODO: Add _grotations.is_rotation_active, that way this feature can be toggled.
    void system_contract::update_elected_producers( block_timestamp block_time ) {
       _gstate.last_producer_schedule_update = block_time;
 

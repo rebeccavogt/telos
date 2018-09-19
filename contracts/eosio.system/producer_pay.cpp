@@ -72,7 +72,7 @@ void system_contract::set_producer_block_missed(account_name producer, uint32_t 
   if (pitr != _producers.end() && pitr->active()) {
     _producers.modify(pitr, 0, [&](auto &p) {
         p.missed_blocks += amount;
-        if(crossed_missed_blocks_threshold(p.missed_blocks)) p.deactivate();
+        if(crossed_missed_blocks_threshold(p.missed_blocks) && _grotations.is_kick_active) p.deactivate();
     });
   }
 }
@@ -83,7 +83,7 @@ void system_contract::update_producer_blocks(account_name producer, uint32_t amo
       _producers.modify(pitr, 0, [&](auto &p) { 
         p.blocks_per_cycle += amountBlocksProduced; 
         p.missed_blocks += amountBlocksMissed;
-        if(crossed_missed_blocks_threshold(p.missed_blocks)) p.deactivate();
+        if(crossed_missed_blocks_threshold(p.missed_blocks) && _grotations.is_kick_active) p.deactivate();
       });
   }
 }

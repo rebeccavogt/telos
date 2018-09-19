@@ -90,17 +90,22 @@ namespace eosiosystem {
    };
 
    struct rotation_info {
+      bool                   is_rotation_active = true;
       account_name           bp_currently_out;
       account_name           sbp_currently_in;
       uint32_t               bp_out_index;
       uint32_t               sbp_in_index;
       block_timestamp        next_rotation_time;
       block_timestamp        last_rotation_time;
-      account_name           current_bp; 
+
+      //NOTE: This might not be the best place for this information
+
+      bool                   is_kick_active = true;
+      account_name           current_bp; //TODO: This name is ambiguous 
       block_timestamp        last_time_block_produced;
 
-      EOSLIB_SERIALIZE( rotation_info, (bp_currently_out)(sbp_currently_in)(bp_out_index)(sbp_in_index)(next_rotation_time)
-                        (last_rotation_time)(current_bp)(last_time_block_produced) )
+      EOSLIB_SERIALIZE( rotation_info, (is_rotation_active)(bp_currently_out)(sbp_currently_in)(bp_out_index)(sbp_in_index)(next_rotation_time)
+                        (last_rotation_time)(is_kick_active)(current_bp)(last_time_block_produced) )
    };
 
    struct voter_info {
@@ -239,6 +244,10 @@ namespace eosiosystem {
          void setpriv( account_name account, uint8_t ispriv );
 
          void rmvproducer( account_name producer );
+
+         void setkick(bool state);
+
+         void setrotate(bool state);
 
          void bidname( account_name bidder, account_name newname, asset bid );
         
