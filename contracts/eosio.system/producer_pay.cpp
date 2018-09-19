@@ -229,7 +229,7 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer) 
 
         payments.erase(p);
 
-        _gstate.next_payment = (timestamp.slot + uint32_t(300)); //300 blocks in 5 minutes
+        _gstate.next_payment = (timestamp.slot + uint32_t(600)); //600 blocks in 5 minutes
     }
 }
 
