@@ -470,6 +470,14 @@
      "type": "canceldelay",
      "ricardian_contract": ""
    },{
+     "name": "setkick",
+     "type": "setkick",
+     "ricardian_contract": ""
+   },{
+     "name": "setrotate",
+     "type": "setrotate",
+     "ricardian_contract": ""
+   },{
      "name": "onerror",
      "type": "onerror",
      "ricardian_contract": ""
