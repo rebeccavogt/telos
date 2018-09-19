@@ -211,25 +211,25 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer) 
         }
     }
 
-    //add to producers to payments table
-    if (_gstate.last_claimrewards + blocks_per_day <= timestamp.slot) { //172800 blocks in a day 
-        claimrewards(producer); //probably wrong...
+    //called once per day to set payments snapshot
+    if (_gstate.last_claimrewards + uint32_t(172800) <= timestamp.slot) { //172800 blocks in a day
+        print("\nClaimRewards Snapshot");
+        claimrewards(producer);
+        _gstate.last_claimrewards = timestamp.slot;
     }
 
+    auto p = payments.begin();
+
     //execute every 5 minutes, should run through all 51 within 4.5 hours
-    if (timestamp.slot - _gstate.last_claimrewards > 300) {
-        payments_table payments(_self, _self);
-        auto p = payments.begin();
+    if (timestamp.slot >= _gstate.next_payment && p != payments.end()) {
+        auto first = *p;
 
-        //get first object from payments table
-        if (p != payments.end()) { //maybe just do for loop and break after first iteration?
-            auto first = *p;
+        INLINE_ACTION_SENDER(eosio::token, transfer)
+        (N(eosio.token), {N(eosio.bpay), N(active)}, {N(eosio.bpay), first.bp, first.pay, std::string("Automatic Producer/Standby Payment")});
 
-            INLINE_ACTION_SENDER(eosio::token, transfer)
-            (N(eosio.token), {N(eosio.bpay), N(active)}, {N(eosio.bpay), first.bp, first.pay, std::string("Automatic Producer/Standby Payment")});
+        payments.erase(p);
 
-            payments.erase(p);
-        }
+        _gstate.next_payment = (timestamp.slot + uint32_t(300)); //300 blocks in 5 minutes
     }
 }
 
@@ -279,28 +279,25 @@ void system_contract::recalculate_votes(){
 }
 
 /**
-    * TELOS CHANGES:
-    *
-    * 1. Updated to_producers (BP/Standby payments) to reflect new payout structure (40% of inflation) --- DONE
-    * 2. Updated to_worker_proposals (Worker Proposal Fund) to reflect new payout structure (remaining 60% of inflation) --- DONE
-    * 3. Implement debugging logs with print() --- DONE
-    *
-    */
-
+ * RATIONALE: Minimum Unpaid Blocks Threshold
+ *
+ * In the Telos Payment Architecture, block reward payments are calculated on the fly at the time
+ * of the call to claimrewards. When called, the claimrewards function determines which payment level
+ * each producer qualifies for and saves their payment to the payments table. Payments are then doled
+ * out over the course of a day to the intended recipient.
+ *
+ * In order to qualify for a Producer level payout, the caller must be in the top 21 producers AND have
+ * at least 12 hours worth of block production as a producer.
+ */
 void system_contract::claimrewards(const account_name &owner) {
     require_auth(N(eosio)); //can only come from bp's onblock call
-    //require_auth(owner);
 
-    //TODO: add asserts so claimrewards can't be called except from onblock
-
-    const auto &prod = _producers.get(owner);
-    //eosio_assert(prod.active(), "producer does not have an active key");
-
-    eosio_assert(_gstate.total_activated_stake >= min_activated_stake,
-                 "cannot claim rewards until the chain is activated (at least 15% of all tokens participate in voting)");
+    eosio_assert(_gstate.total_activated_stake >= min_activated_stake, "cannot claim rewards until chain is activated");
+    if (_gstate.total_unpaid_blocks <= 0) { //skips action, since there are no rewards to claim
+        return;
+    }
 
     auto ct = current_time();
-    //eosio_assert(ct - prod.last_claim_time > useconds_per_day, "already claimed rewards within past day");
 
     const asset token_supply = token(N(eosio.token)).get_supply(symbol_type(system_token_symbol).name());
     const auto usecs_since_last_fill = ct - _gstate.last_pervote_bucket_fill;
@@ -326,12 +323,12 @@ void system_contract::claimrewards(const account_name &owner) {
     }
 
     //sort producers table
-    auto sortedProds = _producers.get_index<N(prototalvote)>();
+    auto sortedprods = _producers.get_index<N(prototalvote)>();
 
     uint32_t sharecount = 0;
 
     //calculate shares, should be between 2 and 72 shares
-    for (const auto &item : sortedProds)
+    for (const auto &item : sortedprods)
     {
         if (item.active()) { //only count activated producers
             if (sharecount <= 42) {
@@ -345,21 +342,12 @@ void system_contract::claimrewards(const account_name &owner) {
     }
 
     auto shareValue = (_gstate.perblock_bucket / sharecount);
-    payments_table payments(_self, _self);
     int32_t index = 0;
 
-    //Loop through producers and add payment to payments table
-    for (const auto &prod : sortedProds) {
-
-        if (_gstate.total_unpaid_blocks <= 0) { //skips producer, since they have nothing to claim
-            continue;
-        }
+    for (const auto &prod : sortedprods) {
 
         int64_t pay_amount = 0;
         index++;
-        auto itr = payments.find(prod.owner); //search for existing prod?
-
-        //maybe also check for active() status?
         
         if (index <= 21 && prod.unpaid_blocks >= min_unpaid_blocks_threshold) {
             pay_amount = (shareValue * int64_t(2));
@@ -378,9 +366,11 @@ void system_contract::claimrewards(const account_name &owner) {
             p.last_claim_time = ct;
             p.unpaid_blocks = 0;
         });
+
+        auto itr = payments.find(prod.owner); //check for active()?
         
         if (itr == payments.end()) {
-            payments.emplace(prod.owner, [&]( auto& a ) { //maybe have eosio pay?
+            payments.emplace(prod.owner, [&]( auto& a ) { //have eosio pay? no issues so far...
                 a.bp = prod.owner;
                 a.pay = asset(pay_amount);
             });
@@ -391,44 +381,6 @@ void system_contract::claimrewards(const account_name &owner) {
         }
     }
 
-    /**
-     * RATIONALE: Minimum Unpaid Blocks Threshold
-     *
-     * In the Telos Payment Architecture, block reward payments are calculated on the fly at the time
-     * of the call to claimrewards. When called, the claimrewards function determines which payment level
-     * the calling account qualifies for and pays them accordingly.
-     *
-     * In order to qualify for a Producer level payout, the caller must be in the top 21 producers AND have
-     * at least 12 hours worth of block production as a producer. Requiring the calling account to have produced
-     * a minimum of 12 hours worth of blocks ensures Standby's can't "jump the fence" just long enough to call
-     * claimrewards and take a producer's share of the payout.
-     */
-
-    /**
-     * TODO: Implement Missed Block Deductions
-     *
-     * Telos Payout Architecture will account for missed blocks, and reduce
-     * payout based on percentage of missed blocks.
-     *
-     * For instance, if Producer A misses 3 of their 12 blocks, they will
-     * have missed 25% of their scheduled blocks. For easy math, say producers
-     * earn 1 TLOS per block. This means Producer A will receive a payment of
-     * 9 TLOS for their work, but the other 3 will remain in the bucket.
-     */
-
-    //_gstate.perblock_bucket -= pay_amount;
-    //_gstate.total_unpaid_blocks -= prod.unpaid_blocks;
-
-    //_producers.modify(prod, 0, [&](auto &p) {
-        //p.last_claim_time = ct;
-        //p.unpaid_blocks = 0;
-    //});
-
-    //if (pay_amount > 0)
-    //{
-        //INLINE_ACTION_SENDER(eosio::token, transfer)
-        //(N(eosio.token), {N(eosio.bpay), N(active)}, {N(eosio.bpay), owner, asset(pay_amount), std::string("Producer/Standby Payment")});
-    //}
 }
 
 } //namespace eosiosystem
