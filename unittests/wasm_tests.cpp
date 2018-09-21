@@ -590,6 +590,7 @@ BOOST_FIXTURE_TEST_CASE(cpu_usage_tests, tester ) try {
 // test weighted cpu limit
 BOOST_FIXTURE_TEST_CASE(weighted_cpu_limit_tests, tester ) try {
 // TODO Increase the robustness of this test.
+   setkick(false);
    resource_limits_manager mgr = control->get_mutable_resource_limits_manager();
    create_accounts( {N(f_tests)} );
    create_accounts( {N(acc2)} );
