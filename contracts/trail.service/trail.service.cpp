@@ -94,7 +94,7 @@ void trail::unregvoter(account_name voter) {
 
 void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, uint16_t direction, account_name voter) {
     //NOTE: Maybe require_auth2? Call should only come from voting contract
-    require_auth(vote_code);
+    require_auth(voter);
 
     voters_table voters(_self, voter);
     auto v = voters.find(voter);
