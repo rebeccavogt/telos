@@ -93,8 +93,8 @@ void trail::unregvoter(account_name voter) {
 }
 
 void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, uint16_t direction, account_name voter) {
-    //NOTE: Maybe require_auth2? Add param or voting_contract? contract would send _self. So voting_contract@eosio.code? Call should only come from votereceipt contract
-    //require_auth(voter);
+    //NOTE: Maybe require_auth2? Call should only come from voting contract
+    require_auth(vote_code);
 
     voters_table voters(_self, voter);
     auto v = voters.find(voter);
@@ -116,7 +116,6 @@ void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_ke
 
     //search for existing receipt
     for (votereceipt r : vid.receipt_list) {
-
         if (r.vote_code == vote_code && r.vote_scope == vote_scope && r.vote_key == vote_key) {
             print("\nExisting receipt found. Updating...");
 
@@ -125,30 +124,20 @@ void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_ke
 
             break;
         }
-
         itr++;
     }
 
     if (itr == vid.receipt_list.end()) {
-
         vid.receipt_list.push_back(new_vr);
+    } 
 
-        voters.modify(v, 0, [&]( auto& a ) {
-            a.receipt_list = vid.receipt_list;
-        });
-    } else {
-
-        voters.modify(v, 0, [&]( auto& a ) {
-            a.receipt_list = vid.receipt_list;
-        });
-    }
+    voters.modify(v, 0, [&]( auto& a ) {
+        a.receipt_list = vid.receipt_list;
+    });
 
     print("\nVoteReceipt Addition: SUCCESS");
 }
 
-/**
- * Removes an existing vote receipt from a VoterID.
-*/
 void trail::rmvreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, account_name voter) {
     //NOTE: Maybe require_auth2? Add param or voting_contract? contract would send _self. So voting_contract@eosio.code? Call should only come from votereceipt contract
     //require_auth(voter);

@@ -32,7 +32,7 @@ class ratifyamend : public contract {
          * Creates a new document and inserts it into the documents table.
          * @param title - string representation of document title
          * @param clauses - vector of strings representing ipfs urls to the text of each clause
-        */
+         */
         void insertdoc(string title, vector<string> clauses);
 
         /**
@@ -42,32 +42,39 @@ class ratifyamend : public contract {
          * @param document_id - id of document being edited
          * @param clause_id - id of clause in document to overwrite
          * @param proposer - account name submitting proposal
-        */
+         */
         void propose(string title, string ipfs_url, uint64_t document_id, uint64_t clause_id, account_name proposer);
 
         /**
          * Casts a vote in a certain direction on a proposal, by the weight of the voter's tlos tokens.
          * @param proposal_id - id of proposal to vote on
          * @param vote - direction of vote (0 = NO, 1 = YES, 2 = ABSTAIN)
-        */
+         */
         void vote(uint64_t proposal_id, uint16_t vote, account_name voter);
 
         /**
          * Removes a vote from the proposal matching the given proposal id.
          * @param proposal_id - id of proposal from which to rescinf vote
          * @param voter - account name that cast vote being removed
-        */
+         */
         void unvote(uint64_t proposal_id, account_name voter);
 
         /**
          * Closes a proposal and declares a PASS or FAIL if its past its expiration, and not already closed.
          * @param proposal_id - proposal to close
-        */
+         */
         void close(uint64_t proposal_id);
+
+        /**
+         * Force closes a proposal a certain time after expiration. Forfeits refund.
+         */
+        //void forceclose(uint64_t proposal_id);
 
     protected:
 
         void update_thresh();
+
+        void update_doc(uint64_t document_id, uint64_t clause_id, string new_clause);
 
         /// @abi table documents i64
         struct document {
