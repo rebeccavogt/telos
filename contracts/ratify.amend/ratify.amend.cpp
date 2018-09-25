@@ -45,7 +45,7 @@ void ratifyamend::insertdoc(string title, vector<string> clauses) {
     print("\nAssigned Document ID: ", doc_id);
 }
 
-void ratifyamend::propose(string title, string ipfs_url, uint64_t document_id, uint64_t clause_id, account_name proposer) {
+void ratifyamend::propose(string title, uint64_t document_id, vector<uint16_t> new_clause_ids, vector<string> new_ipfs_urls, account_name proposer) {
     require_auth(proposer);
 
     documents_table documents(_self, _self);
@@ -54,7 +54,22 @@ void ratifyamend::propose(string title, string ipfs_url, uint64_t document_id, u
     eosio_assert(d != documents.end(), "Document Not Found");
     auto doc_struct = *d;
 
-    eosio_assert(clause_id <= (doc_struct.clauses.size() + 1), "Clause Not Found");
+    eosio_assert(new_clause_ids.size() == new_ipfs_urls.size(), "Clause ID vector and IPFS url vector sizes must match");
+
+    auto doc_size = doc_struct.clauses.size();
+    int16_t last_clause_id = -1;
+    auto last_ipfs_url = 0;
+
+    for (int i = 0; i < new_clause_ids.size(); i++) {
+        eosio_assert(new_clause_ids.at(i) > last_clause_id, "Clause IDs Must Be In Ascending Order");
+        last_clause_id = new_clause_ids.at(i);
+        eosio_assert(new_clause_ids.at(i) <= (doc_size + 1), "Invalid Clause Number");
+        
+        last_ipfs_url++;
+        if (new_clause_ids.at(i) == (doc_size + 1)) { //if clause is new, increase doc_size
+            doc_size++;
+        }
+    }
 
     //NOTE: 100.0000 TLOS fee, refunded if proposal passes
     action(permission_level{ proposer, N(active) }, N(eosio.token), N(transfer), make_tuple( //NOTE: susceptible to ram-drain bug
@@ -69,9 +84,9 @@ void ratifyamend::propose(string title, string ipfs_url, uint64_t document_id, u
     proposals.emplace(proposer, [&]( auto& a ){
         a.id = proposals.available_primary_key();
         a.document_id = document_id;
-        a.clause_id = clause_id;
         a.title = title;
-        a.ipfs_url = ipfs_url;
+        a.new_clause_ids = new_clause_ids;
+        a.new_ipfs_urls = new_ipfs_urls;
         a.yes_count = 0;
         a.no_count = 0;
         a.abstain_count = 0;
@@ -104,7 +119,7 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
 
     if (vid.receipt_list.empty()) {
 
-        print("\nVoteInfo Stack Empty...Calling TrailService to update VoterID");
+        print("\nReceipt List Empty...Calling TrailService to update VoterID");
 
         action(permission_level{ voter, N(active) }, N(trailservice), N(addreceipt), make_tuple(
     	    _self,      
@@ -114,17 +129,17 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
             voter
 	    )).send();
 
-        print("\nVoterID Successfully Updated");
+        print("\nReceipt Added. VoterID Successfully Updated");
     } else {
 
-        print("\nSearching receipts list for existing VoteInfo...");
+        print("\nSearching receipts list for existing VoteReceipt...");
 
         bool found = false;
 
         for (votereceipt r : vid.receipt_list) {
             if (r.vote_key == proposal_id) {
 
-                print("\nVoteInfo receipt found");
+                print("\nVoteReceipt receipt found");
                 found = true;
 
                 switch (r.direction) {
@@ -287,7 +302,7 @@ void ratifyamend::close(uint64_t proposal_id) { //TODO: add require_auth for pro
             std::string("Ratify/Amend Proposal Fee Refund")
 	    )).send();
 
-        update_doc(po.document_id, po.clause_id, po.ipfs_url);
+        update_doc(po.document_id, po.new_clause_ids, po.new_ipfs_urls);
 
         print("\nProposal Passed...Refund Sent...Documents Updated.");
 
@@ -329,15 +344,19 @@ void ratifyamend::update_thresh() {
     thresh_struct.total_voters = new_total_voters;
 }
 
-void ratifyamend::update_doc(uint64_t document_id, uint64_t clause_id, string new_clause) {
+void ratifyamend::update_doc(uint64_t document_id, vector<uint16_t> new_clause_ids, vector<string> new_ipfs_urls) {
     documents_table documents(_self, _self);
     auto d = documents.find(document_id);
     auto doc = *d;
 
-    if (clause_id <= doc.clauses.size()) { //update existing clause
-        doc.clauses[clause_id] = new_clause;
-    } else { //add new clause
-        doc.clauses.push_back(new_clause);
+    auto doc_size = doc.clauses.size();
+    for (int i = 0; i < new_clause_ids.size(); i++) {
+        
+        if (new_clause_ids[i] < doc.clauses.size()) { //update existing clause
+            doc.clauses[new_clause_ids[i]] = new_ipfs_urls.at(i);
+        } else { //add new clause
+            doc.clauses.push_back(new_ipfs_urls.at(i));
+        }
     }
 
     documents.modify(d, 0, [&]( auto& a ) {

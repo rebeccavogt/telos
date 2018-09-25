@@ -139,8 +139,7 @@ void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_ke
 }
 
 void trail::rmvreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, account_name voter) {
-    //NOTE: Maybe require_auth2? Add param or voting_contract? contract would send _self. So voting_contract@eosio.code? Call should only come from votereceipt contract
-    //require_auth(voter);
+    require_auth(voter);
 
     voters_table voters(_self, voter);
     auto v = voters.find(voter);
@@ -150,12 +149,14 @@ void trail::rmvreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_ke
     auto vid = *v;
 
     auto itr = vid.receipt_list.begin();
+    bool found = false;
 
     //search for existing receipt
     for (votereceipt r : vid.receipt_list) {
 
         if (r.vote_code == vote_code && r.vote_scope == vote_scope && r.vote_key == vote_key) {
             print("\nExisting receipt found. Removing...");
+            found = true;
 
             auto vr = vid.receipt_list.erase(itr);
 
@@ -165,7 +166,7 @@ void trail::rmvreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_ke
         itr++;
     }
 
-    eosio_assert(itr != vid.receipt_list.end(), "Receipt not found");
+    eosio_assert(found, "Receipt not found");
 
     voters.modify(v, 0, [&]( auto& a ) {
         a.receipt_list = vid.receipt_list;
