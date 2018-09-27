@@ -214,7 +214,7 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer) 
     //called once per day to set payments snapshot
     if (_gstate.last_claimrewards + uint32_t(172800) <= timestamp.slot) { //172800 blocks in a day
         print("\nNew ClaimRewards Snapshot");
-        claimrewards_snapshot(producer);
+        claimrewards_snapshot();
         _gstate.last_claimrewards = timestamp.slot;
     }
 }
@@ -264,7 +264,7 @@ void system_contract::recalculate_votes(){
     }
 }
 
-void system_contract::claimrewards_snapshot(account_name owner){
+void system_contract::claimrewards_snapshot(){
     require_auth(N(eosio)); //can only come from bp's onblock call
 
     eosio_assert(_gstate.total_activated_stake >= min_activated_stake, "cannot take snapshot until chain is activated");

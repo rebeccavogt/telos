@@ -249,7 +249,7 @@ namespace eosiosystem {
          // functions defined in producer_pay.cpp
          void claimrewards( const account_name& owner );
 
-         void claimrewards_snapshot(account_name owner);
+         void claimrewards_snapshot();
 
          void setpriv( account_name account, uint8_t ispriv );
 
