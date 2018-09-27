@@ -1,3 +1,11 @@
+/**
+ * This file includes all definitions necessary to interact with Trail's voting system. Developers who want to
+ * utilize the system simply must include this file in their implementation to interact with the information
+ * stores by Trail.
+ * 
+ * @author Craig Branscom
+ */
+
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/permission.hpp>
 #include <eosiolib/asset.hpp>
@@ -71,16 +79,17 @@ typedef eosio::multi_index<N(accounts), account> accounts;
 
 /**
  * Updates the voter's tlos_weight on their VoterID.
+ * @param voter - account from which to retrieve liquid TLOS amount
 */
 int64_t get_liquid_tlos(account_name voter) {
     accounts accountstable(N(eosio.token), voter);
-    auto a = accountstable.find(asset(int64_t(0), S(4, TLOS)).symbol.name()); //find better way to get key?
+    auto a = accountstable.find(asset(int64_t(0), S(4, TLOS)).symbol.name()); //TODO: find better way to get TLOS symbol?
 
     int64_t liquid_tlos = 0;
 
     if (a != accountstable.end()) {
         auto acct = *a;
-        liquid_tlos = acct.balance.amount;
+        liquid_tlos = acct.balance.amount / int64_t(10000); //divide to get actual balance
     }
     
     return liquid_tlos;

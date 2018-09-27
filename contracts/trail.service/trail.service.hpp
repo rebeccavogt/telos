@@ -70,9 +70,6 @@ class trail : public contract {
 
     protected:
 
-        /**
-         * 
-        */
         /// @abi table registries i64
         struct registration {
             asset native;
@@ -82,41 +79,8 @@ class trail : public contract {
             uint64_t by_publisher() const { return publisher; }
         };
 
-        /*
-        struct voteinfo { //TODO: change to votereceipt?
-            uint64_t vote_code; // code of contract receiving vote //TODO: change to account_name?
-            uint64_t vote_scope; // scope of contract receiving vote
-            uint64_t vote_key; // key to retrieve voted object in external contract
-            uint16_t direction; // 0 = abstain, 1 = yes, 2 = no TODO: use enum? 
-            uint64_t weight; // weight of votes applied
-        };
-
-        /// @abi table voters i64
-        struct voterid {
-            account_name voter;
-            vector<voteinfo> votes_list;
-            uint64_t tlos_weight;
-
-            uint64_t primary_key() const { return voter; }
-            EOSLIB_SERIALIZE(voterid, (voter)(votes_list)(tlos_weight))
-        };
-
-        /// @abi table environment
-        struct environment {
-            account_name publisher;
-
-            uint64_t total_tokens;
-            uint64_t total_voters;
-
-            uint64_t primary_key() const { return publisher; }
-            EOSLIB_SERIALIZE(environment, (publisher)(total_tokens)(total_voters))
-        };
-        */
-
         typedef multi_index<N(registries), registration> registries_table;
-        //typedef multi_index<N(voters), voterid> voters_table;
 
-        //typedef singleton<N(environment), environment> environment_singleton;
         environment_singleton env_singleton;
         environment env_struct;
 };
