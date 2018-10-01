@@ -91,22 +91,23 @@ namespace eosiosystem {
    };
 
    struct rotation_info {
-      bool                   is_rotation_active = true;
-      account_name           bp_currently_out;
-      account_name           sbp_currently_in;
-      uint32_t               bp_out_index;
-      uint32_t               sbp_in_index;
-      block_timestamp        next_rotation_time;
-      block_timestamp        last_rotation_time;
+      bool                            is_rotation_active = true;
+      account_name                    bp_currently_out;
+      account_name                    sbp_currently_in;
+      uint32_t                        bp_out_index;
+      uint32_t                        sbp_in_index;
+      block_timestamp                 next_rotation_time;
+      block_timestamp                 last_rotation_time;
 
       //NOTE: This might not be the best place for this information
 
-      bool                   is_kick_active = true;
-      account_name           last_onblock_caller; //TODO: This name is ambiguous maybe
-      block_timestamp        last_time_block_produced;
+      bool                            is_kick_active = true;
+      account_name                    last_onblock_caller; //TODO: This name is ambiguous maybe
+      block_timestamp                 last_time_block_produced;
+      std::vector<offline_producer>   offline_bps;
 
       EOSLIB_SERIALIZE( rotation_info, (is_rotation_active)(bp_currently_out)(sbp_currently_in)(bp_out_index)(sbp_in_index)(next_rotation_time)
-                        (last_rotation_time)(is_kick_active)(last_onblock_caller)(last_time_block_produced) )
+                        (last_rotation_time)(is_kick_active)(last_onblock_caller)(last_time_block_produced)(offline_bps) )
    };
 
    struct voter_info {
