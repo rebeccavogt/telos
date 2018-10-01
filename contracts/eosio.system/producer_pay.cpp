@@ -112,9 +112,9 @@ void system_contract::check_missed_blocks(block_timestamp timestamp, account_nam
         if (lastPitr == _producers.end()) return;
             
         account_name producers_schedule[21];
-        uint32_t bytes_populated = get_active_producers(producers_schedule, sizeof(account_name)*21);
+        uint32_t total_prods = get_active_producers(producers_schedule, sizeof(account_name) * 21) / 8;
         
-        auto currentProducerIndex = std::distance(producers_schedule, std::find(producers_schedule, producers_schedule + 21, producer));
+        auto currentProducerIndex = std::distance(producers_schedule, std::find(producers_schedule, producers_schedule + total_prods, producer));
         
         auto totalMissedSlots = std::fabs(producedTimeDiff - 1 - lastPitr->blocks_per_cycle);
 
@@ -122,7 +122,8 @@ void system_contract::check_missed_blocks(block_timestamp timestamp, account_nam
         if(totalMissedSlots == 0) {
             //set zero to last producer blocks_per_cycle 
             set_producer_block_produced(_grotations.last_onblock_caller, RESET_BLOCKS_PRODUCED);
-
+            
+            account_name bp_offline = currentProducerIndex == 0 ? producers_schedule[total_prods - 1] : producers_schedule[currentProducerIndex - 1];
             update_producer_blocks(producers_schedule[currentProducerIndex - 1], RESET_BLOCKS_PRODUCED, producedTimeDiff - 1);
             
             set_producer_block_produced(producer, 1);
