@@ -108,51 +108,51 @@ void system_contract::check_missed_blocks(block_timestamp timestamp, account_nam
     } 
     else if(producedTimeDiff > 1 && producer == _grotations.last_onblock_caller) update_producer_blocks(producer, 1, producedTimeDiff - 1);
     else {
-        // auto lastPitr = _producers.find(_grotations.last_onblock_caller);
-        // if (lastPitr == _producers.end()) return;
+        auto lastPitr = _producers.find(_grotations.last_onblock_caller);
+        if (lastPitr == _producers.end()) return;
             
-        // account_name producers_schedule[21];
-        // uint32_t bytes_populated = get_active_producers(producers_schedule, sizeof(account_name)*21);
+        account_name producers_schedule[21];
+        uint32_t bytes_populated = get_active_producers(producers_schedule, sizeof(account_name)*21);
         
-        // auto currentProducerIndex = std::distance(producers_schedule, std::find(producers_schedule, producers_schedule + 21, producer));
+        auto currentProducerIndex = std::distance(producers_schedule, std::find(producers_schedule, producers_schedule + 21, producer));
         
-        // auto totalMissedSlots = std::fabs(producedTimeDiff - 1 - lastPitr->blocks_per_cycle);
+        auto totalMissedSlots = std::fabs(producedTimeDiff - 1 - lastPitr->blocks_per_cycle);
 
-    //     //last producer didn't miss blocks    
-    //     if(totalMissedSlots == 0) {
-    //         //set zero to last producer blocks_per_cycle 
-    //         set_producer_block_produced(_grotations.last_onblock_caller, RESET_BLOCKS_PRODUCED);
+        //last producer didn't miss blocks    
+        if(totalMissedSlots == 0) {
+            //set zero to last producer blocks_per_cycle 
+            set_producer_block_produced(_grotations.last_onblock_caller, RESET_BLOCKS_PRODUCED);
 
-    //         update_producer_blocks(producers_schedule[currentProducerIndex - 1], RESET_BLOCKS_PRODUCED, producedTimeDiff - 1);
+            update_producer_blocks(producers_schedule[currentProducerIndex - 1], RESET_BLOCKS_PRODUCED, producedTimeDiff - 1);
             
-    //         set_producer_block_produced(producer, 1);
-    //     } else { //more than one producer missed blocks
-    //         if(totalMissedSlots / MAX_BLOCK_PER_CYCLE > 0) {
-    //             auto totalProdsMissedSlots = totalMissedSlots / 12;
-    //             auto totalCurrentProdMissedBlocks = std::fmod(totalMissedSlots, 12);
+            set_producer_block_produced(producer, 1);
+        } else { //more than one producer missed blocks
+            if(totalMissedSlots / MAX_BLOCK_PER_CYCLE > 0) {
+                auto totalProdsMissedSlots = totalMissedSlots / 12;
+                auto totalCurrentProdMissedBlocks = std::fmod(totalMissedSlots, 12);
                 
-    //             //Check if the last or the current bp missed blocks
-    //             if(totalCurrentProdMissedBlocks > 0) {
-    //                 auto lastProdTotalMissedBlocks = MAX_BLOCK_PER_CYCLE - lastPitr->blocks_per_cycle;
-    //                 if(lastProdTotalMissedBlocks > 0) set_producer_block_missed(producers_schedule[currentProducerIndex - 1], lastProdTotalMissedBlocks);
+                //Check if the last or the current bp missed blocks
+                if(totalCurrentProdMissedBlocks > 0) {
+                    auto lastProdTotalMissedBlocks = MAX_BLOCK_PER_CYCLE - lastPitr->blocks_per_cycle;
+                    if(lastProdTotalMissedBlocks > 0) set_producer_block_missed(producers_schedule[currentProducerIndex - 1], lastProdTotalMissedBlocks);
                     
-    //                 update_producer_blocks(producer, 1, totalCurrentProdMissedBlocks - lastProdTotalMissedBlocks);
-    //             }  else set_producer_block_produced(producer, 1);
+                    update_producer_blocks(producer, 1, totalCurrentProdMissedBlocks - lastProdTotalMissedBlocks);
+                }  else set_producer_block_produced(producer, 1);
                 
-    //             for(int i = 0; i <= totalProdsMissedSlots; i++) {
-    //                 auto lastProdIndex = currentProducerIndex - (i + 1);
-    //                 lastProdIndex = lastProdIndex < 0 ? 21 + lastProdIndex : lastProdIndex;
+                for(int i = 0; i <= totalProdsMissedSlots; i++) {
+                    auto lastProdIndex = currentProducerIndex - (i + 1);
+                    lastProdIndex = lastProdIndex < 0 ? 21 + lastProdIndex : lastProdIndex;
 
-    //                 auto prod = producers_schedule[lastProdIndex];
-    //                 set_producer_block_missed(prod, MAX_BLOCK_PER_CYCLE);                       
-    //             }
+                    auto prod = producers_schedule[lastProdIndex];
+                    set_producer_block_missed(prod, MAX_BLOCK_PER_CYCLE);                       
+                }
 
-    //             set_producer_block_produced(_grotations.last_onblock_caller, RESET_BLOCKS_PRODUCED);
-    //         } else {
-    //             set_producer_block_produced(_grotations.last_onblock_caller, RESET_BLOCKS_PRODUCED);
-    //             update_producer_blocks(producer, 1, totalMissedSlots);
-    //         }
-    //     }
+                set_producer_block_produced(_grotations.last_onblock_caller, RESET_BLOCKS_PRODUCED);
+            } else {
+                set_producer_block_produced(_grotations.last_onblock_caller, RESET_BLOCKS_PRODUCED);
+                update_producer_blocks(producer, 1, totalMissedSlots);
+            }
+        }
     }    
 
     _grotations.last_time_block_produced = timestamp;
