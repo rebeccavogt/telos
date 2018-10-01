@@ -47,7 +47,6 @@ namespace eosiosystem {
       return dp;
    }
 
-
    system_contract::~system_contract() {
       //print( "destruct system\n" );
       _global.set( _gstate, _self );

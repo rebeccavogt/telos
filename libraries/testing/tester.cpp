@@ -110,32 +110,6 @@ namespace eosio { namespace testing {
          push_genesis_block();
    }
 
-   transaction_trace_ptr base_tester::set_kick(bool state) {
-        signed_transaction trx;
-        set_transaction_headers(trx);
-        trx.actions.emplace_back( vector<permission_level>{{N(eosio),config::active_name}},
-                                setkick{
-                                   .state  = state
-                                });
-
-      set_transaction_headers(trx);
-      trx.sign( get_private_key( N(eosio), "active" ), control->get_chain_id()  );
-      return push_transaction( trx );
-   }
-
-//    transaction_trace_ptr base_tester::set_rotate(bool state) {
-//         signed_transaction trx;
-//         set_transaction_headers(trx);
-//         trx.actions.emplace_back( vector<permission_level>{{N(eosio),config::active_name}},
-//                                 setrotate{
-//                                    .state  = state
-//                                 });
-
-//       set_transaction_headers(trx);
-//       trx.sign( get_private_key( N(eosio), "active" ), control->get_chain_id()  );
-//       return push_transaction( trx );
-//    }
-
    void base_tester::init(controller::config config) {
       cfg = config;
       open();
