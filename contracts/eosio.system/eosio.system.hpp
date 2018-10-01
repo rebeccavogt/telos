@@ -295,6 +295,13 @@ namespace eosiosystem {
 
          bool crossed_missed_blocks_threshold(uint32_t amountBlocksMissed);
          
+         void add_producer_to_kick_list(offline_producer producer);
+
+         void remove_producer_to_kick_list(offline_producer producer);
+
+         bool reach_consensus();
+
+         void kick_producer();
    };
 
 } /// eosiosystem
