@@ -68,6 +68,10 @@ class trail : public contract {
         */
         void rmvreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, account_name voter);
 
+        void regballot(account_name publisher);
+
+        void unregballot(account_name publisher);
+
     protected:
 
         /// @abi table registries i64

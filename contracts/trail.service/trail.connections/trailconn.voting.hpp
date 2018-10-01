@@ -59,12 +59,22 @@ struct environment {
     account_name publisher;
     uint64_t total_tokens;
     uint64_t total_voters;
+    uint64_t total_ballots;
 
     uint64_t primary_key() const { return publisher; }
     EOSLIB_SERIALIZE(environment, (publisher)(total_tokens)(total_voters))
 };
 
+/// @abi table ballots
+struct ballot {
+    account_name publisher;
+
+    uint64_t primary_key() const { return publisher; }
+    EOSLIB_SERIALIZE(ballot, (publisher))
+};
+
 typedef multi_index<N(voters), voterid> voters_table;
+typedef multi_index<N(ballots), ballot> ballots_table;
 typedef singleton<N(environment), environment> environment_singleton;
 
 //----------EOSIO.TOKEN DEFINITIONS----------
