@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <cmath>
 
-#define VOTE_VARIATION 0.1
+#define VOTE_VARIATION 0.001
 #define TWELVE_HOURS_US 43200000000
 #define SIX_MINUTES_US 360000000 // debug version
 #define TWELVE_MINUTES_US 720000000
