@@ -75,6 +75,7 @@ namespace eosiosystem {
 
       _producers.modify( prod, 0, [&]( producer_info& info ){
             info.deactivate();
+            info.missed_blocks = 0;
       });
    }
 
@@ -85,7 +86,7 @@ namespace eosiosystem {
 
    void system_contract::updateRotationTime(block_timestamp block_time){
       _grotations.last_rotation_time = block_time;
-      _grotations.next_rotation_time = block_timestamp(block_time.to_time_point() + time_point(microseconds(TWELVE_MINUTES_US)));
+      _grotations.next_rotation_time = block_timestamp(block_time.to_time_point() + time_point(microseconds(SIX_HOURS_US)));
    } 
    //TODO: Add _grotations.is_rotation_active, that way this feature can be toggled.
    void system_contract::update_elected_producers( block_timestamp block_time ) {
