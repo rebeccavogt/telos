@@ -55,9 +55,12 @@ class trail : public contract {
          * @param vote_key - 
          * @param direction - 
          * @param weight - 
+         * @param expiration - 
          * @param voter - 
         */
-        void addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, uint16_t direction, account_name voter);
+        void addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, uint16_t direction, uint32_t expiration, account_name voter);
+
+        void rmvexpvotes(account_name voter);
 
         /**
          * Removes a receipt from the receipt list on a VoterID.
@@ -66,7 +69,7 @@ class trail : public contract {
          * @param vote_key - 
          * @param voter - 
         */
-        void rmvreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, account_name voter);
+        //void rmvreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, account_name voter);
 
         void regballot(account_name publisher);
 

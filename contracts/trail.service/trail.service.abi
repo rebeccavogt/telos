@@ -20,6 +20,9 @@
         },{
           "name": "weight",
           "type": "int64"
+        },{
+            "name": "expiration",
+            "type": "uint32"
         }
       ]
     },{
@@ -123,27 +126,27 @@
           "name": "direction",
           "type": "uint16"
         },{
+            "name": "expiration",
+            "type": "uint32"
+        },{
           "name": "voter",
           "type": "name"
         }
       ]
     },{
-      "name": "rmvreceipt",
-      "base": "",
-      "fields": [{
-          "name": "vote_code",
-          "type": "uint64"
-        },{
-          "name": "vote_scope",
-          "type": "uint64"
-        },{
-          "name": "vote_key",
-          "type": "uint64"
-        },{
-          "name": "voter",
-          "type": "name"
-        }
-      ]
+        "name": "regballot",
+        "base": "",
+        "fields": [{
+            "name": "publisher",
+            "type": "name"
+        }]
+    },{
+        "name": "unregballot",
+        "base": "",
+        "fields": [{
+            "name": "publisher",
+            "type": "name"
+        }]
     }
   ],
   "actions": [{
@@ -167,9 +170,13 @@
       "type": "addreceipt",
       "ricardian_contract": ""
     },{
-      "name": "rmvreceipt",
-      "type": "rmvreceipt",
-      "ricardian_contract": ""
+        "name": "regballot",
+        "type": "regballot",
+        "ricardian_contract": ""
+    },{
+        "name": "unregballot",
+        "type": "unregballot",
+        "ricardian_contract": ""
     }
   ],
   "tables": [{
