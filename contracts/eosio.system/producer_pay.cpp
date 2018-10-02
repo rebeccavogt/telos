@@ -54,7 +54,7 @@ void system_contract::add_producer_to_kick_list(offline_producer producer) {
         return op.name == bp_name; 
     }); 
 
-    if(bp == _grotations.offline_bps.end()) _grotations.offline_bps.push_back(producer);
+    if(bp == _grotations.offline_bps.end())  _grotations.offline_bps.push_back(producer);
     else { // update producer missed blocks and total votes
        for(int i = 0; i < _grotations.offline_bps.size(); i++) {
            if(bp_name == _grotations.offline_bps[i].name){
@@ -64,10 +64,8 @@ void system_contract::add_producer_to_kick_list(offline_producer producer) {
            }
        }    
     }
-        
-    if(active_schedule_size > 0) {
-        if(!reach_consensus()) kick_producer();
-    } 
+     
+    if(active_schedule_size > 1 && !reach_consensus()) kick_producer();
 }
 
 void system_contract::remove_producer_to_kick_list(offline_producer producer) {
@@ -87,10 +85,10 @@ void system_contract::kick_producer() {
         if(op1.missed_blocks != op2.missed_blocks) return op1.missed_blocks > op2.missed_blocks;
         else return op1.total_votes < op2.total_votes;
     });
-
-    for(uint32_t i = 0; i < _grotations.offline_bps.size(); i++) {
-        auto obp = _grotations.offline_bps[i];
+    for(uint32_t i = 0; i < o_bps.size(); i++) {
+        auto obp = o_bps[i];
         auto bp = _producers.find(obp.name);
+
         _producers.modify(bp, 0, [&](auto &p) {
             p.deactivate();
             remove_producer_to_kick_list(obp);
@@ -98,26 +96,25 @@ void system_contract::kick_producer() {
 
         if(reach_consensus()) break;
     }
-
-    // update_elected_producers(block_timestamp(now()));
 }
 
 bool system_contract::crossed_missed_blocks_threshold(uint32_t amountBlocksMissed) {
-    if(active_schedule_size == 0) return false;
+    if(active_schedule_size <= 1) return false;
+
     //6hrs
-    uint64_t timeframe = std::abs((_grotations.next_rotation_time.to_time_point() - _grotations.last_rotation_time.to_time_point()).to_seconds());
+    auto timeframe = (_grotations.next_rotation_time.to_time_point() - _grotations.last_rotation_time.to_time_point()).to_seconds();
    
     //get_active_producers returns the number of bytes populated
     // account_name prods[21];
-    uint32_t totalProds = active_schedule_size;//get_active_producers(prods, sizeof(account_name) * 21) / 8;
+    auto totalProds = active_schedule_size;//get_active_producers(prods, sizeof(account_name) * 21) / 8;
     //Total blocks that can be produced in a cycle
-    uint32_t maxBlocksPerCycle = (totalProds - 1) * MAX_BLOCK_PER_CYCLE;
+    auto maxBlocksPerCycle = (totalProds - 1) * MAX_BLOCK_PER_CYCLE;
     //total block that can be produced in the current timeframe
-    uint64_t totalBlocksPerTimeframe = (maxBlocksPerCycle * timeframe) / (maxBlocksPerCycle / 2);
+    auto totalBlocksPerTimeframe = (maxBlocksPerCycle * timeframe) / (maxBlocksPerCycle / 2);
     //max blocks that can be produced by a single producer in a timeframe
-    uint64_t maxBlocksPerProducer = (totalBlocksPerTimeframe * MAX_BLOCK_PER_CYCLE) / maxBlocksPerCycle;
+    auto maxBlocksPerProducer = (totalBlocksPerTimeframe * MAX_BLOCK_PER_CYCLE) / maxBlocksPerCycle;
     //15% is the max allowed missed blocks per single producer
-    uint64_t thresholdMissedBlocks = uint64_t(maxBlocksPerProducer * 0.15);
+    auto thresholdMissedBlocks = maxBlocksPerProducer * 0.15;
     
     return amountBlocksMissed > thresholdMissedBlocks;
 }
@@ -166,7 +163,7 @@ void system_contract::update_producer_blocks(account_name producer, uint32_t amo
   }
 }
 
-void system_contract::check_missed_blocks(block_timestamp timestamp, account_name producer) {
+void system_contract::check_missed_blocks(block_timestamp timestamp, account_name producer) { 
     if(_grotations.last_onblock_caller == 0) {
         _grotations.last_time_block_produced = timestamp;
         _grotations.last_onblock_caller = producer;
@@ -176,6 +173,7 @@ void system_contract::check_missed_blocks(block_timestamp timestamp, account_nam
   
     //12 == 6s
     auto producedTimeDiff = timestamp.slot - _grotations.last_time_block_produced.slot;
+
     if(producedTimeDiff == 1 && producer == _grotations.last_onblock_caller) set_producer_block_produced(producer, producedTimeDiff); 
     else if(producedTimeDiff == 1 && producer != _grotations.last_onblock_caller) {
         //set zero to last producer blocks_per_cycle 
@@ -192,9 +190,7 @@ void system_contract::check_missed_blocks(block_timestamp timestamp, account_nam
         uint32_t total_prods = get_active_producers(producers_schedule, sizeof(account_name) * 21) / 8;
         
         active_schedule_size = total_prods;
-
         auto currentProducerIndex = std::distance(producers_schedule, std::find(producers_schedule, producers_schedule + total_prods, producer));
-        
         auto totalMissedSlots = std::fabs(producedTimeDiff - 1 - lastPitr->blocks_per_cycle);
 
         //last producer didn't miss blocks    
@@ -203,7 +199,8 @@ void system_contract::check_missed_blocks(block_timestamp timestamp, account_nam
             set_producer_block_produced(_grotations.last_onblock_caller, RESET_BLOCKS_PRODUCED);
             
             account_name bp_offline = currentProducerIndex == 0 ? producers_schedule[total_prods - 1] : producers_schedule[currentProducerIndex - 1];
-            update_producer_blocks(producers_schedule[currentProducerIndex - 1], RESET_BLOCKS_PRODUCED, producedTimeDiff - 1);
+            
+            update_producer_blocks(bp_offline, RESET_BLOCKS_PRODUCED, producedTimeDiff - 1);
             
             set_producer_block_produced(producer, 1);
         } else { //more than one producer missed blocks
@@ -241,12 +238,12 @@ void system_contract::check_missed_blocks(block_timestamp timestamp, account_nam
 
 void system_contract::onblock(block_timestamp timestamp, account_name producer) {
     require_auth(N(eosio));
+    
     recalculate_votes();
     
     // Until activated stake crosses this threshold no new rewards are paid
-    if (_gstate.total_activated_stake < min_activated_stake && _gstate.thresh_activated_stake_time == 0){
-        return;
-    }
+    if (_gstate.total_activated_stake < min_activated_stake && _gstate.thresh_activated_stake_time == 0) return;
+    
      
     if (_gstate.last_pervote_bucket_fill == 0) /// start the presses
         _gstate.last_pervote_bucket_fill = current_time();
@@ -263,11 +260,11 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer) 
         });
     }
 
-    if (_grotations.is_kick_active) {
-        check_missed_blocks(timestamp, producer);
-    }
+    // if (_grotations.is_kick_active) {
+    //     check_missed_blocks(timestamp, producer);
+    // }
 
-    //check_missed_blocks(timestamp, producer);
+    check_missed_blocks(timestamp, producer);
 
     // Only update block producers once every minute, block_timestamp is in half seconds
     if (timestamp.slot - _gstate.last_producer_schedule_update.slot > 120) {
