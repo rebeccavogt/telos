@@ -794,15 +794,10 @@ void try_local_port( const string& lo_address, uint16_t port, uint32_t duration 
    }
 }
 
-<<<<<<< HEAD:programs/teclos/main.cpp
-void ensure_keosd_running(CLI::App* app) { // TELOS CHANGES: rename keosd to tkeosd
-    // get, version, net do not require tkeosd
-=======
 void ensure_keosd_running(CLI::App* app) {
     if (no_auto_keosd)
         return;
     // get, version, net do not require keosd
->>>>>>> v1.3.0:programs/cleos/main.cpp
     if (tx_skip_sign || app->got_subcommand("get") || app->got_subcommand("version") || app->got_subcommand("net"))
         return;
     if (app->get_subcommand("create")->got_subcommand("key")) // create key does not require wallet

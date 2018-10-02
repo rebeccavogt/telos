@@ -65,7 +65,7 @@ fi
       create_symlink "eosio-s2wasm"
       create_symlink "eosio-wast2wasm"
       create_symlink "eosiocpp"
-      create_symlink "keosd"
+      create_symlink "tkeosd"
       create_symlink "nodeos"
    }
 
