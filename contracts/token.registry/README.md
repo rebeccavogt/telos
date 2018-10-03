@@ -1,6 +1,4 @@
-# TIP-5 Interface and Sample Implementation Overview
-
-For a complete code walkthrough, go [here]().
+# TIP-5 Interface and Sample Implementation Walkthrough
 
 ### Tables and Structs
 
