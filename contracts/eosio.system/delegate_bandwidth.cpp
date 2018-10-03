@@ -370,9 +370,10 @@ namespace eosiosystem {
                });
          }
          eosio_assert( 0 <= from_voter->staked, "stake for voting cannot be negative");
-         if( from == N(b1) ) {
-            validate_b1_vesting( from_voter->staked );
-         }
+      // update to telosfoundation account
+      //    if( from == N(b1) ) {
+      //       validate_b1_vesting( from_voter->staked );
+      //    }
 
          if( from_voter->producers.size() || from_voter->proxy ) {
             update_votes( from, from_voter->proxy, from_voter->producers, false );

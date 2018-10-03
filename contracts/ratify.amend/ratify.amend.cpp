@@ -7,11 +7,12 @@ ratifyamend::ratifyamend(account_name self) : contract(self), thresh_singleton(s
 
         thresh_struct = threshold{
             _self, //publisher
-            0, //total_voters
+            0, //initial total_voters
             0, //initial quorum_threshold
-            300 //expiration_length in seconds (default is 5,000,000 or ~58 days)
+            uint32_t(600) //expiration_length in seconds (default is 5,000,000 or ~58 days)
         };
 
+        update_thresh();
         thresh_singleton.set(thresh_struct, _self);
     } else {
 
@@ -28,7 +29,7 @@ ratifyamend::~ratifyamend() {
 }
 
 void ratifyamend::insertdoc(string title, vector<string> clauses) {
-    require_auth(_self); //Only contract owner can insert new document
+    require_auth(_self); //only contract owner can insert new document
     
     documents_table documents(_self, _self);
 
@@ -44,51 +45,55 @@ void ratifyamend::insertdoc(string title, vector<string> clauses) {
     print("\nAssigned Document ID: ", doc_id);
 }
 
-void ratifyamend::propose(string title, string ipfs_url, uint64_t document_id, uint64_t clause_id, account_name proposer) {
+void ratifyamend::propose(string title, uint64_t document_id, vector<uint16_t> new_clause_ids, vector<string> new_ipfs_urls, account_name proposer) {
     require_auth(proposer);
-
-    //eosio_assert(document_id >= 0 && clause_id >= 0, "Document and Clause ID cannot be less than 0"); //irrellevant?
 
     documents_table documents(_self, _self);
     auto d = documents.find(document_id);
 
     eosio_assert(d != documents.end(), "Document Not Found");
-    print("\nDocument Found");
-
     auto doc_struct = *d;
 
-    eosio_assert(doc_struct.clauses.size() >= clause_id, "Clause Not Found"); //TODO: consider revising to vector.at()
-    print("\nClause Found");
+    eosio_assert(new_clause_ids.size() == new_ipfs_urls.size(), "Clause ID vector and IPFS url vector sizes must match");
+
+    auto doc_size = doc_struct.clauses.size();
+    int16_t last_clause_id = -1;
+    auto last_ipfs_url = 0;
+
+    for (int i = 0; i < new_clause_ids.size(); i++) {
+        eosio_assert(new_clause_ids.at(i) > last_clause_id, "Clause IDs Must Be In Ascending Order");
+        last_clause_id = new_clause_ids.at(i);
+        eosio_assert(new_clause_ids.at(i) <= (doc_size + 1), "Invalid Clause Number");
+        
+        last_ipfs_url++;
+        if (new_clause_ids.at(i) == (doc_size + 1)) { //if clause is new, increase doc_size
+            doc_size++;
+        }
+    }
 
     //NOTE: 100.0000 TLOS fee, refunded if proposal passes
     action(permission_level{ proposer, N(active) }, N(eosio.token), N(transfer), make_tuple( //NOTE: susceptible to ram-drain bug
     	proposer,
-        N(trailservice),
+        _self,
         asset(int64_t(1000000), S(4, TLOS)),
         std::string("Ratify/Amend Proposal Fee")
 	)).send();
 
     proposals_table proposals(_self, _self);
 
-    uint64_t prop_id = proposals.available_primary_key();
-    uint32_t prop_time = now();
-
     proposals.emplace(proposer, [&]( auto& a ){
-        a.id = prop_id;
+        a.id = proposals.available_primary_key();
         a.document_id = document_id;
-        a.clause_id = clause_id;
         a.title = title;
-        a.ipfs_url = ipfs_url;
+        a.new_clause_ids = new_clause_ids;
+        a.new_ipfs_urls = new_ipfs_urls;
         a.yes_count = 0;
         a.no_count = 0;
         a.abstain_count = 0;
         a.proposer = proposer;
-        a.expiration = prop_time + thresh_struct.expiration_length;
+        a.expiration = now() + thresh_struct.expiration_length;
         a.status = 0;
     });
-
-    print("\nProposal Emplacement: SUCCESS");
-    print("\nProposal ID: ", prop_id);
 }
 
 void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name voter) {
@@ -114,7 +119,7 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
 
     if (vid.receipt_list.empty()) {
 
-        print("\nVoteInfo Stack Empty...Calling TrailService to update VoterID");
+        print("\nReceipt List Empty...Calling TrailService to update VoterID");
 
         action(permission_level{ voter, N(active) }, N(trailservice), N(addreceipt), make_tuple(
     	    _self,      
@@ -124,17 +129,17 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
             voter
 	    )).send();
 
-        print("\nVoterID Successfully Updated");
+        print("\nReceipt Added. VoterID Successfully Updated");
     } else {
 
-        print("\nSearching receipts list for existing VoteInfo...");
+        print("\nSearching receipts list for existing VoteReceipt...");
 
         bool found = false;
 
         for (votereceipt r : vid.receipt_list) {
             if (r.vote_key == proposal_id) {
 
-                print("\nVoteInfo receipt found");
+                print("\nVoteReceipt receipt found");
                 found = true;
 
                 switch (r.direction) {
@@ -254,13 +259,11 @@ void ratifyamend::unvote(uint64_t proposal_id, account_name voter) {
 	)).send();
 }
 
-void ratifyamend::close(uint64_t proposal_id) {
-    
+void ratifyamend::close(uint64_t proposal_id) { //TODO: add require_auth for proposer?
     proposals_table proposals(_self, _self);
     auto p = proposals.find(proposal_id);
+
     eosio_assert(p != proposals.end(), "Proposal Not Found");
-    
-    print("\nProposal Found");
     auto po = *p;
 
     eosio_assert(po.expiration <= now(), "Voting Window Still Open");
@@ -270,76 +273,61 @@ void ratifyamend::close(uint64_t proposal_id) {
     uint64_t pass_thresh = ((po.yes_count + po.no_count) / 3) * 2; // 66.67% of total votes
 
     //refund thresholds
-    uint64_t q_refund_thresh = thresh_struct.total_voters / 25; //4% of all voters //NOTE: moving window, consider saving total voters at proposal time?
-    uint64_t p_refund_thresh = total_votes / 4; //25% of votes
+    uint64_t q_refund_thresh = thresh_struct.total_voters / 25; //4% of all registered voters
+    uint64_t p_refund_thresh = total_votes / 4; //25% of votes cast
 
-    print("\npass_thresh: ", pass_thresh);
-    print("\nnow: ", now());
+    //check for zero votes
+    if (total_votes == uint64_t(0)) {
 
-    if (total_votes >= thresh_struct.quorum_threshold && total_votes != uint64_t(0)) {
+        proposals.modify(p, 0, [&]( auto& a ) {
+            a.status = 2;
+        });
 
-        print("\nPassed Quorum Check");
-        
-        if (po.yes_count >= pass_thresh) {
+        print("\nProposal Failed With 0 Votes.");
 
-            print("\nPass Thresh Passed...Updating Prop and Refunding Proposer");
-            
-            proposals.modify(p, 0, [&]( auto& a ) {
-                a.status = 1;
-            });
+        return;
+    }
 
-            action(permission_level{ _self, N(eosio.code) }, N(eosio.token), N(transfer), make_tuple( //NOTE: susceptible to ram-drain bug
-    	        N(trailservice),
-                po.proposer,
-                asset(int64_t(1000000), S(4, TLOS)),
-                std::string("Ratify/Amend Proposal Fee Refund")
-	        )).send();
+    //determine pass/fail and refund eligibility
+    if (total_votes >= thresh_struct.quorum_threshold && po.yes_count >= pass_thresh) { //PASS
 
-            print("\nProposal Passed");
-            print("\nRefund Sent to Proposer");
-        } else {
+        proposals.modify(p, 0, [&]( auto& a ) {
+            a.status = 1;
+        });
 
-            print("\nFailed Pass Thresh Check");
+        action(permission_level{ _self, N(active) }, N(eosio.token), N(transfer), make_tuple( //NOTE: susceptible to ram-drain bug
+    	    _self,
+            po.proposer,
+            asset(int64_t(1000000), S(4, TLOS)),
+            std::string("Ratify/Amend Proposal Fee Refund")
+	    )).send();
 
-            proposals.modify(p, 0, [&]( auto& a ) {
-                a.status = 2;
-            });
+        update_doc(po.document_id, po.new_clause_ids, po.new_ipfs_urls);
 
-            print("\nProposal Failed Due To Insufficient YES Votes");
+        print("\nProposal Passed...Refund Sent...Documents Updated.");
 
-            if (po.yes_count >= p_refund_thresh && total_votes >= q_refund_thresh) {
-                print("\nRefund Threshold Reached...Refunding Fee");
-
-                action(permission_level{ _self, N(eosio.code) }, N(eosio.token), N(transfer), make_tuple( //NOTE: susceptible to ram-drain bug
-    	            N(trailservice),
-                    po.proposer,
-                    asset(int64_t(1000000), S(4, TLOS)),
-                    std::string("Ratify/Amend Proposal Fee Refund")
-	            )).send();
-
-                print("\nFee Refunded");
-            }
-        }
-    } else {
+    } else if (po.yes_count >= p_refund_thresh && total_votes >= q_refund_thresh) { //FAILED, REFUND CHECK
         
         proposals.modify(p, 0, [&]( auto& a ) {
             a.status = 2;
         });
 
-        print("\nProposal Failed Due To Insufficient Quorum");
+        action(permission_level{ _self, N(active) }, N(eosio.token), N(transfer), make_tuple( //NOTE: susceptible to ram-drain bug
+    	    _self,
+            po.proposer,
+            asset(int64_t(1000000), S(4, TLOS)),
+            std::string("Ratify/Amend Proposal Fee Refund")
+	    )).send();
 
-        if (po.yes_count >= p_refund_thresh && total_votes >= q_refund_thresh && p_refund_thresh > 0 && q_refund_thresh > 0) {
-            print("\nRefund Threshold Reached...Refunding Fee");
+        print("\nProposal Failed...Refund Sent.");
+        
+    } else { //FAILED, NO REFUND CHECK
 
-            action(permission_level{ _self, N(eosio.code) }, N(eosio.token), N(transfer), make_tuple( //NOTE: susceptible to ram-drain bug
-    	        N(trailservice),
-                po.proposer,
-                asset(int64_t(1000000), S(4, TLOS)),
-                std::string("Ratify/Amend Proposal Fee Refund")
-	        )).send();
+        proposals.modify(p, 0, [&]( auto& a ) {
+            a.status = 2;
+        });
 
-            print("\nFee Refunded");
-        }
+        print("\nProposal Passed.");
     }
     
 }
@@ -354,8 +342,26 @@ void ratifyamend::update_thresh() {
 
     thresh_struct.quorum_threshold = new_quorum;
     thresh_struct.total_voters = new_total_voters;
+}
 
-    print("\nEnvironment Thresholds updated");
+void ratifyamend::update_doc(uint64_t document_id, vector<uint16_t> new_clause_ids, vector<string> new_ipfs_urls) {
+    documents_table documents(_self, _self);
+    auto d = documents.find(document_id);
+    auto doc = *d;
+
+    auto doc_size = doc.clauses.size();
+    for (int i = 0; i < new_clause_ids.size(); i++) {
+        
+        if (new_clause_ids[i] < doc.clauses.size()) { //update existing clause
+            doc.clauses[new_clause_ids[i]] = new_ipfs_urls.at(i);
+        } else { //add new clause
+            doc.clauses.push_back(new_ipfs_urls.at(i));
+        }
+    }
+
+    documents.modify(d, 0, [&]( auto& a ) {
+        a.clauses = doc.clauses;
+    });
 }
 
 EOSIO_ABI( ratifyamend, (insertdoc)(propose)(vote)(unvote)(close))

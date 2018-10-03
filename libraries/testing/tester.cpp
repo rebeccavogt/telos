@@ -110,7 +110,6 @@ namespace eosio { namespace testing {
          push_genesis_block();
    }
 
-
    void base_tester::init(controller::config config) {
       cfg = config;
       open();
@@ -121,7 +120,6 @@ namespace eosio { namespace testing {
       control.reset();
       chain_transactions.clear();
    }
-
 
    void base_tester::open() {
       control.reset( new controller(cfg) );

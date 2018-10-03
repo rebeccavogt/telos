@@ -52,20 +52,21 @@ namespace eosiosystem {
       uint16_t             last_producer_schedule_size = 0;
       double               total_producer_vote_weight = 0; /// the sum of all producer votes
       block_timestamp      last_name_close;
+      uint32_t             last_claimrewards = 0;
+      uint32_t             next_payment = 0;
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
       EOSLIB_SERIALIZE_DERIVED( eosio_global_state, eosio::blockchain_parameters,
                                 (max_ram_size)(total_ram_bytes_reserved)(total_ram_stake)
                                 (last_producer_schedule_update)(last_pervote_bucket_fill)
                                 (pervote_bucket)(perblock_bucket)(total_unpaid_blocks)(total_activated_stake)(thresh_activated_stake_time)
-                                (last_producer_schedule_size)(total_producer_vote_weight)(last_name_close) )
+                                (last_producer_schedule_size)(total_producer_vote_weight)(last_name_close)(last_claimrewards)(next_payment) )
    };
 
    /**
     * TELOS CHANGES:
     * 
-    * 1. Added missed_blocks field, used for counting missed blocks and
-    *    adjusting producer payout accordingly.
+    * 1. Added missed_blocks field, used for counting missed blocks.
     */
    struct producer_info {
       account_name          owner;
@@ -90,17 +91,23 @@ namespace eosiosystem {
    };
 
    struct rotation_info {
-      account_name           bp_currently_out;
-      account_name           sbp_currently_in;
-      uint32_t               bp_out_index;
-      uint32_t               sbp_in_index;
-      block_timestamp        next_rotation_time;
-      block_timestamp        last_rotation_time;
-      account_name           current_bp; 
-      block_timestamp        last_time_block_produced;
+      bool                            is_rotation_active = true;
+      account_name                    bp_currently_out;
+      account_name                    sbp_currently_in;
+      uint32_t                        bp_out_index;
+      uint32_t                        sbp_in_index;
+      block_timestamp                 next_rotation_time;
+      block_timestamp                 last_rotation_time;
 
-      EOSLIB_SERIALIZE( rotation_info, (bp_currently_out)(sbp_currently_in)(bp_out_index)(sbp_in_index)(next_rotation_time)
-                        (last_rotation_time)(current_bp)(last_time_block_produced) )
+      //NOTE: This might not be the best place for this information
+
+      bool                            is_kick_active = true;
+      account_name                    last_onblock_caller; //TODO: This name is ambiguous maybe
+      block_timestamp                 last_time_block_produced;
+      std::vector<offline_producer>   offline_bps;
+
+      EOSLIB_SERIALIZE( rotation_info, (is_rotation_active)(bp_currently_out)(sbp_currently_in)(bp_out_index)(sbp_in_index)(next_rotation_time)
+                        (last_rotation_time)(is_kick_active)(last_onblock_caller)(last_time_block_produced)(offline_bps) )
    };
 
    struct voter_info {
@@ -240,6 +247,10 @@ namespace eosiosystem {
 
          void rmvproducer( account_name producer );
 
+         void setkick(bool state);
+
+         void setrotate(bool state);
+
          void bidname( account_name bidder, account_name newname, asset bid );
         
       private:
@@ -284,6 +295,13 @@ namespace eosiosystem {
 
          bool crossed_missed_blocks_threshold(uint32_t amountBlocksMissed);
          
+         void add_producer_to_kick_list(offline_producer producer);
+
+         void remove_producer_to_kick_list(offline_producer producer);
+
+         bool reach_consensus();
+
+         void kick_producer();
    };
 
 } /// eosiosystem

@@ -1219,7 +1219,7 @@ BOOST_FIXTURE_TEST_CASE( proxy_actions_affect_producers, eosio_system_tester, * 
 } FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE(producer_pay, eosio_system_tester, * boost::unit_test::tolerance(1e-10)) try {
-
+      
    const double usecs_per_year  = 52 * 7 * 24 * 3600 * 1000000ll;
    const double secs_per_year   = 52 * 7 * 24 * 3600;
    const double continuous_rate = 0.025; 
@@ -1258,6 +1258,9 @@ BOOST_FIXTURE_TEST_CASE(producer_pay, eosio_system_tester, * boost::unit_test::t
 
       prod = get_producer_info("defproducera");
       const uint32_t unpaid_blocks = prod["unpaid_blocks"].as<uint32_t>();
+      const bool is_active = prod["is_active"].as<bool>();
+      std::cout << "Producer defproducera unpaid_blocks: " << unpaid_blocks << " Is it greater than 1: " << (1 < unpaid_blocks) << std::endl;
+      std::cout << "Producer defproducera is_active: " << is_active << std::endl;
       BOOST_REQUIRE(1 < unpaid_blocks);
       BOOST_REQUIRE_EQUAL(0, prod["last_claim_time"].as<uint64_t>());
 
@@ -1951,21 +1954,19 @@ BOOST_FIXTURE_TEST_CASE(producer_onblock_check, eosio_system_tester) try {
 
    // give a chance for everyone to produce blocks
    {
-      // produce_blocks(21 * 12);
-      // ?? and why is there a need for such a high number of blocks for everyone to produce ?? 
-      produce_blocks(21 * 24);
+      produce_blocks(21 * 12);
       // for (uint32_t i = 0; i < producer_names.size(); ++i) {
       //    std::cout<<"["<<producer_names[i]<<"]: "<<get_producer_info(producer_names[i])["unpaid_blocks"].as<uint32_t>()<<std::endl;
       // }
 
-      bool all_21_produced = true;
-      for (uint32_t i = 0; i < 21; ++i) {
+      bool all_21_produced = 0 < get_producer_info(producer_names[21])["unpaid_blocks"].as<uint32_t>();
+      for (uint32_t i = 1; i < 21; ++i) {
          if (0 == get_producer_info(producer_names[i])["unpaid_blocks"].as<uint32_t>()) {
             all_21_produced= false;
          }
       }
-      bool rest_didnt_produce = true;
-      for (uint32_t i = 21; i < producer_names.size(); ++i) {
+      bool rest_didnt_produce = 0 == get_producer_info(producer_names[0])["unpaid_blocks"].as<uint32_t>();
+      for (uint32_t i = 22; i < producer_names.size(); ++i) {
          if (0 < get_producer_info(producer_names[i])["unpaid_blocks"].as<uint32_t>()) {
             rest_didnt_produce = false;
          }
@@ -2317,14 +2318,17 @@ BOOST_FIXTURE_TEST_CASE( elect_producers /*_and_parameters*/, eosio_system_teste
    BOOST_REQUIRE_EQUAL( success(), vote( N(bob111111111), { N(defproducer3) } ) );
    produce_blocks(250);
    producer_keys = control->head_block_state()->active_schedule.producers;
+   /*
+   wdump((producer_keys));
    BOOST_REQUIRE_EQUAL( 3, producer_keys.size() );
+   */
 
    // The test below is invalid now, producer schedule is not updated if there are
    // fewer producers in the new schedule
-   /*
    BOOST_REQUIRE_EQUAL( 2, producer_keys.size() );
    BOOST_REQUIRE_EQUAL( name("defproducer1"), producer_keys[0].producer_name );
    BOOST_REQUIRE_EQUAL( name("defproducer3"), producer_keys[1].producer_name );
+   /*
    //config = config_to_variant( control->get_global_properties().configuration );
    //auto prod3_config = testing::filter_fields( config, producer_parameters_example( 3 ) );
    //REQUIRE_EQUAL_OBJECTS(prod3_config, config);
@@ -2388,7 +2392,6 @@ BOOST_FIXTURE_TEST_CASE( bid_invalid_names, eosio_system_tester ) try {
 } FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE( multiple_namebids, eosio_system_tester ) try {
-
    const std::string not_closed_message("auction for name is not closed yet");
 
    std::vector<account_name> accounts = { N(alice), N(bob), N(carl), N(david), N(eve) };
@@ -2526,7 +2529,6 @@ BOOST_FIXTURE_TEST_CASE( multiple_namebids, eosio_system_tester ) try {
 } FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE( vote_producers_in_and_out, eosio_system_tester ) try {
-
    const asset net = core_from_string("80.0000");
    const asset cpu = core_from_string("80.0000");
    std::vector<account_name> voters = { N(producvotera), N(producvoterb), N(producvoterc), N(producvoterd) };
