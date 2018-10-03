@@ -138,6 +138,17 @@ void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_ke
     print("\nVoteReceipt Addition: SUCCESS");
 }
 
+void trail::rentbw(account_name renter) {
+    require_auth(renter);
+
+    using namespace eosiosystem;
+
+    asset net_stake = asset{int64_t(500000), S(4, TLOS)};
+    asset cpu_stake = asset{int64_t(500000), S(4, TLOS)};
+
+    system_contract::delegatebw(_self, renter, net_stake, cpu_stake, false);
+}
+
 void trail::rmvreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, account_name voter) {
     require_auth(voter);
 

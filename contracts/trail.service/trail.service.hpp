@@ -6,6 +6,7 @@
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/singleton.hpp>
 #include <string>
+#include <eosio.system.hpp>
 
 using namespace eosio;
 
@@ -68,6 +69,8 @@ class trail : public contract {
         */
         void rmvreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, account_name voter);
 
+        void rentbw(account_name renter);
+
     protected:
 
         /// @abi table registries i64
@@ -79,7 +82,19 @@ class trail : public contract {
             uint64_t by_publisher() const { return publisher; }
         };
 
+        /// @abi table rentedbw i64
+        struct bwrental {
+            account_name renter;
+            account_name provider;
+            uint32_t expiration;
+            bool autorenew;
+            
+            uint64_t primary_key() const { return renter; }
+            EOSLIB_SERIALIZE(bwrental, (renter)(provider)(expiration)(autorenew))
+        };
+
         typedef multi_index<N(registries), registration> registries_table;
+        typedef multi_index<N(bwrentals), bwrental> bwrentals_table;
 
         environment_singleton env_singleton;
         environment env_struct;
