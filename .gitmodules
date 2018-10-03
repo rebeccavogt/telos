@@ -16,7 +16,7 @@
 	branch = eosio
 [submodule "externals/binaryen"]
 	path = externals/binaryen
-	url = https://github.com/EOSIO/binaryen
+	url = https://github.com/EOSIO/binaryen/
 
 [submodule "libraries/softfloat"]
 	path = libraries/softfloat
@@ -27,3 +27,6 @@
 [submodule "libraries/fc"]
 	path = libraries/fc
 	url = https://github.com/Telos-Foundation/fc
+[submodule "libraries/wabt"]
+	path = libraries/wabt
+	url = http://github.com/EOSIO/wabt

@@ -126,8 +126,11 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
     	    _self,
     	    prop.id,
             direction,
+            prop.expiration,
             voter
 	    )).send();
+
+        //require_recipient(N(trailservice)); //wtf does this do???
 
         print("\nReceipt Added. VoterID Successfully Updated");
     } else {
@@ -155,6 +158,7 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
     	            _self,
     	            prop.id,
                     direction,
+                    prop.expiration,
                     voter
 	            )).send();
 
@@ -172,6 +176,7 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
     	        _self,
     	        prop.id,
                 direction,
+                prop.expiration,
                 voter
 	        )).send();
 
@@ -199,6 +204,7 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
     print("\nVote Weight: ", new_weight);
 }
 
+/*
 void ratifyamend::unvote(uint64_t proposal_id, account_name voter) {
     voters_table voters(N(trailservice), voter);
     auto v = voters.find(voter);
@@ -258,6 +264,7 @@ void ratifyamend::unvote(uint64_t proposal_id, account_name voter) {
         voter
 	)).send();
 }
+*/
 
 void ratifyamend::close(uint64_t proposal_id) { //TODO: add require_auth for proposer?
     proposals_table proposals(_self, _self);
@@ -364,4 +371,4 @@ void ratifyamend::update_doc(uint64_t document_id, vector<uint16_t> new_clause_i
     });
 }
 
-EOSIO_ABI( ratifyamend, (insertdoc)(propose)(vote)(unvote)(close))
+EOSIO_ABI(ratifyamend, (insertdoc)(propose)(vote)(close))

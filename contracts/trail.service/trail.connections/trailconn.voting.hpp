@@ -1,7 +1,7 @@
 /**
  * This file includes all definitions necessary to interact with Trail's voting system. Developers who want to
  * utilize the system simply must include this file in their implementation to interact with the information
- * stores by Trail.
+ * stored by Trail.
  * 
  * @author Craig Branscom
  */
@@ -23,6 +23,7 @@ using namespace eosio;
  * @field vote_key - primary key of object where vote is stored
  * @field direction - direction of vote, where 0 = NO, 1 = YES, and 2 = ABSTAIN
  * @field weight - weight of vote
+ * @field expiration - time_point of vote's expiration. Vote can be erased after expiring.
  * 
  * TODO: Could this be EOSLIB_SERIALIZED?
  */
@@ -32,6 +33,7 @@ struct votereceipt {
     uint64_t vote_key;
     uint16_t direction; //TODO: Use enum?
     int64_t weight;
+    uint32_t expiration;
 };
 
 /**
@@ -59,12 +61,22 @@ struct environment {
     account_name publisher;
     uint64_t total_tokens;
     uint64_t total_voters;
+    uint64_t total_ballots;
 
     uint64_t primary_key() const { return publisher; }
     EOSLIB_SERIALIZE(environment, (publisher)(total_tokens)(total_voters))
 };
 
+/// @abi table ballots
+struct ballot {
+    account_name publisher;
+
+    uint64_t primary_key() const { return publisher; }
+    EOSLIB_SERIALIZE(ballot, (publisher))
+};
+
 typedef multi_index<N(voters), voterid> voters_table;
+typedef multi_index<N(ballots), ballot> ballots_table;
 typedef singleton<N(environment), environment> environment_singleton;
 
 //----------EOSIO.TOKEN DEFINITIONS----------
