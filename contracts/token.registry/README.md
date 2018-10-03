@@ -2,7 +2,7 @@
 
 ### Tables and Structs
 
-The TIP-5 standard uses three tables to store information about token balances, allotments, and global token settings.
+The TIP-5 standard uses three tables to store information about token balances, token allotments, and global token settings.
 
 * `balances_table` The balances table is used to store the native token balances of each user on the contract.
 
@@ -19,7 +19,7 @@ The TIP-5 standard uses three tables to store information about token balances, 
     * `sender` is the account that made the allotment.
     * `tokens` is the asset allotted, where `tokens.amount` is the quantity allotted.
 
-* `_config` The _config instance of the `config_singleton` typedef is a global singleton that is insantiated and set automatically by the constructor and destructor, respectively. 
+* `_config` The _config instance of the `config_singleton` typedef is a global singleton that is instantiated and set automatically by the constructor and destructor, respectively. 
 
     The _config singleton holds all information about the native token managed by the contract. This information can be set by creating a `config` struct with the desired configuration and then setting that struct into the singleton at contract destruction. This design pattern allows the `config` struct to be modified at will during execution, and then the final state will be saved automatically when the destructor is called. See the constructor and destructor implementation for an example.
 
