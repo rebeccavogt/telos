@@ -22,13 +22,15 @@
       "name": "rotation_info",
       "base": "",
       "fields": [
-        {"name":"bp_currently_out",     "type":"account_name"},
-        {"name":"sbp_currently_in",     "type":"account_name"},
-        {"name":"bp_out_index",         "type":"uint32"},
-        {"name":"sbp_in_index",         "type":"uint32"},
-        {"name":"next_rotation_time",   "type":"block_timestamp_type"},
-        {"name":"last_rotation_time",   "type":"block_timestamp_type"},
-        {"name":"current_bp",                 "type":"account_name"},
+        {"name":"is_rotation_active",         "type":"bool"},
+        {"name":"bp_currently_out",           "type":"account_name"},
+        {"name":"sbp_currently_in",           "type":"account_name"},
+        {"name":"bp_out_index",               "type":"uint32"},
+        {"name":"sbp_in_index",               "type":"uint32"},
+        {"name":"next_rotation_time",         "type":"block_timestamp_type"},
+        {"name":"last_rotation_time",         "type":"block_timestamp_type"},
+        {"name":"is_kick_active",             "type":"bool"},
+        {"name":"last_onblock_caller",        "type":"account_name"},
         {"name":"last_time_block_produced",   "type":"block_timestamp_type"}
       ]
     },{
@@ -66,6 +68,18 @@
       "fields": [
         {"name":"permission", "type":"permission_level"},
         {"name":"weight",     "type":"weight_type"}
+      ]
+    },{
+      "name": "setkick",
+      "base": "",
+      "fields": [
+        {"name":"state", "type":"bool"}
+      ]
+    },{
+      "name": "setrotate",
+      "base": "",
+      "fields": [
+        {"name":"state", "type":"bool"}
       ]
     },{
       "name": "wait_weight",
@@ -461,6 +475,14 @@
    },{
      "name": "canceldelay",
      "type": "canceldelay",
+     "ricardian_contract": ""
+   },{
+     "name": "setkick",
+     "type": "setkick",
+     "ricardian_contract": ""
+   },{
+     "name": "setrotate",
+     "type": "setrotate",
      "ricardian_contract": ""
    },{
      "name": "onerror",

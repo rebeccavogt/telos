@@ -151,7 +151,7 @@ namespace eosio { namespace testing {
                                      permission_name parent = config::owner_name );
          void delete_authority( account_name account, permission_name perm,  const vector<permission_level>& auths, const vector<private_key_type>& keys );
          void delete_authority( account_name account, permission_name perm );
-
+         
          transaction_trace_ptr create_account( account_name name,
                                                account_name creator = config::system_account_name,
                                                bool multisig = false,
