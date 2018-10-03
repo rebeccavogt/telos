@@ -56,7 +56,7 @@ void system_contract::add_producer_to_kick_list(offline_producer producer) {
 
     if(bp == _grotations.offline_bps.end())  _grotations.offline_bps.push_back(producer);
     else { // update producer missed blocks and total votes
-       for(int i = 0; i < _grotations.offline_bps.size(); i++) {
+       for(size_t i = 0; i < _grotations.offline_bps.size(); i++) {
            if(bp_name == _grotations.offline_bps[i].name){
                _grotations.offline_bps[i].total_votes = producer.total_votes;
                _grotations.offline_bps[i].missed_blocks = producer.missed_blocks;
@@ -194,7 +194,7 @@ void system_contract::check_missed_blocks(block_timestamp timestamp, account_nam
         auto totalMissedSlots = std::fabs(producedTimeDiff - 1 - lastPitr->blocks_per_cycle);
 
         //last producer didn't miss blocks    
-        if(totalMissedSlots == 0) {
+        if(totalMissedSlots == 0.0) {
             //set zero to last producer blocks_per_cycle 
             set_producer_block_produced(_grotations.last_onblock_caller, RESET_BLOCKS_PRODUCED);
             
@@ -213,7 +213,7 @@ void system_contract::check_missed_blocks(block_timestamp timestamp, account_nam
                     auto lastProdTotalMissedBlocks = MAX_BLOCK_PER_CYCLE - lastPitr->blocks_per_cycle;
                     if(lastProdTotalMissedBlocks > 0) set_producer_block_missed(producers_schedule[currentProducerIndex - 1], lastProdTotalMissedBlocks);
                     
-                    update_producer_blocks(producer, 1, totalCurrentProdMissedBlocks - lastProdTotalMissedBlocks);
+                    update_producer_blocks(producer, 1, uint32_t(totalCurrentProdMissedBlocks - lastProdTotalMissedBlocks));
                 }  else set_producer_block_produced(producer, 1);
                 
                 for(int i = 0; i <= totalProdsMissedSlots; i++) {
@@ -227,7 +227,7 @@ void system_contract::check_missed_blocks(block_timestamp timestamp, account_nam
                 set_producer_block_produced(_grotations.last_onblock_caller, RESET_BLOCKS_PRODUCED);
             } else {
                 set_producer_block_produced(_grotations.last_onblock_caller, RESET_BLOCKS_PRODUCED);
-                update_producer_blocks(producer, 1, totalMissedSlots);
+                update_producer_blocks(producer, 1, uint32_t(totalMissedSlots) );
             }
         }
     }    

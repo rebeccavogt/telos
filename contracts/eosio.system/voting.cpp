@@ -94,11 +94,11 @@ namespace eosiosystem {
 
       auto idx = _producers.get_index<N(prototalvote)>();
 
-      auto totalActiveVotedProds = std::distance(idx.begin(), idx.end());
+      uint32_t totalActiveVotedProds = uint32_t(std::distance(idx.begin(), idx.end()));
       totalActiveVotedProds = totalActiveVotedProds > MAX_PRODUCERS ? MAX_PRODUCERS : totalActiveVotedProds;
       
       std::vector<eosio::producer_key> prods;
-      prods.reserve(totalActiveVotedProds);
+      prods.reserve(size_t(totalActiveVotedProds));
 
       //add active producers with vote > 0
       for ( auto it = idx.cbegin(); it != idx.cend() && prods.size() < totalActiveVotedProds && it->total_votes > 0 && it->active(); ++it ) {
@@ -112,7 +112,7 @@ namespace eosiosystem {
 
       if (_grotations.next_rotation_time <= block_time) {
         // restart all missed blocks to bps and sbps
-        for (int i = 0; i < prods.size(); i++) {
+        for (size_t i = 0; i < prods.size(); i++) {
           auto pitr = _producers.find(prods[i].producer_name);
           if (pitr != _producers.end() && pitr->active()) {
             _producers.modify(pitr, 0, [&](auto &p) { 
@@ -430,7 +430,7 @@ namespace eosiosystem {
 
       _voters.modify( voter, 0, [&]( auto& av ) {
          av.last_vote_weight = new_vote_weight;
-         av.last_stake = totalStaked;
+         av.last_stake = int64_t(totalStaked);
          av.producers = producers;
          av.proxy     = proxy;
       });
@@ -475,7 +475,7 @@ namespace eosiosystem {
     
       if (new_weight - voter.last_vote_weight > 1){
          if (voter.proxy) {
-            if(voter.last_stake != totalStake){
+            if(voter.last_stake != int64_t(totalStake)){
                // this part should never happen since the function is called only on proxies
                auto &proxy = _voters.get(voter.proxy, "proxy not found"); // data corruption
                _voters.modify(proxy, 0, [&](auto &p) { 
@@ -497,7 +497,7 @@ namespace eosiosystem {
       
       _voters.modify(voter, 0, [&](auto &v) { 
          v.last_vote_weight = new_weight; 
-         v.last_stake = totalStake;
+         v.last_stake = int64_t(totalStake);
       });
    }
 
