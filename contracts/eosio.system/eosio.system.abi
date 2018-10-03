@@ -32,6 +32,13 @@
         {"name":"last_time_block_produced",   "type":"block_timestamp_type"}
       ]
     },{
+      "name": "payment",
+      "base": "",
+      "fields": [
+        {"name": "bp", "type": "account_name"},
+        {"name": "pay", "type": "asset"}
+      ]
+    },{
       "name": "permission_level",
       "base": "",
       "fields": [
@@ -546,6 +553,12 @@
       "index_type": "i64",
       "key_names" : ["bp_currently_out"],
       "key_types" : ["uint64"]
+    },{
+      "name": "payments",
+      "type": "payment",
+      "index_type": "i64",
+      "key_names": ["bp"],
+      "key_types": ["account_name"]
     },{
       "name": "producers",
       "type": "producer_info",
