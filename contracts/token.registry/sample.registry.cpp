@@ -88,7 +88,7 @@ void registry::createwallet(account_name recipient) {
     eosio_assert(itr == balances.end(), "Wallet already exists for given account");
 
     balances.emplace(recipient, [&]( auto& a ){
-        a.owner = owner;
+        a.owner = recipient;
         a.tokens = asset(int64_t(0), config.max_supply.symbol);
     });
 }

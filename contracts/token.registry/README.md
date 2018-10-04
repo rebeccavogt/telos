@@ -2,37 +2,7 @@
 
 This walkthrough follows the design pattern outlined in `token.registry.hpp` and implemented in `sample.registry.cpp`. In addition, this pattern was made to be extensible. Plugins that offer extended functionality are available in their respective folders, along with walkthroughs for developers and users.
 
-### Tables and Structs
-
-The TIP-5 standard uses three tables to store information about token balances, token allotments, and global token settings.
-
-* `balances_table` The balances table is used to store the native token balances of each user on the contract.
-
-    The balances_table typedef is defined in the interface, allowing developers to instantiate the table with any code or scope as needed. The balances table stores `balance` structs, indexed by the `owner` member.
-
-    * `owner` is the account that owns the token balance.
-    * `tokens` is the native asset, where `tokens.amount` is the quantity held.
-
-* `allotments_table` The allotments_table is a table separate from balances that allows users to make allotments to a desired recipient. The recipient can then collect their allotment at any time, provided the user who made the allotment has not reclaimed it.
-
-    The allotments_table typedef is defined in the interface, allowing developers to instantiate the table with any code or scope as needed. The allotments table stores `allotment` structs, indexed by the `recipient` member.
-
-    * `recipient` is the account that is intended to receive the allotment.
-    * `sender` is the account that made the allotment.
-    * `tokens` is the asset allotted, where `tokens.amount` is the quantity allotted.
-
-* `_config` The _config instance of the `config_singleton` typedef is a global singleton that is instantiated and set automatically by the constructor and destructor, respectively. 
-
-    The _config singleton holds all information about the native token managed by the contract. This information can be set by creating a `config` struct with the desired configuration and then setting that struct into the singleton at contract destruction. This design pattern allows the `config` struct to be modified at will during execution, and then the final state will be saved automatically when the destructor is called. See the constructor and destructor implementation for an example.
-
-    * `publisher` is the account that owns the token contract and has the authority to mint new tokens.
-    * `token_name` is the human-readable name of the native token.
-    * `max_supply` is the maximum number of tokens that can be in circulation at any given time.
-    * `supply` is the amount of tokens currently in circulation.
-
 ### Actions
-
-The following is a walkthrough of the TIP-5 Token Registry Standard actions:
 
 * `mint()` Mint is called to create tokens, thereby introducing new tokens into circulation.
   
@@ -58,3 +28,56 @@ The following is a walkthrough of the TIP-5 Token Registry Standard actions:
 
     It is critical to ensure a wallet entry is only deleted if it has a balance of exactly zero. Deleting wallets with balances in them is the equivalent of burning those tokens and not removing them from the maximum supply. Future TIP-5 extentions will introduce token burning features that account for this as well as a variable max supply.
 
+### Tables and Structs
+
+The TIP-5 standard uses three tables to store information about token balances, token allotments, and global token settings.
+
+* `balances_table` The balances table is used to store the native token balances of each user on the contract.
+
+    The balances_table typedef is defined in the interface, allowing developers to instantiate the table with any code or scope as needed. The balances table stores `balance` structs, indexed by the `owner` member.
+
+    * `owner` is the account that owns the token balance.
+    * `tokens` is the native asset, where `tokens.amount` is the quantity held.
+
+* `allotments_table` The allotments_table is a table separate from balances that allows users to make allotments to a desired recipient. The recipient can then collect their allotment at any time, provided the user who made the allotment has not reclaimed it.
+
+    The allotments_table typedef is defined in the interface, allowing developers to instantiate the table with any code or scope as needed. The allotments table stores `allotment` structs, indexed by the `recipient` member. The allotments table also has a secondary index, `sender`.
+
+    * `recipient` is the account that is intended to receive the allotment.
+    * `sender` is the account that made the allotment.
+    * `tokens` is the asset allotted, where `tokens.amount` is the quantity allotted.
+
+* `_config` The _config instance of the `config_singleton` typedef is a global singleton that is instantiated and set automatically by the constructor and destructor, respectively. 
+
+    The _config singleton holds all information about the native token managed by the contract. This information can be set by creating a `config` struct with the desired configuration and then setting that struct into the singleton at contract destruction. This design pattern allows the `config` struct to be modified at will during execution, and then the final state will be saved automatically when the destructor is called. See the constructor and destructor implementation for an example.
+
+    * `publisher` is the account that owns the token contract and has the authority to mint new tokens.
+    * `token_name` is the human-readable name of the native token.
+    * `max_supply` is the maximum number of tokens that can be in circulation at any given time.
+    * `supply` is the amount of tokens currently in circulation.
+
+### Teclos Example Commands
+
+* `teclos get table contract-name account-name balances`
+  
+    Returns the balance of the account name.
+
+* `teclos get table contract-name account-name allotments`
+
+    Returns all allotments made by the account name.
+
+* `teclos get table contract-name contract-name config`
+
+    Returns the configuration of the token contract.
+
+* `teclos push action contract-name transfer '{"sender": "account-name", "recipient": "account-name", "tokens": "5.00 TEST"}' -p your-auth`
+
+    Executes a transfer of the native asset to the recipient.
+
+* `teclos push action contract-name allot '{"sender": "account-name", "recipient": "account-name", "tokens": "5.00 TEST"}' -p your-auth`
+
+    Makes an allotment for the recipient from the sender.
+
+* `teclos push action contract-name claimallot '{"sender": "account-name", "recipient": "account-name", "tokens": "5.00 TEST"}' -p your-auth`
+
+    Claims an allotment made for the recipient.
