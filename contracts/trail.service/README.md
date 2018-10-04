@@ -34,7 +34,7 @@ All users on the Telos Blockchain Network can register their account and receive
 
 ## Token Registration
 
-Developers and organizations can author new and independent token contracts and then register their contract through Trail. Registering a token 
+Developers and organizations can author new and independent token contracts and then register their contract through Trail.
 
 * `regtoken()`
 * `unregtoken()`
