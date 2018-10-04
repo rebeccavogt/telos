@@ -68,16 +68,22 @@ class registry : public contract {
 
         //@abi table allotments i64
         struct allotment {
+            uint64_t allot_id;
             account_name recipient;
             account_name sender;
             asset tokens;
 
-            uint64_t primary_key() const { return recipient; }
-            EOSLIB_SERIALIZE(allotment, (recipient)(sender)(tokens))
+            uint64_t primary_key() const { return allot_id; }
+            uint64_t by_recipient() const { return recipient; }
+            uint64_t by_sender() const { return sender; }
+            EOSLIB_SERIALIZE(allotment, (allot_id)(recipient)(sender)(tokens))
         };
 
         typedef multi_index< N(balances), balance> balances_table;
-        typedef multi_index< N(allotments), allotment> allotments_table;
+
+        typedef multi_index< N(allotments), allotment, 
+            indexed_by<N(recipient), const_mem_fun<allotment, uint64_t, &allotment::by_recipient>>,
+            indexed_by<N(sender), const_mem_fun<allotment, uint64_t, &allotment::by_sender>>> allotments_table;
 
         typedef eosio::singleton<N(config), tokenconfig> config_singleton;
         config_singleton _config;

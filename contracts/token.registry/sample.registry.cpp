@@ -2,12 +2,8 @@
  * 
  * @author Craig Branscom
  */
+
 #include "token.registry.hpp"
-
-#include <eosiolib/eosio.hpp>
-#include <eosiolib/asset.hpp>
-
-#include <eosiolib/print.hpp>
 
 registry::registry(account_name self) : contract(self), _config(self, self) {
     if (!_config.exists()) {
@@ -42,7 +38,6 @@ void registry::mint(account_name recipient, asset tokens) {
     config.supply = (config.supply + tokens);
 }
 
-//TODO: tokens.amount is unapplied precision...does that matter?
 void registry::transfer(account_name sender, account_name recipient, asset tokens) {
     require_auth(sender);
     eosio_assert(is_account(recipient), "recipient account does not exist");
@@ -117,6 +112,7 @@ void registry::sub_balance(account_name owner, asset tokens) {
     balances_table balances(config.publisher, owner);
     auto itr = balances.find(owner);
     auto b = *itr;
+
     eosio_assert(b.tokens.amount >= tokens.amount, "transaction would overdraw balance");
 
     balances.modify(itr, 0, [&]( auto& a ) {
@@ -139,6 +135,7 @@ void registry::sub_allot(account_name owner, account_name recipient, asset token
     allotments_table allotments(config.publisher, owner);
     auto itr = allotments.find(recipient);
     auto al = *itr;
+
     eosio_assert(al.tokens.amount >= tokens.amount, "transaction would overdraw balance");
 
     if(al.tokens.amount == tokens.amount ) {
