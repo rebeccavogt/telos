@@ -1,5 +1,7 @@
 # TIP-5 Interface and Sample Implementation Walkthrough
 
+This walkthrough follows the design pattern outlined in `token.registry.hpp` and implemented in `sample.registry.cpp`. In addition, this pattern was made to be extensible. Plugins that offer extended functionality are available in their respective folders, along with walkthroughs for developers and users.
+
 ### Tables and Structs
 
 The TIP-5 standard uses three tables to store information about token balances, token allotments, and global token settings.
