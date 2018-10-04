@@ -58,6 +58,8 @@ The TIP-5 standard uses three tables to store information about token balances, 
 
 ### Teclos Example Commands
 
+*Replace positionals such as contract-name, account-name, and your-auth with the appropriate identifiers for your environment*
+
 * `teclos get table contract-name account-name balances`
   
     Returns the balance of the account name.
