@@ -239,8 +239,6 @@ void system_contract::check_missed_blocks(block_timestamp timestamp, account_nam
 void system_contract::onblock(block_timestamp timestamp, account_name producer) {
     require_auth(N(eosio));
     
-    recalculate_votes();
-    
     // Until activated stake crosses this threshold no new rewards are paid
     if (_gstate.thresh_activated_stake_time == 0) {
         _gstate.block_num++;
@@ -249,7 +247,6 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer) 
         
         return;
     }
-    
      
     if (_gstate.last_pervote_bucket_fill == 0) /// start the presses
         _gstate.last_pervote_bucket_fill = current_time();
@@ -266,9 +263,7 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer) 
         });
     }
 
-    // if (_grotations.is_kick_active) {
-    //     check_missed_blocks(timestamp, producer);
-    // }
+    recalculate_votes();
 
     check_missed_blocks(timestamp, producer);
 
