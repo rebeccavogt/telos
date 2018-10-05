@@ -297,9 +297,6 @@ namespace eosiosystem {
          //calculate the inverse vote weight
          double inverseVoteWeight(double staked, double amountVotedProducers);
 
-         //verify if the network is activated
-         void checkNetworkActivation();
-
          bool is_in_range(int32_t index, int32_t low_bound, int32_t up_bound);
 
          void check_missed_blocks(block_timestamp timestamp, account_name producer);
