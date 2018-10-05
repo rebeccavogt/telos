@@ -242,7 +242,13 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer) 
     recalculate_votes();
     
     // Until activated stake crosses this threshold no new rewards are paid
-    if (_gstate.total_activated_stake < min_activated_stake && _gstate.thresh_activated_stake_time == 0) return;
+    if (_gstate.thresh_activated_stake_time == 0) {
+        _gstate.block_num++;
+        
+        if(_gstate.block_num >= block_num_network_activation) _gstate.thresh_activated_stake_time = current_time();
+        
+        return;
+    }
     
      
     if (_gstate.last_pervote_bucket_fill == 0) /// start the presses

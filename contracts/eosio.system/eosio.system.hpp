@@ -19,7 +19,9 @@ namespace eosiosystem {
    using eosio::indexed_by;
    using eosio::const_mem_fun;
    using eosio::block_timestamp;
-
+   const uint32_t block_num_network_activation = 250; // debug version
+  //  const uint32_t block_num_network_activation = 1000000; 
+   
    struct name_bid {
      account_name            newname;
      account_name            high_bidder;
@@ -54,13 +56,14 @@ namespace eosiosystem {
       block_timestamp      last_name_close;
       uint32_t             last_claimrewards = 0;
       uint32_t             next_payment = 0;
+      uint32_t             block_num = 12;
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
       EOSLIB_SERIALIZE_DERIVED( eosio_global_state, eosio::blockchain_parameters,
                                 (max_ram_size)(total_ram_bytes_reserved)(total_ram_stake)
                                 (last_producer_schedule_update)(last_pervote_bucket_fill)
                                 (pervote_bucket)(perblock_bucket)(total_unpaid_blocks)(total_activated_stake)(thresh_activated_stake_time)
-                                (last_producer_schedule_size)(total_producer_vote_weight)(last_name_close)(last_claimrewards)(next_payment) )
+                                (last_producer_schedule_size)(total_producer_vote_weight)(last_name_close)(last_claimrewards)(next_payment)(block_num) )
    };
 
    /**
