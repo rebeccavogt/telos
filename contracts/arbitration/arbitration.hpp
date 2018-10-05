@@ -21,6 +21,9 @@ using namespace eosio;
 
 class arbitration : public contract {
     public:
+
+        //======================= Enums =========================
+
         enum case_status {
             AWAITING_ARBS, //0
             CASE_INVESTIGATION, //1
@@ -32,7 +35,7 @@ class arbitration : public contract {
             COMPLETE //7
         };
 
-        enum class_type {
+        enum claim_class {
             LOST_KEY_RECOVERY, //0
             TRX_REVERSAL, //1
             EMERGENCY_INTER, //2
@@ -55,22 +58,77 @@ class arbitration : public contract {
         //NOTE: additional states: ineligible (possibly the same as is_active) or (not meeting min requirements)
         enum arb_status {
             AVAILABLE, //0
-            UNAVAILABLE //1
+            UNAVAILABLE, //1
+            INELIGIBLE //2
         };
+
+        //======================= Structs =========================
+
+        struct claim {
+            claim_class class_suggestion;
+            claim_class class_decision;
+            vector<string> ipfs_urls;
+
+            //uint64_t primary_key() const { return claim_id; }
+            //EOSLIB_SERIALIZE(claim, (class_suggestion)(class_decision)(ipfs_urls))
+        };
+
+        /// @abi table arbitrators i64
+        struct arbitrator {
+            account_name arb;
+            vector<uint64_t> case_ids;
+            arb_status status;
+            bool is_active;
+            vector<string> languages; //NOTE: language codes (enum?)
+
+            uint64_t primary_key() const { return arb; }
+            EOSLIB_SERIALIZE(arbitrator, (arb)(is_active))
+        };
+
+        //TODO: evidence types?
+        //NOTE: add metadata
+        /// @abi table evidence i64
+        struct evidence {
+            uint64_t ev_id;
+            vector<string> ipfs_urls;
+
+            uint64_t primary_key() const { return ev_id; }
+            EOSLIB_SERIALIZE(evidence, (ev_id)(ipfs_urls))
+        };
+
+        //NOTE: joinders saved in separate table
+        /// @abi table casefiles i64
+        struct casefile {
+            uint64_t case_id;
+            vector<uint64_t> pending_evidence_ids;
+            vector<uint64_t> dismissed_evidence_ids;
+            vector<uint64_t> accepted_evidence_ids;
+            vector<account_name> arbitrators; //CLARIFY: do arbitrators get added when joining?
+            vector<claim> claims;
+            case_status status;
+            block_timestamp last_edit;
+            //vector<asset> additional_fees; //NOTE: case by case?
+            //TODO: add messages field
+
+            uint64_t primary_key() const { return case_id; }
+            EOSLIB_SERIALIZE(casefile, (case_id)(evidence_id))
+        };
+
+        //======================= Actions =========================
 
         arbitration(account_name self);
 
         ~arbitration();
 
-        void setconfig(); //setting global global configuration 
+        void setconfig(uint16_t max_arbs, uint32_t default_time); //setting global configuration 
 
         #pragma region Member_Actions
 
-        void filecase(); //NOTE: filing a case doesn't require a respondent
+        void filecase(account_name claimant, vector<claim> claims); //NOTE: filing a case doesn't require a respondent
 
-        void closecase();
+        void closecase(uint64_t case_id); //CLARIFY: should anyone be able to close case? accusations are serious, potential greifing tool
 
-        void message();
+        void message(account_name from, account_name to, string msg);
 
         // TODO: Add evidence action on chain evidence (public?) and off chain evidence (private?)
         // exhibits... possibly multiple actions
@@ -78,35 +136,35 @@ class arbitration : public contract {
         // and contains meta data about the offchain information submitted
         // zero knowledge proof?
 
-        void regarb();
+        void regarb(account_name candidate);
 
-        void unregarb();
+        void unregarb(account_name arb);
 
-        void votearb();
+        void votearb(account_name candidate, uint16_t direction, account_name voter);
 
-        void selectarbs();
+        void selectarbs(vector<account_name> arbs, account_name selector);
             
         #pragma endregion Member_Actions
 
         #pragma region Arb_Actions
 
-        void addevidence();
+        void addevidence(uint64_t case_id, vector<uint64_t> ipfs_urls, account_name arb);
 
-        void editarbstat();
+        void editarbstat(account_name arb, arb_status new_status);
 
-        void editcasestat();
+        void editcasestat(uint64_t case_id, case_status new_status, account_name arb);
 
-        void joincases(); //CLARIFY: joined case is rolled into Base case?
+        void joincases(vector<uint64_t> case_ids, account_name arb); //CLARIFY: joined case is rolled into Base case?
 
-        void changeclass();
+        void changeclass(uint64_t case_id, uint16_t claim_key, account_name arb);
 
-        void removeclaim();
+        void removeclaim(uint64_t case_id, uint16_t claim_key, account_name arb);
 
-        void droparb(); //NOTE: called by multi-sig to drop arbitrator from case
+        void droparb(account_name arb); //NOTE: called by multi-sig to drop arbitrator from case
 
-        void dismissarb(); //NOTE: called by multi-sig to force unregarb()
+        void dismissarb(account_name arb); //NOTE: called by multi-sig to force unregarb()
 
-        void recuse(); //CLARIFY: provide written explanation of reasoning for recusal
+        void recuse(uint64_t case_id, account_name arb); //CLARIFY: provide written explanation of reasoning for recusal
 
         //TODO: set additional fee structure for a case
 
@@ -132,57 +190,15 @@ class arbitration : public contract {
             EOSLIB_SERIALIZE(config, (publisher)(fee_structure))
         };
 
-        /// @abi table arbitrators i64
-        struct arbitrator {
-            account_name arb;
-            vector<uint64_t> case_ids;
-            arb_status status;
-            bool is_active;
-            vector<string> languages; //NOTE: language codes (enum?)
-
-            uint64_t primary_key() const { return arb; }
-            EOSLIB_SERIALIZE(arbitrator, (arb)(is_active))
-        };
-
-        struct claim {
-            uint64_t claim_id;
-            class_type type;
-            vector<string> ipfs_urls;
-
-            //uint64_t primary_key() const { return claim_id; }
-            //EOSLIB_SERIALIZE(claim, (claim_id)(type))
-        };
-
-        //NOTE: joinders saved in separate table
-        /// @abi table casefiles i64
-        struct casefile {
-            uint64_t case_id;
-            vector<uint64_t> evidence_ids;
-            vector<account_name> arbitrators; //CLARIFY: do arbitrators get added when joining?
-            vector<claim> claims;
-            case_status status;
-            block_timestamp last_edit;
-            //vector<asset> additional_fees; //NOTE: case by case?
-            //TODO: add messages field
-
-            uint64_t primary_key() const { return case_id; }
-            EOSLIB_SERIALIZE(casefile, (case_id)(evidence_id))
-        };
-
-        //TODO: evidence types?
-        //NOTE: add metadata
-        /// @abi table evidence i64
-        struct evidence {
-            uint64_t ev_id;
-            vector<string> ipfs_urls;
-
-            uint64_t primary_key() const { return ev_id; }
-            EOSLIB_SERIALIZE(evidence, (ev_id)(ipfs_urls))
-        };
+         //======================= Tables =========================
 
         typedef singleton<N(config), config> config_singleton;
 
+        typedef multi_index<N(candidates), arbitrator> candidates_table;
         typedef multi_index<N(arbitrators), arbitrator> arbitrators_table;
+
         typedef multi_index<N(casefiles), casefile> casefiles_table;
+
+        typedef multi_index<N(pendingev), evidence> pendingevidence_table;
         typedef multi_index<N(evidence), evidence> evidence_table;
 };
