@@ -3,11 +3,11 @@
  * account through the Trail Service, where they will be issued a VoterID card that tracks and stores vote
  * participation.
  * 
- * @author Craig Branscom, Peter Bue, Ed Silva
+ * @author Craig Branscom, Peter Bue, Ed Silva, Douglas Horn
  * @copyright defined in telos/LICENSE.txt
  */
 
-#include <../trail.service/trail.connections/trailconn.voting.hpp> //trailservice voting data definitions
+#include <../trail.service/trail.connections/trailconn.voting.hpp>
 
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/permission.hpp>
@@ -22,36 +22,37 @@ using namespace eosio;
 class arbitration : public contract {
     public:
         enum case_status {
-            FILED, //0
-            AWAITING_ARBS, //1
-            CASE_INVESTIGATION, //2
-            DISMISSED, //3
-            HEARING, //4
-            DELIBERATION, //5
-            DECISION, //6
-            ENFORCED //7
-        };
-
-        enum claim_type {
-            TRX_REVERSAL, //0
-            EMERGENCY_INTER, //1
-            CONTESTED_OWNER, //2
-            UNEXECUTED_RELIEF, //3
-            CONTRACT_BREACH, //4
-            MISUSED_CR_IP, //5
-            A_TORT, //6
-            BP_PENALTY_REVERSAL, //7
-            WRONGFUL_ARB_ACT, //8
-            ACT_EXEC_RELIEF, //9
-            WP_PROJ_FAILURE, //10
-            TBNOA_BREACH, //11
-            MISC //12
+            AWAITING_ARBS, //0
+            CASE_INVESTIGATION, //1
+            DISMISSED, //2
+            HEARING, //3
+            DELIBERATION, //4
+            DECISION, //5 NOTE: No more joinders allowed
+            ENFORCEMENT, //6
+            COMPLETE //7
         };
 
         enum class_type {
-            
+            LOST_KEY_RECOVERY, //0
+            TRX_REVERSAL, //1
+            EMERGENCY_INTER, //2
+            CONTESTED_OWNER, //3
+            UNEXECUTED_RELIEF, //4
+            CONTRACT_BREACH, //5
+            MISUSED_CR_IP, //6
+            A_TORT, //7
+            BP_PENALTY_REVERSAL, //8
+            WRONGFUL_ARB_ACT, //9
+            ACT_EXEC_RELIEF, //10
+            WP_PROJ_FAILURE, //11
+            TBNOA_BREACH, //12
+            MISC //13
         };
 
+        //TODO: Evidence states
+
+        //CLARIFY: can arbs determine classes of cases they take? YES
+        //NOTE: additional states: ineligible (possibly the same as is_active) or (not meeting min requirements)
         enum arb_status {
             AVAILABLE, //0
             UNAVAILABLE //1
@@ -61,15 +62,21 @@ class arbitration : public contract {
 
         ~arbitration();
 
-        void setcontext();
+        void setconfig(); //setting global global configuration 
 
         #pragma region Member_Actions
 
-        void filecase();
+        void filecase(); //NOTE: filing a case doesn't require a respondent
 
         void closecase();
 
         void message();
+
+        // TODO: Add evidence action on chain evidence (public?) and off chain evidence (private?)
+        // exhibits... possibly multiple actions
+        // NOTE: off chain evidence is still recorded on the chain as being submitted,
+        // and contains meta data about the offchain information submitted
+        // zero knowledge proof?
 
         void regarb();
 
@@ -89,17 +96,17 @@ class arbitration : public contract {
 
         void editcasestat();
 
-        void joincases(); //NOTE: joined case is rolled into Base case
+        void joincases(); //CLARIFY: joined case is rolled into Base case?
 
         void changeclass();
+
+        void removeclaim();
 
         void droparb(); //NOTE: called by multi-sig to drop arbitrator from case
 
         void dismissarb(); //NOTE: called by multi-sig to force unregarb()
 
-        void recuse();
-
-        //void removeclaim();
+        void recuse(); //CLARIFY: provide written explanation of reasoning for recusal
 
         //TODO: set additional fee structure for a case
 
@@ -108,8 +115,11 @@ class arbitration : public contract {
 
     protected:
 
+        //NOTE: initial respondent response times different than subsequent response times
+        //NOTE: initial deposit saved
+        //NOTE: class of claim where neither party can pay fees, TF pays instead
         /// @abi table context i64
-        struct context {
+        struct config {
             account_name publisher;
             uint16_t max_concurrent_arbs;
             //TODO: Arbitrator schedule field based on class
@@ -119,7 +129,7 @@ class arbitration : public contract {
             //CLARIFY: usage of "schedule" in requirements doc
 
             uint64_t primary_key() const { return publisher; }
-            EOSLIB_SERIALIZE(context, (publisher))
+            EOSLIB_SERIALIZE(config, (publisher)(fee_structure))
         };
 
         /// @abi table arbitrators i64
@@ -127,20 +137,23 @@ class arbitration : public contract {
             account_name arb;
             vector<uint64_t> case_ids;
             arb_status status;
+            bool is_active;
+            vector<string> languages; //NOTE: language codes (enum?)
 
             uint64_t primary_key() const { return arb; }
-            EOSLIB_SERIALIZE(arbitrator, (arb))
+            EOSLIB_SERIALIZE(arbitrator, (arb)(is_active))
         };
 
         struct claim {
             uint64_t claim_id;
-            claim_type type;
+            class_type type;
             vector<string> ipfs_urls;
 
             //uint64_t primary_key() const { return claim_id; }
             //EOSLIB_SERIALIZE(claim, (claim_id)(type))
         };
 
+        //NOTE: joinders saved in separate table
         /// @abi table casefiles i64
         struct casefile {
             uint64_t case_id;
@@ -150,11 +163,14 @@ class arbitration : public contract {
             case_status status;
             block_timestamp last_edit;
             //vector<asset> additional_fees; //NOTE: case by case?
+            //TODO: add messages field
 
             uint64_t primary_key() const { return case_id; }
             EOSLIB_SERIALIZE(casefile, (case_id)(evidence_id))
         };
 
+        //TODO: evidence types?
+        //NOTE: add metadata
         /// @abi table evidence i64
         struct evidence {
             uint64_t ev_id;
@@ -164,7 +180,7 @@ class arbitration : public contract {
             EOSLIB_SERIALIZE(evidence, (ev_id)(ipfs_urls))
         };
 
-        typedef singleton<N(context), context> context_singleton;
+        typedef singleton<N(config), config> config_singleton;
 
         typedef multi_index<N(arbitrators), arbitrator> arbitrators_table;
         typedef multi_index<N(casefiles), casefile> casefiles_table;
