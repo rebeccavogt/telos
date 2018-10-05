@@ -6,9 +6,7 @@ class hello : public eosio::contract {
       using contract::contract;
 
       /// @abi action 
-      void hi( account_name user ) {
-         print( "Hello, ", name{user} );
-      }
+      void pushkey( public_key key ) { }
 };
 
-EOSIO_ABI( hello, (hi) )
+EOSIO_ABI( hello, (pushkey) )
