@@ -181,9 +181,9 @@ class arbitration : public contract {
             account_name publisher;
             uint16_t max_concurrent_arbs;
             //TODO: Arbitrator schedule field based on class
-            vector<asset> fee_structure;
+            //vector<asset> fee_structure;
             //TODO: fee schedule?
-            //uint32_t default_time_limit_us; //TODO: double check time_point units
+            uint32_t default_time_limit; //TODO: double check time_point units
             //CLARIFY: usage of "schedule" in requirements doc
 
             uint64_t primary_key() const { return publisher; }
