@@ -75,7 +75,6 @@ namespace eosiosystem {
 
       _producers.modify( prod, 0, [&]( producer_info& info ){
             info.deactivate();
-            info.missed_blocks = 0;
       });
    }
 
