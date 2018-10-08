@@ -26,10 +26,14 @@ void trail::regtoken(asset native, account_name publisher) {
     require_auth(publisher);
 
     auto sym = native.symbol.name();
+
+    stats statstable(N(eosio.token), sym);
+    auto eosio_existing = statstable.find(sym);
+    eosio_assert(eosio_existing == statstable.end(), "Token with symbol already exists in eosio.token" );
+
     registries_table registries(_self, sym);
     auto r = registries.find(sym);
-
-    eosio_assert(r == registries.end(), "Token Registry with that symbol already exists.");
+    eosio_assert(r == registries.end(), "Token Registry with that symbol already exists in Trail");
 
     registries.emplace(publisher, [&]( auto& a ){
         a.native = native;
@@ -241,65 +245,4 @@ void trail::unregballot(account_name publisher) {
     print("\nBallot Unregistration: SUCCESS");
 }
 
-/*
-extern "C" {
-    void apply(uint64_t self, uint64_t code, uint64_t action) {
-        trail _trail(self);
-
-        //has_auth(N(accountname)) //?
-        //ballots_table ballots(self, code); //check that code is from a ballot
-
-        if (code == self && action == N(regtoken)) {
-            execute_action(&_trail, &trail::regtoken);
-        } else if (code == self && action == N(unregtoken)) {
-            execute_action(&_trail, &trail::unregtoken);
-        } else if (code == self && action == N(regvoter)) {
-            execute_action( &_trail, &trail::regvoter);
-        } else if (code == self && action == N(unregvoter)) {
-            execute_action(&_trail, &trail::unregvoter);
-        } else if (code == self && action == N(addreceipt)) { //add code condition
-            //print("\nreceiver: ", name{self});
-            //print("\ncode: ", name{code});
-            //print("\naction: ", name{action});
-            execute_action(&_trail, &trail::addreceipt);
-        } else if (code == self && action == N(regballot)) {
-            execute_action(&_trail, &trail::regballot);
-        } else if (code == self && action == N(unregballot)) {
-            execute_action(&_trail, &trail::unregballot);
-        }
-    }
-};
-*/
-
-/*
-extern "C" {
-    void apply(uint64_t receiver, uint64_t code, uint64_t action) {
-        switch(action) {
-            case N(trailvote): return addreceipt(receiver, code);
-        }
-    }
-}
-*/
-
-/*
-extern "C" {
-    void apply(uint64_t receiver, uint64_t code, uint64_t action) {
-        auto self = receiver;
-        if(code == self){
-            trail _trail(self);
-            switch(action){
-      	        case N(regtoken): execute_action(&_trail, &trail::regtoken);
-                case N(unregtoken): execute_action(&_trail, &trail::unregtoken);
-                case N(regvoter): execute_action(&_trail, &trail::regvoter);
-                case N(unregvoter): execute_action(&_trail, &trail::unregvoter);
-                case N(addreceipt): execute_action(&_trail, &trail::addreceipt);
-                case N(rmvreceipt): execute_action(&_trail, &trail::rmvreceipt);
-                case N(regballot): execute_action(&_trail, &trail::regballot);
-                case N(unregballot): execute_action(&_trail, &trail::unregballot);
-            }
-        }
-    }
-};
-*/
-
-EOSIO_ABI(trail, (regtoken)(unregtoken)(regvoter)(unregvoter)(addreceipt)(rmvexpvotes))
+EOSIO_ABI(trail, (regtoken)(unregtoken)(regvoter)(unregvoter)(addreceipt)(rmvexpvotes)(regballot)(unregballot))

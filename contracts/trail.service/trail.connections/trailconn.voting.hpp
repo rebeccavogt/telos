@@ -78,31 +78,3 @@ struct ballot {
 typedef multi_index<N(voters), voterid> voters_table;
 typedef multi_index<N(ballots), ballot> ballots_table;
 typedef singleton<N(environment), environment> environment_singleton;
-
-//----------EOSIO.TOKEN DEFINITIONS----------
-
-struct account {
-    asset balance;
-
-    uint64_t primary_key()const { return balance.symbol.name(); }
-};
-
-typedef eosio::multi_index<N(accounts), account> accounts;
-
-/**
- * Updates the voter's tlos_weight on their VoterID.
- * @param voter - account from which to retrieve liquid TLOS amount
-*/
-int64_t get_liquid_tlos(account_name voter) {
-    accounts accountstable(N(eosio.token), voter);
-    auto a = accountstable.find(asset(int64_t(0), S(4, TLOS)).symbol.name()); //TODO: find better way to get TLOS symbol?
-
-    int64_t liquid_tlos = 0;
-
-    if (a != accountstable.end()) {
-        auto acct = *a;
-        liquid_tlos = acct.balance.amount / int64_t(10000); //divide to get actual balance
-    }
-    
-    return liquid_tlos;
-}
