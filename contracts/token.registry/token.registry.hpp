@@ -1,10 +1,11 @@
 /**
- * @file
- * @copyright defined in telos/LICENSE.txt
+ * This contract defines the TIP-5 Single Token Interface.
  * 
- * @brief TIP_5 Single Token Registry Interface
+ * For a full developer walkthrough go here: 
+ * 
  * @author Craig Branscom
  */
+
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/asset.hpp>
 #include <eosiolib/singleton.hpp>
@@ -22,38 +23,38 @@ class registry : public contract {
         // ABI Actions
         void mint(account_name recipient, asset tokens);
 
-        void transfer(account_name owner, account_name recipient, asset tokens);
+        void transfer(account_name sender, account_name recipient, asset tokens);
 
-        void allot(account_name owner, account_name recipient, asset tokens);
+        void allot(account_name sender, account_name recipient, asset tokens);
 
-        void reclaim(account_name owner, account_name recipient, asset tokens);
+        void unallot(account_name sender, account_name recipient, asset tokens);
 
-        void transferfrom(account_name owner, account_name recipient, asset tokens);
+        void claimallot(account_name sender, account_name recipient, asset tokens);
 
-        void createwallet(account_name owner);
+        void createwallet(account_name recipient);
 
         void deletewallet(account_name owner);
 
     protected:
 
+        //TODO: change to inlines?
         void sub_balance(account_name owner, asset tokens);
 
         void add_balance(account_name recipient, asset tokens, account_name payer);
 
-        void sub_allot(account_name owner, account_name recipient, asset tokens);
+        void sub_allot(account_name sender, account_name recipient, asset tokens);
 
-        void add_allot(account_name owner, account_name recipient, asset tokens, account_name payer);
+        void add_allot(account_name sender, account_name recipient, asset tokens, account_name payer);
         
-        //@abi table settings i64
-        struct setting {
-            account_name issuer;
+        //@abi table config i64
+        struct tokenconfig {
+            account_name publisher;
+            string token_name;
             asset max_supply;
             asset supply;
-            string name;
-            bool is_initialized;
 
-            uint64_t primary_key() const { return issuer; }
-            EOSLIB_SERIALIZE(setting, (issuer)(max_supply)(supply)(name)(is_initialized))
+            uint64_t primary_key() const { return publisher; }
+            EOSLIB_SERIALIZE(tokenconfig, (publisher)(token_name)(max_supply)(supply))
         };
         
         //@abi table balances i64
@@ -68,17 +69,20 @@ class registry : public contract {
         //@abi table allotments i64
         struct allotment {
             account_name recipient;
-            account_name owner;
+            account_name sender;
             asset tokens;
 
             uint64_t primary_key() const { return recipient; }
-            EOSLIB_SERIALIZE(allotment, (recipient)(owner)(tokens))
+            uint64_t by_sender() const { return sender; }
+            EOSLIB_SERIALIZE(allotment, (recipient)(sender)(tokens))
         };
 
         typedef multi_index< N(balances), balance> balances_table;
-        typedef multi_index< N(allotments), allotment> allotments_table;
 
-        typedef eosio::singleton<N(settings), setting> settings_table;
-        settings_table settings;
-        setting _settings;
+        typedef multi_index< N(allotments), allotment, 
+            indexed_by<N(sender), const_mem_fun<allotment, uint64_t, &allotment::by_sender>>> allotments_table;
+
+        typedef eosio::singleton<N(config), tokenconfig> config_singleton;
+        config_singleton _config;
+        tokenconfig config;
 };
