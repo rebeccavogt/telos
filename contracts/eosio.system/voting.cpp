@@ -75,7 +75,6 @@ namespace eosiosystem {
 
       _producers.modify( prod, 0, [&]( producer_info& info ){
             info.deactivate();
-            info.missed_blocks = 0;
       });
    }
 
@@ -306,12 +305,6 @@ namespace eosiosystem {
      update_votes(voter_name, proxy, producers, true);
    }
    
-   void system_contract::checkNetworkActivation(){
-     if( _gstate.total_activated_stake >= min_activated_stake && _gstate.thresh_activated_stake_time == 0 ) {
-            _gstate.thresh_activated_stake_time = current_time();
-    }
-   } 
-
    void system_contract::update_votes( const account_name voter_name, const account_name proxy, const std::vector<account_name>& producers, bool voting ) {
       //validate input
       if ( proxy ) {
@@ -345,7 +338,6 @@ namespace eosiosystem {
       // if(_gstate.thresh_activated_stake_time == 0 && !proxy && !voter->proxy){
       if(!proxy && !voter->proxy){
          _gstate.total_activated_stake += totalStaked - voter->last_stake;
-         checkNetworkActivation();
       }
 
       auto new_vote_weight = inverseVoteWeight((double )totalStaked, (double) producers.size());
@@ -369,11 +361,7 @@ namespace eosiosystem {
             // propagate weight here only when switching proxies
             // otherwise propagate happens in the case below
             if( proxy != voter->proxy ){ 
-               // if(_gstate.thresh_activated_stake_time == 0){
-                  _gstate.total_activated_stake += totalStaked - voter->last_stake;
-                  checkNetworkActivation();
-               // }
-
+               _gstate.total_activated_stake += totalStaked - voter->last_stake;
                propagate_weight_change( *old_proxy );
             }
          } else {
@@ -395,11 +383,7 @@ namespace eosiosystem {
          });
          
          if((*new_proxy).last_vote_weight > 0){
-            // if(_gstate.thresh_activated_stake_time == 0){
-               _gstate.total_activated_stake += totalStaked - voter->last_stake;
-               checkNetworkActivation();
-            // }
-            
+            _gstate.total_activated_stake += totalStaked - voter->last_stake;
             propagate_weight_change( *new_proxy );
          }
       } else {

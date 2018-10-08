@@ -19,7 +19,9 @@ namespace eosiosystem {
    using eosio::indexed_by;
    using eosio::const_mem_fun;
    using eosio::block_timestamp;
-
+   const uint32_t block_num_network_activation = 3600; // debug version 3600 blocks = 30 min
+  //  const uint32_t block_num_network_activation = 1000000; 
+   
    struct name_bid {
      account_name            newname;
      account_name            high_bidder;
@@ -54,13 +56,14 @@ namespace eosiosystem {
       block_timestamp      last_name_close;
       uint32_t             last_claimrewards = 0;
       uint32_t             next_payment = 0;
+      uint32_t             block_num = 12;
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
       EOSLIB_SERIALIZE_DERIVED( eosio_global_state, eosio::blockchain_parameters,
                                 (max_ram_size)(total_ram_bytes_reserved)(total_ram_stake)
                                 (last_producer_schedule_update)(last_pervote_bucket_fill)
                                 (pervote_bucket)(perblock_bucket)(total_unpaid_blocks)(total_activated_stake)(thresh_activated_stake_time)
-                                (last_producer_schedule_size)(total_producer_vote_weight)(last_name_close)(last_claimrewards)(next_payment) )
+                                (last_producer_schedule_size)(total_producer_vote_weight)(last_name_close)(last_claimrewards)(next_payment)(block_num) )
    };
 
    /**
@@ -83,7 +86,7 @@ namespace eosiosystem {
       uint64_t primary_key()const { return owner;                                   }
       double   by_votes()const    { return is_active ? -total_votes : total_votes;  }
       bool     active()const      { return is_active;                               }
-      void     deactivate()       { producer_key = public_key(); is_active = false; }
+      void     deactivate()       { producer_key = public_key(); is_active = false; missed_blocks = 0; }
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
       EOSLIB_SERIALIZE( producer_info, (owner)(total_votes)(producer_key)(is_active)(url)
@@ -293,9 +296,6 @@ namespace eosiosystem {
 
          //calculate the inverse vote weight
          double inverseVoteWeight(double staked, double amountVotedProducers);
-
-         //verify if the network is activated
-         void checkNetworkActivation();
 
          bool is_in_range(int32_t index, int32_t low_bound, int32_t up_bound);
 
