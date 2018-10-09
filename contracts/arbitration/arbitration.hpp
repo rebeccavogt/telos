@@ -22,67 +22,107 @@ using namespace eosio;
 class arbitration : public contract {
     public:
 
-        //======================= Enums =========================
+        #pragma region Enums
 
-        enum case_status {
-            AWAITING_ARBS, //0
-            CASE_INVESTIGATION, //1
-            DISMISSED, //2
-            HEARING, //3
-            DELIBERATION, //4
-            DECISION, //5 NOTE: No more joinders allowed
-            ENFORCEMENT, //6
-            COMPLETE //7
+        enum case_state {
+            CASE_SETUP, //0
+            AWAITING_ARBS, //1
+            CASE_INVESTIGATION, //2
+            DISMISSED, //3
+            HEARING, //4
+            DELIBERATION, //5
+            DECISION, //6 NOTE: No more joinders allowed
+            ENFORCEMENT, //7
+            COMPLETE //8
         };
 
         enum claim_class {
-            LOST_KEY_RECOVERY, //0
-            TRX_REVERSAL, //1
-            EMERGENCY_INTER, //2
-            CONTESTED_OWNER, //3
-            UNEXECUTED_RELIEF, //4
-            CONTRACT_BREACH, //5
-            MISUSED_CR_IP, //6
-            A_TORT, //7
-            BP_PENALTY_REVERSAL, //8
-            WRONGFUL_ARB_ACT, //9
-            ACT_EXEC_RELIEF, //10
-            WP_PROJ_FAILURE, //11
-            TBNOA_BREACH, //12
-            MISC //13
+            UNDECIDED, //0
+            LOST_KEY_RECOVERY, //1
+            TRX_REVERSAL, //2
+            EMERGENCY_INTER, //3
+            CONTESTED_OWNER, //4
+            UNEXECUTED_RELIEF, //5
+            CONTRACT_BREACH, //6
+            MISUSED_CR_IP, //7
+            A_TORT, //8
+            BP_PENALTY_REVERSAL, //9
+            WRONGFUL_ARB_ACT, //10
+            ACT_EXEC_RELIEF, //11
+            WP_PROJ_FAILURE, //12
+            TBNOA_BREACH, //13
+            MISC //14
+        };
+
+        //CLARIFY: can arbs determine classes of cases they take? YES
+        enum arb_status {
+            AVAILABLE, //0
+            UNAVAILABLE, //1
+            INACTIVE, //2
+        };
+
+        enum election_status {
+            OPEN, //0
+            PASSED, //1
+            FAILED //2
         };
 
         //TODO: Evidence states
 
-        //CLARIFY: can arbs determine classes of cases they take? YES
-        //NOTE: additional states: ineligible (possibly the same as is_active) or (not meeting min requirements)
-        enum arb_status {
-            AVAILABLE, //0
-            UNAVAILABLE, //1
-            INELIGIBLE //2
+        #pragma endregion Enums
+
+        #pragma region Structs
+
+        //NOTE: diminishing subsequent response (default) times
+        //NOTE: initial deposit saved
+        //NOTE: class of claim where neither party can pay fees, TF pays instead
+        /// @abi table context i64
+        struct config {
+            account_name publisher;
+            uint16_t max_arbs;
+            uint32_t default_time; //TODO: double check time_point units
+            //TODO: Arbitrator schedule field based on class
+            //vector<uint16_t> fee_structure;
+            //CLARIFY: usage of "schedule" in requirements doc
+
+            uint64_t primary_key() const { return publisher; }
+            EOSLIB_SERIALIZE(config, (publisher)(max_arbs)(default_time))
         };
 
-        //======================= Structs =========================
+        /// @abi table elections i64
+        struct election {
+            account_name candidate;
+            string credentials;
+            uint32_t yes_votes;
+            uint32_t no_votes;
+            uint32_t abstain_votes;
+            uint32_t expire_time;
+            uint16_t election_status;
 
-        struct claim {
-            claim_class class_suggestion;
-            claim_class class_decision;
-            vector<string> ipfs_urls;
-
-            //uint64_t primary_key() const { return claim_id; }
-            //EOSLIB_SERIALIZE(claim, (class_suggestion)(class_decision)(ipfs_urls))
+            uint64_t primary_key() const { return candidate; }
+            EOSLIB_SERIALIZE(election, (candidate)(credentials)(yes_votes)(no_votes)(abstain_votes)(expire_time)(election_status))
         };
 
         /// @abi table arbitrators i64
         struct arbitrator {
             account_name arb;
-            vector<uint64_t> case_ids;
-            arb_status status;
-            bool is_active;
-            vector<string> languages; //NOTE: language codes (enum?)
+            uint16_t status;
+            vector<uint64_t> open_case_ids;
+            vector<uint64_t> closed_case_ids;
+            //string credentials; //ipfs_url of credentials
+            //vector<string> languages; //NOTE: language codes for space
 
             uint64_t primary_key() const { return arb; }
-            EOSLIB_SERIALIZE(arbitrator, (arb)(is_active))
+            EOSLIB_SERIALIZE(arbitrator, (arb)(status)(open_case_ids)(closed_case_ids))
+        };
+
+        struct claim {
+            uint16_t class_suggestion;
+            vector<string> submitted_evidence;
+            vector<uint64_t> accepted_ev_ids;
+            uint16_t class_decision; //initialized to UNDECIDED (0)
+
+            EOSLIB_SERIALIZE(claim, (class_suggestion)(submitted_evidence)(accepted_ev_ids)(class_decision))
         };
 
         //TODO: evidence types?
@@ -90,31 +130,31 @@ class arbitration : public contract {
         /// @abi table evidence i64
         struct evidence {
             uint64_t ev_id;
-            vector<string> ipfs_urls;
+            string ipfs_url;
 
             uint64_t primary_key() const { return ev_id; }
-            EOSLIB_SERIALIZE(evidence, (ev_id)(ipfs_urls))
+            EOSLIB_SERIALIZE(evidence, (ev_id)(ipfs_url))
         };
 
         //NOTE: joinders saved in separate table
         /// @abi table casefiles i64
         struct casefile {
             uint64_t case_id;
-            vector<uint64_t> pending_evidence_ids;
-            vector<uint64_t> dismissed_evidence_ids;
-            vector<uint64_t> accepted_evidence_ids;
-            vector<account_name> arbitrators; //CLARIFY: do arbitrators get added when joining?
+            account_name claimant; //TODO: add vector for claimant's party? same for respondant and their party?
+            account_name respondant; //NOTE: can be set to 0
             vector<claim> claims;
-            case_status status;
-            block_timestamp last_edit;
+            vector<account_name> arbitrators; //CLARIFY: do arbitrators get added when joining?
+            uint16_t case_status;
+            uint32_t last_edit;
             //vector<asset> additional_fees; //NOTE: case by case?
             //TODO: add messages field
 
             uint64_t primary_key() const { return case_id; }
-            EOSLIB_SERIALIZE(casefile, (case_id)(evidence_id))
+            uint64_t by_claimant() const { return claimant; }
+            EOSLIB_SERIALIZE(casefile, (case_id)(claimant)(claims)(arbitrators)(case_status)(last_edit))
         };
 
-        //======================= Actions =========================
+        #pragma endregion Structs
 
         arbitration(account_name self);
 
@@ -122,13 +162,65 @@ class arbitration : public contract {
 
         void setconfig(uint16_t max_arbs, uint32_t default_time); //setting global configuration 
 
-        #pragma region Member_Actions
+        #pragma region Arb_Elections
 
-        void filecase(account_name claimant, vector<claim> claims); //NOTE: filing a case doesn't require a respondent
+        void applyforarb(account_name candidate, string creds_ipfs_url); //TODO: rename to arbapply(), newarbapp()
 
-        void closecase(uint64_t case_id); //CLARIFY: should anyone be able to close case? accusations are serious, potential greifing tool
+        void cancelarbapp(account_name candidate); //TODO: rename to arbunapply(), rmvarbapply()
 
-        void message(account_name from, account_name to, string msg);
+        void voteforarb(account_name candidate, uint16_t direction, account_name voter);
+
+        void endelection(); //automate in constructor?
+
+        #pragma endregion Arb_Elections
+
+        #pragma region Case_Setup
+
+        void filecase(account_name claimant, uint16_t class_suggestion, string ev_ipfs_url); //NOTE: filing a case doesn't require a respondent
+
+        void addclaim(uint64_t case_id, uint16_t class_suggestion, string ev_ipfs_url, account_name claimant); //NOTE: adds subsequent claims to a case
+
+        void removeclaim(uint64_t case_id, uint16_t claim_num, account_name arb);
+
+        void shredcase(uint64_t case_id, account_name claimant); //NOTE: member-level case removal, called during CASE_SETUP
+
+        #pragma endregion Case_Setup
+
+        #pragma region Member_Only
+
+        void vetoarb(uint64_t case_id, account_name arb, account_name selector);
+
+        #pragma endregion Member_Only
+
+        #pragma region Arb_Only
+
+        void dismisscase(uint64_t case_id, account_name arb); //TODO: require rationale?
+
+        void closecase(uint64_t case_id, account_name closer); //TODO: require decision?
+
+        //void dismissclaim(uint64_t case_id, uint16_t claim_num, account_name arb); //NOTE: arb should not dismiss claims, only cases
+
+        void arbstatus(uint16_t new_status, account_name arb);
+
+        void casestatus(uint64_t case_id, uint16_t new_status, account_name arb);
+
+        void changeclass(uint64_t case_id, uint16_t claim_key, uint16_t new_class, account_name arb);
+
+        //void joincases(vector<uint64_t> case_ids, account_name arb); //CLARIFY: joined case is rolled into Base case?
+
+        //void addevidence(uint64_t case_id, vector<uint64_t> ipfs_urls, account_name arb); //NOTE: member version is submitev()
+
+        void recuse(uint64_t case_id, string rationale, account_name arb);
+
+        #pragma endregion Arb_Only
+
+        #pragma region BP_Multisig_Actions
+
+        void dismissarb(account_name arb, account_name bp);
+
+        #pragma endregion BP_Multisig_Actions
+
+        //void message(uint64_t case_id, account_name from, account_name to, string msg);
 
         // TODO: Add evidence action on chain evidence (public?) and off chain evidence (private?)
         // exhibits... possibly multiple actions
@@ -136,69 +228,38 @@ class arbitration : public contract {
         // and contains meta data about the offchain information submitted
         // zero knowledge proof?
 
-        void regarb(account_name candidate);
-
-        void unregarb(account_name arb);
-
-        void votearb(account_name candidate, uint16_t direction, account_name voter);
-
-        void selectarbs(vector<account_name> arbs, account_name selector);
-            
-        #pragma endregion Member_Actions
-
-        #pragma region Arb_Actions
-
-        void addevidence(uint64_t case_id, vector<uint64_t> ipfs_urls, account_name arb);
-
-        void editarbstat(account_name arb, arb_status new_status);
-
-        void editcasestat(uint64_t case_id, case_status new_status, account_name arb);
-
-        void joincases(vector<uint64_t> case_ids, account_name arb); //CLARIFY: joined case is rolled into Base case?
-
-        void changeclass(uint64_t case_id, uint16_t claim_key, account_name arb);
-
-        void removeclaim(uint64_t case_id, uint16_t claim_key, account_name arb);
-
-        void droparb(account_name arb); //NOTE: called by multi-sig to drop arbitrator from case
-
-        void dismissarb(account_name arb); //NOTE: called by multi-sig to force unregarb()
-
-        void recuse(uint64_t case_id, account_name arb); //CLARIFY: provide written explanation of reasoning for recusal
-
         //TODO: set additional fee structure for a case
 
-        #pragma endregion Arb_Actions
     private:
 
     protected:
 
-        //NOTE: initial respondent response times different than subsequent response times
-        //NOTE: initial deposit saved
-        //NOTE: class of claim where neither party can pay fees, TF pays instead
-        /// @abi table context i64
-        struct config {
-            account_name publisher;
-            uint16_t max_concurrent_arbs;
-            //TODO: Arbitrator schedule field based on class
-            //vector<asset> fee_structure;
-            //TODO: fee schedule?
-            uint32_t default_time_limit; //TODO: double check time_point units
-            //CLARIFY: usage of "schedule" in requirements doc
+        #pragma region Helper_Functions
 
-            uint64_t primary_key() const { return publisher; }
-            EOSLIB_SERIALIZE(config, (publisher)(fee_structure))
-        };
+        bool is_candidate(account_name candidate);
 
-         //======================= Tables =========================
+        bool is_arb(account_name arb);
 
-        typedef singleton<N(config), config> config_singleton;
+        bool is_case(uint64_t case_id);
 
-        typedef multi_index<N(candidates), arbitrator> candidates_table;
+        //void require_arb(account_name arb);
+
+        #pragma endregion Helper_Functions
+
+        #pragma region Tables
+
+        typedef singleton<N(configs), config> config_singleton;
+        config_singleton configs;
+        config _config;
+ 
+        typedef multi_index<N(elections), election> elections_table;
         typedef multi_index<N(arbitrators), arbitrator> arbitrators_table;
 
         typedef multi_index<N(casefiles), casefile> casefiles_table;
+        typedef multi_index<N(dismisscases), casefile> dismissed_cases_table;
 
-        typedef multi_index<N(pendingev), evidence> pendingevidence_table;
         typedef multi_index<N(evidence), evidence> evidence_table;
+        typedef multi_index<N(dismissedev), evidence> dismissed_evidence_table;
+
+        #pragma endregion Tables
 };
