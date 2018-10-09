@@ -27,10 +27,7 @@ using namespace eosio;
 * NOTE: A full breakdown of the calculated token supply and 15% activation threshold
 * can be found at: https://docs.google.com/document/d/1K8w_Kd8Vmk_L0tAK56ETfAWlqgLo7r7Ae3JX25A5zVk/edit?usp=sharing
 */
-const int64_t min_activated_stake = 28'570'987'3500; // calculated from max TLOS supply of 190,473,249 (fluctuating value until mainnet activation)
 const double continuous_rate = 0.025;                // 2.5% annual inflation rate
-const double producer_rate = 0.01;                   // 1% TLOS rate to BP/Standby
-const double worker_rate = 0.015;                    // 1.5% TLOS rate to worker fund
 const uint64_t min_unpaid_blocks_threshold = 342;    // Minimum unpaid blocks required to qualify for Producer level payout
 
 // Calculated constants
@@ -349,7 +346,8 @@ void system_contract::recalculate_votes(){
 void system_contract::claimrewards_snapshot(){
     require_auth(N(eosio)); //can only come from bp's onblock call
 
-    eosio_assert(_gstate.total_activated_stake >= min_activated_stake, "cannot take snapshot until chain is activated");
+    eosio_assert(_gstate.thresh_activated_stake_time > 0, "cannot take snapshot until chain is activated");
+
     if (_gstate.total_unpaid_blocks <= 0) { //skips action, since there are no rewards to claim
         return;
     }
