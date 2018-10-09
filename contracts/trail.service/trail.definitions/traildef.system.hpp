@@ -37,8 +37,27 @@ struct transfer_args {
     string        memo;
 };
 
+struct user_resources {
+    account_name  owner;
+    asset         net_weight;
+    asset         cpu_weight;
+    int64_t       ram_bytes = 0;
+
+    uint64_t primary_key()const { return owner; }
+
+    EOSLIB_SERIALIZE( user_resources, (owner)(net_weight)(cpu_weight)(ram_bytes) )
+};
+
 typedef eosio::multi_index<N(accounts), account> accounts;
 typedef eosio::multi_index<N(stat), currency_stats> stats;
+
+typedef eosio::multi_index< N(userres), user_resources> user_resources_table;
+
+#pragma region Custom_Functions
+
+int64_t get_token_balance(account_name registry, account_name voter) {
+    //TODO: implement later
+}
 
 int64_t get_liquid_tlos(account_name voter) {
     accounts accountstable(N(eosio.token), voter);
@@ -48,8 +67,24 @@ int64_t get_liquid_tlos(account_name voter) {
 
     if (a != accountstable.end()) {
         auto acct = *a;
-        liquid_tlos = acct.balance.amount / int64_t(10000); //divide to get actual balance
+        liquid_tlos = acct.balance.amount / int64_t(10000); //divide to get post-precision balance
     }
     
     return liquid_tlos;
 }
+
+int64_t get_staked_tlos(account_name voter) {
+    user_resources_table userres(N(eosio), voter);
+    auto r = userres.find(voter);
+
+    int64_t staked_tlos = 0;
+
+    if (r != userres.end()) {
+        auto res = *r;
+        staked_tlos = (res.cpu_weight.amount + res.net_weight.amount) / int64_t(10000); //divide to get post-precision balance
+    }
+    
+    return staked_tlos;
+}
+
+#pragma endregion Custom_Functions

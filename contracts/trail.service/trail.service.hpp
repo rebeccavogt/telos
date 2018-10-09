@@ -3,11 +3,9 @@
  * 
  */
 
-#pragma once
-
-#include <trail.connections/trailconn.voting.hpp>
-#include <trail.connections/trailconn.system.hpp>
-#include <trail.connections/trailconn.tokens.hpp>
+#include <trail.definitions/traildef.voting.hpp>
+#include <trail.definitions/traildef.system.hpp>
+#include <trail.definitions/traildef.tokens.hpp>
 
 #include <eosiolib/asset.hpp>
 #include <eosiolib/eosio.hpp>

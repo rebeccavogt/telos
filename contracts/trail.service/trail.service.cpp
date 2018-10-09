@@ -106,7 +106,7 @@ void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_ke
     eosio_assert(v != voters.end(), "Voter doesn't exist");
 
     auto vid = *v;
-    int64_t new_weight = get_liquid_tlos(voter);
+    int64_t new_weight = get_staked_tlos(voter);
 
     votereceipt new_vr = votereceipt{
         vote_code,
