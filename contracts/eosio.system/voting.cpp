@@ -52,9 +52,21 @@ namespace eosiosystem {
       if ( prod != _producers.end() ) {
          _producers.modify( prod, producer, [&]( producer_info& info ){
                info.producer_key = producer_key;
-               info.is_active    = true;
                info.url          = url;
                info.location     = location;
+              
+              //  eosio_assert( info.times_kicked >= 10 && info.kick_penalty = info.missed_blocks , "public key should not be the default value" );
+               
+               if(info.times_kicked >= 0 && info.times_kicked < 10) {
+                  info.missed_blocks = info.kick_penalty;
+                  info.is_active = true;
+               } else {
+                  // _grotations.next_rotation_time 
+                  // info.last_time_kicked
+               }
+              
+
+               
             });
       } else {
          _producers.emplace( producer, [&]( producer_info& info ){
@@ -115,7 +127,8 @@ namespace eosiosystem {
           auto pitr = _producers.find(prods[i].producer_name);
           if (pitr != _producers.end() && pitr->active()) {
             _producers.modify(pitr, 0, [&](auto &p) { 
-              p.missed_blocks = 0;
+              if(p.times_kicked < 10) p.missed_blocks = 0;
+              // else 
             });  
           }
         }
