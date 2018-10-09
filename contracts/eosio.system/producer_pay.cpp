@@ -90,7 +90,8 @@ void system_contract::kick_producer() {
         auto bp = _producers.find(obp.name);
 
         _producers.modify(bp, 0, [&](auto &p) {
-            p.deactivate();
+            // p.deactivate();
+            p.kick(kick_type::PREVENT_LIB_STOP_MOVING);
             remove_producer_to_kick_list(obp);
         });
 
@@ -140,7 +141,8 @@ void system_contract::set_producer_block_missed(account_name producer, uint32_t 
 
         offline_producer op{p.owner, p.total_votes, p.missed_blocks};
         if(crossed_missed_blocks_threshold(p.missed_blocks)) {
-            p.deactivate();
+            // p.deactivate();
+            p.kick(kick_type::REACHED_TRESHOLD);
             remove_producer_to_kick_list(op);
         } else if(op.missed_blocks > 0) add_producer_to_kick_list(op);
     });
@@ -156,7 +158,8 @@ void system_contract::update_producer_blocks(account_name producer, uint32_t amo
 
         offline_producer op{p.owner, p.total_votes, p.missed_blocks};
         if(crossed_missed_blocks_threshold(p.missed_blocks)) {
-            p.deactivate();
+            // p.deactivate();
+            p.kick(kick_type::REACHED_TRESHOLD);
             remove_producer_to_kick_list(op);
         } else if(op.missed_blocks > 0) add_producer_to_kick_list(op);
       });    

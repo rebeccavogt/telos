@@ -66,6 +66,12 @@ namespace eosiosystem {
                                 (last_producer_schedule_size)(total_producer_vote_weight)(last_name_close)(last_claimrewards)(next_payment)(block_num) )
    };
 
+   enum class kick_type {
+     REACHED_TRESHOLD = 1,
+     PREVENT_LIB_STOP_MOVING = 2,
+     BPS_VOTING = 3
+   };
+
    /**
     * TELOS CHANGES:
     * 
@@ -82,15 +88,45 @@ namespace eosiosystem {
       uint32_t              blocks_per_cycle = 0;
       uint64_t              last_claim_time = 0;
       uint16_t              location = 0;
+      
+      uint32_t              kick_reason_id = 0;
+      std::string           kick_reason_memo;
+      uint32_t              times_kicked = 0;
+      uint32_t              kick_penalty = 0;
 
       uint64_t primary_key()const { return owner;                                   }
       double   by_votes()const    { return is_active ? -total_votes : total_votes;  }
       bool     active()const      { return is_active;                               }
-      void     deactivate()       { producer_key = public_key(); is_active = false; missed_blocks = 0; }
+      void     deactivate()       { producer_key = public_key(); is_active = false; }
+      
+      void kick(kick_type kt) {
+        times_kicked++;
+        
+        switch(kt) {
+          case kick_type::REACHED_TRESHOLD:
+          kick_reason_id = uint32_t(kick_type::REACHED_TRESHOLD);
+          kick_reason_memo = "Producer was deactivated because reached maximum missed blocks in this rotation timeframe.";
+          kick_penalty = 1;
+          break;
+          case kick_type::PREVENT_LIB_STOP_MOVING:
+          kick_reason_id = uint32_t(kick_type::PREVENT_LIB_STOP_MOVING);
+          kick_reason_memo = "Producer was deactivated to prevent LIB to stop moving.";
+          kick_penalty = 1;
+          break;
+          case kick_type::BPS_VOTING:
+          kick_reason_id = uint32_t(kick_type::BPS_VOTING);
+          kick_reason_memo = "Producer was deactivated by vote.";
+          kick_penalty = 1;
+          break;
+        }
+        
+        deactivate();
+      } 
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
       EOSLIB_SERIALIZE( producer_info, (owner)(total_votes)(producer_key)(is_active)(url)
-                        (unpaid_blocks)(missed_blocks)(blocks_per_cycle)(last_claim_time)(location) )
+                        (unpaid_blocks)(missed_blocks)(blocks_per_cycle)(last_claim_time)
+                        (location)(kick_reason_memo)(times_kicked)(kick_penalty) )
    };
 
    struct rotation_info {
