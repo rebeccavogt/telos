@@ -243,7 +243,7 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer) 
     if (_gstate.thresh_activated_stake_time == 0) {
         _gstate.block_num++;
         
-        if(_gstate.block_num >= block_num_network_activation) _gstate.thresh_activated_stake_time = current_time();
+        if(_gstate.block_num >= block_num_network_activation && _gstate.total_producer_vote_weight > 0) _gstate.thresh_activated_stake_time = current_time();
         
         return;
     }
