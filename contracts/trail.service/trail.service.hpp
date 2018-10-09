@@ -63,7 +63,7 @@ class trail : public contract {
          * @param expiration - 
          * @param voter - 
         */
-        void addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, uint16_t direction, uint32_t expiration, account_name voter);
+        void addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, symbol_name vote_token, uint16_t direction, uint32_t expiration, account_name voter);
 
         void rmvexpvotes(account_name voter);
 

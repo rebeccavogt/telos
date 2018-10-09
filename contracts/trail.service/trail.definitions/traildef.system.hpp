@@ -57,6 +57,7 @@ typedef eosio::multi_index< N(userres), user_resources> user_resources_table;
 
 int64_t get_token_balance(account_name registry, account_name voter) {
     //TODO: implement later
+    
 }
 
 int64_t get_liquid_tlos(account_name voter) {

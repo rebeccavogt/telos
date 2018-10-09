@@ -97,15 +97,16 @@ void trail::unregvoter(account_name voter) {
     print("\nVoterID Unregistration: SUCCESS");
 }
 
-void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, uint16_t direction, uint32_t expiration, account_name voter) {
+void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, symbol_name vote_token, uint16_t direction, uint32_t expiration, account_name voter) {
     require_auth(voter);
 
     voters_table voters(_self, voter);
     auto v = voters.find(voter);
 
     eosio_assert(v != voters.end(), "Voter doesn't exist");
-
     auto vid = *v;
+
+    //TODO: get weight based on token
     int64_t new_weight = get_staked_tlos(voter);
 
     votereceipt new_vr = votereceipt{
