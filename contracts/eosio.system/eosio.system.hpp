@@ -102,9 +102,9 @@ namespace eosiosystem {
       
       void kick(kick_type kt) {
         times_kicked++;
-        last_time_kicked = time_point(microseconds(current_time())));
+        last_time_kicked = block_timestamp(eosio::time_point(eosio::microseconds(int64_t(current_time()))));
 
-        if(max_times_kick > times_kicked) kick_penalty = (1 - times_kicked / 10) * missed_blocks;
+        if(max_times_kick > times_kicked) kick_penalty = (times_kicked / 10) * missed_blocks;
         else kick_penalty = missed_blocks;
 
         switch(kt) {
