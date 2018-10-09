@@ -28,7 +28,7 @@ arbitration::~arbitration() {
     }
 }
 
-void arbitration::setconfig(uint16_t max_arbs, uint32_t default_time) {
+void arbitration::setconfig(uint16_t max_arbs, uint32_t default_time, vector<int64_t> fees) {
     require_auth(_self);
 
     //TODO: expand as struct is developed
@@ -36,7 +36,8 @@ void arbitration::setconfig(uint16_t max_arbs, uint32_t default_time) {
     _config = config{
         _self, //publisher
         max_arbs, //max_arbs
-        default_time //default_time
+        default_time, //default_time
+        fees
     };
 
     print("\nSettings Configured: SUCCESS");

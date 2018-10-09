@@ -81,8 +81,8 @@ class arbitration : public contract {
             account_name publisher;
             uint16_t max_arbs;
             uint32_t default_time; //TODO: double check time_point units
+            vector<int64_t> fee_structure; //NOTE: int64_t is pre-precision value
             //TODO: Arbitrator schedule field based on class
-            //vector<uint16_t> fee_structure;
             //CLARIFY: usage of "schedule" in requirements doc
 
             uint64_t primary_key() const { return publisher; }
@@ -118,8 +118,8 @@ class arbitration : public contract {
 
         struct claim {
             uint16_t class_suggestion;
-            vector<string> submitted_evidence;
-            vector<uint64_t> accepted_ev_ids;
+            vector<string> submitted_evidence; //submitted by claimant
+            vector<uint64_t> accepted_ev_ids; //accepted and emplaced by arb
             uint16_t class_decision; //initialized to UNDECIDED (0)
 
             EOSLIB_SERIALIZE(claim, (class_suggestion)(submitted_evidence)(accepted_ev_ids)(class_decision))
@@ -160,7 +160,7 @@ class arbitration : public contract {
 
         ~arbitration();
 
-        void setconfig(uint16_t max_arbs, uint32_t default_time); //setting global configuration 
+        void setconfig(uint16_t max_arbs, uint32_t default_time, vector<int64_t> fees); //setting global configuration 
 
         #pragma region Arb_Elections
 
@@ -198,7 +198,9 @@ class arbitration : public contract {
 
         void closecase(uint64_t case_id, account_name closer); //TODO: require decision?
 
-        //void dismissclaim(uint64_t case_id, uint16_t claim_num, account_name arb); //NOTE: arb should not dismiss claims, only cases
+        void dismissev(uint64_t case_id, uint16_t claim_num, uint16_t ev_num, account_name arb); //NOTE: moves to dismissed_evidence table
+
+        void acceptev(uint64_t case_id, uint16_t claim_num, uint16_t ev_num, account_name arb); //NOTE: moves to evidence_table and assigns ID
 
         void arbstatus(uint16_t new_status, account_name arb);
 
@@ -222,9 +224,8 @@ class arbitration : public contract {
 
         //void message(uint64_t case_id, account_name from, account_name to, string msg);
 
-        // TODO: Add evidence action on chain evidence (public?) and off chain evidence (private?)
-        // exhibits... possibly multiple actions
-        // NOTE: off chain evidence is still recorded on the chain as being submitted,
+        //TODO: Add evidence action on chain evidence (public?) and off chain evidence (private?)
+        //NOTE: off chain evidence is still recorded on the chain as being submitted,
         // and contains meta data about the offchain information submitted
         // zero knowledge proof?
 
