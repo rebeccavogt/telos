@@ -10,7 +10,7 @@
 #include <eosiolib/privileged.hpp>
 #include <eosiolib/singleton.hpp>
 #include <eosio.system/exchange_state.hpp>
-
+#include <cmath>  
 #include <string>
 
 namespace eosiosystem {
@@ -71,7 +71,6 @@ namespace eosiosystem {
      PREVENT_LIB_STOP_MOVING = 2,
      BPS_VOTING = 3
    };
-   const int16_t max_times_kick = 10;
    /**
     * TELOS CHANGES:
     * 
@@ -92,7 +91,7 @@ namespace eosiosystem {
       uint32_t              kick_reason_id = 0;
       std::string           kick_reason;
       uint32_t              times_kicked = 0;
-      uint32_t              kick_penalty = 0;
+      uint32_t              kick_penalty_hours = 0; 
       block_timestamp       last_time_kicked;
 
       uint64_t primary_key()const { return owner;                                   }
@@ -103,10 +102,8 @@ namespace eosiosystem {
       void kick(kick_type kt) {
         times_kicked++;
         last_time_kicked = block_timestamp(eosio::time_point(eosio::microseconds(int64_t(current_time()))));
-
-        if(max_times_kick > times_kicked) kick_penalty = (times_kicked / 10) * missed_blocks;
-        else kick_penalty = missed_blocks;
-
+        kick_penalty_hours  = uint32_t(std::pow(2, times_kicked));
+        
         switch(kt) {
           case kick_type::REACHED_TRESHOLD:
             kick_reason_id = uint32_t(kick_type::REACHED_TRESHOLD);
@@ -129,7 +126,7 @@ namespace eosiosystem {
       // explicit serialization macro is not necessary, used here only to improve compilation time
       EOSLIB_SERIALIZE( producer_info, (owner)(total_votes)(producer_key)(is_active)(url)
                         (unpaid_blocks)(missed_blocks)(blocks_per_cycle)(last_claim_time)
-                        (location)(kick_reason_id)(kick_reason)(times_kicked)(kick_penalty)(last_time_kicked) )
+                        (location)(kick_reason_id)(kick_reason)(times_kicked)(kick_penalty_hours)(last_time_kicked) )
    };
 
    struct rotation_info {
