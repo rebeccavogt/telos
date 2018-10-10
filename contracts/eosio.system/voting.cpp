@@ -17,14 +17,13 @@
 #include <algorithm>
 #include <cmath>
 
-#define VOTE_VARIATION            0.001
-#define TWELVE_HOURS_US  5400000000
-#define SIX_HOURS_US     3600000000 //1hr
-                         
-#define SIX_MINUTES_US    360000000 // debug version
-#define TWELVE_MINUTES_US 720000000
-#define MAX_PRODUCERS            51
-#define TOP_PRODUCERS            21
+#define VOTE_VARIATION             0.001
+#define TWELVE_HOURS_US  43200000000
+#define SIX_HOURS_US     21600000000
+#define SIX_MINUTES_US     360000000 // debug version
+#define TWELVE_MINUTES_US  720000000
+#define MAX_PRODUCERS             51
+#define TOP_PRODUCERS             21
 
 namespace eosiosystem {
    using namespace eosio;
