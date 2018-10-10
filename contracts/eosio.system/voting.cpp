@@ -53,10 +53,10 @@ namespace eosiosystem {
         _producers.modify(prod, producer, [&](producer_info &info) {
           auto now = block_timestamp(eosio::time_point(eosio::microseconds(int64_t(current_time()))));
 
-          uint32_t hours_out = info.kick_penalty_hours * 3600;
-
+          uint32_t hours_out = info.kick_penalty_hours * 3600; 
+          // uint32_t hours_out = info.kick_penalty_hours * 60; // debug version is calculated in minutes
           eosio_assert(now.slot - info.last_time_kicked.slot > hours_out,
-            "Producer is not allowed to register at this time. Please take this time to fix your node.");
+            "Producer is not allowed to register at this time. Please fix your node and try again later");
 
           info.producer_key = producer_key;
           info.url = url;
@@ -126,11 +126,10 @@ namespace eosiosystem {
         for (size_t i = 0; i < prods.size(); i++) {
           auto pitr = _producers.find(prods[i].producer_name);
           if (pitr != _producers.end() && pitr->active()) {
-            _producers.modify(pitr, 0, [&](auto &p) { 
-              if(p.active) {
-                p.missed_blocks = 0;
-                if(p.kick_penalty_hours > 0) p.kick_penalty_hours--;
-            });  
+            _producers.modify(pitr, 0, [&](auto &p) {
+              p.missed_blocks = 0;
+              if (p.kick_penalty_hours > 0) p.kick_penalty_hours--;
+            });
           }
         }
 
