@@ -73,7 +73,7 @@ void system_contract::remove_producer_to_kick_list(offline_producer producer) {
     });   
    
   // producer found
-  if (bp != _grotations.offline_bps.end()) _grotations.offline_bps.erase(bp, _grotations.offline_bps.end());
+  if (bp != _grotations.offline_bps.end()) _grotations.offline_bps.erase(bp);
 }
 
 void system_contract::kick_producer() {
