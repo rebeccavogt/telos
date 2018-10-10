@@ -151,7 +151,7 @@ namespace eosiosystem {
 
    void system_contract::votebpout(account_name bp, uint32_t penalty_hours) {
       auto pitr = _producers.find(bp);
-      eosio_assert(pitr != _producers.end(), "Producer was not found");
+      eosio_assert(pitr != _producers.end(), "Producer account was not found");
       
       _producers.modify(pitr, 0, [&](auto &p){
         p.kick(kick_type::BPS_VOTING, penalty_hours);

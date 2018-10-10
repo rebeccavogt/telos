@@ -108,17 +108,17 @@ namespace eosiosystem {
         switch(kt) {
           case kick_type::REACHED_TRESHOLD:
             kick_reason_id = uint32_t(kick_type::REACHED_TRESHOLD);
-            kick_reason = "Producer was deactivated because reached maximum missed blocks in this rotation timeframe.";
+            kick_reason = "Producer account was deactivated because it reached the maximum missed blocks in this rotation timeframe.";
           break;
           case kick_type::PREVENT_LIB_STOP_MOVING:
             kick_reason_id = uint32_t(kick_type::PREVENT_LIB_STOP_MOVING);
-            kick_reason = "Producer was deactivated to prevent LIB to stop moving.";
+            kick_reason = "Producer account was deactivated to prevent the LIB from halting.";
           break;
           case kick_type::BPS_VOTING:
             require_auth(N(eosio));
             eosio_assert(penalty != 0, "The penalty should be greater than zero.");
             kick_reason_id = uint32_t(kick_type::BPS_VOTING);
-            kick_reason = "Producer was deactivated by vote.";
+            kick_reason = "Producer account was deactivated by vote.";
             kick_penalty_hours = penalty;
           break;
         }
@@ -351,7 +351,7 @@ namespace eosiosystem {
          
          void add_producer_to_kick_list(offline_producer producer);
 
-         void remove_producer_to_kick_list(offline_producer producer);
+         void remove_producer_from_kick_list(offline_producer producer);
 
          bool reach_consensus();
 
