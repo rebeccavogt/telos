@@ -49,7 +49,9 @@ class trail : public contract {
 
         /**
          * Unregisters an account's existing VoterID.
-         * @param voter - account owning VoterID to be unregistered 
+         * @param voter - account owning VoterID to be unregistered
+         * 
+         * NOTE: All votereceipts must be removed first.
         */
         void unregvoter(account_name voter);
 
@@ -58,11 +60,13 @@ class trail : public contract {
          * @param vote_code - 
          * @param vote_scope - 
          * @param vote_key - 
+         * @param vote_token - token symbol used to vote
          * @param direction - 
          * @param weight - 
          * @param expiration - 
          * @param voter - 
         */
+        //add param for symbol_name vote_token
         void addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, symbol_name vote_token, uint16_t direction, uint32_t expiration, account_name voter);
 
         void rmvexpvotes(account_name voter);

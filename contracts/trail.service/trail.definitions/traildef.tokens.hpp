@@ -23,6 +23,39 @@ struct registration {
 
     uint64_t primary_key() const { return native.symbol.name(); }
     uint64_t by_publisher() const { return publisher; }
+    EOSLIB_SERIALIZE(registration, (native)(publisher))
 };
 
 typedef multi_index<N(registries), registration> registries_table;
+
+bool is_trail_token(symbol_name sym) {
+    registries_table registries(N(trailservice), sym);
+    auto r = registries.find(sym);
+
+    if (r != registries.end()) {
+        return true;
+    }
+
+    return false;
+}
+
+int64_t get_token_balance(symbol_name sym, account_name voter) {
+    //TODO: implement later
+    
+}
+
+registries_table::const_iterator find_registry(symbol_name sym) {
+    registries_table registries(N(trailservice), sym);
+    auto itr = registries.find(sym);
+
+    if (itr != registries.end()) {
+        return itr;
+    }
+
+    return registries.end();
+}
+
+registration get_registry(symbol_name sym) {
+    registries_table registries(N(trailservice), sym);
+    return registries.get(sym);
+}

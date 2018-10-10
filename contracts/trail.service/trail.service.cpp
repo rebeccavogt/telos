@@ -22,6 +22,8 @@ trail::~trail() {
     }
 }
 
+#pragma region Tokens
+
 void trail::regtoken(asset native, account_name publisher) {
     require_auth(publisher);
 
@@ -60,6 +62,10 @@ void trail::unregtoken(asset native, account_name publisher) {
 
     print("\nToken Unregistration: SUCCESS");
 }
+
+#pragma endregion Trail_Tokens
+
+#pragma region Voting
 
 void trail::regvoter(account_name voter) {
     require_auth(voter);
@@ -102,17 +108,26 @@ void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_ke
 
     voters_table voters(_self, voter);
     auto v = voters.find(voter);
-
-    eosio_assert(v != voters.end(), "Voter doesn't exist");
+    eosio_assert(v != voters.end(), "VoterID doesn't exist");
     auto vid = *v;
 
-    //TODO: get weight based on token
-    int64_t new_weight = get_staked_tlos(voter);
+    int64_t new_weight = 0;
+
+    if (vote_token == asset(int64_t(0), S(4, TLOS)).symbol.name()) { //TODO: simpler way of getting TLOS symbol_name
+        int64_t new_weight = get_staked_tlos(voter);
+    } else if (is_trail_token(vote_token)) {
+        int64_t new_weight = get_token_balance(vote_token, voter);
+    } else if (is_eosio_token(vote_token, voter)) {
+        int64_t new_weight = get_eosio_token_balance(vote_token, voter);
+    } else {
+        print("\nNo token balance found for given symbol, defaulting to 0");
+    }
 
     votereceipt new_vr = votereceipt{
         vote_code,
         vote_scope,
         vote_key,
+        vote_token,
         direction,
         new_weight,
         expiration
@@ -146,6 +161,7 @@ void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_ke
 }
 
 void trail::rmvexpvotes(account_name voter) {
+    //TODO: set default param for limit of removals per call?
     require_auth(voter);
 
     voters_table voters(_self, voter);
@@ -172,47 +188,8 @@ void trail::rmvexpvotes(account_name voter) {
         a.receipt_list = vid.receipt_list;
     });
 
-    print("\nVotes Removed: ", votes_removed);
+    print("\nReceipts Removed: ", votes_removed);
 }
-
-/*
-void trail::rmvreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, account_name voter) {
-    require_auth(voter);
-
-    voters_table voters(_self, voter);
-    auto v = voters.find(voter);
-
-    eosio_assert(v != voters.end(), "Voter doesn't exist");
-
-    auto vid = *v;
-
-    auto itr = vid.receipt_list.begin();
-    bool found = false;
-
-    //search for existing receipt
-    for (votereceipt r : vid.receipt_list) {
-
-        if (r.vote_code == vote_code && r.vote_scope == vote_scope && r.vote_key == vote_key) {
-            print("\nExisting receipt found. Removing...");
-            found = true;
-
-            auto vr = vid.receipt_list.erase(itr);
-
-            break;
-        }
-
-        itr++;
-    }
-
-    eosio_assert(found, "Receipt not found");
-
-    voters.modify(v, 0, [&]( auto& a ) {
-        a.receipt_list = vid.receipt_list;
-    });
-
-    print("\nVoteReceipt Removal: SUCCESS");
-}
-*/
 
 void trail::regballot(account_name publisher) {
     require_auth(publisher);
@@ -245,5 +222,7 @@ void trail::unregballot(account_name publisher) {
 
     print("\nBallot Unregistration: SUCCESS");
 }
+
+#pragma endregion Voting
 
 EOSIO_ABI(trail, (regtoken)(unregtoken)(regvoter)(unregvoter)(addreceipt)(rmvexpvotes)(regballot)(unregballot))

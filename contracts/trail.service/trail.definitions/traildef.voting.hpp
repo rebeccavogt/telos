@@ -17,27 +17,30 @@ using namespace std;
 using namespace eosio;
 
 /**
- * @brief Generic struct used to log a vote.
+ * Generic struct used to log a vote.
  * @field vote_code - code of contract where vote was cast
  * @field vote_scope - scope of table where vote was cast
- * @field vote_key - primary key of object where vote is stored
+ * @field vote_key - primary key of object that was voted on
+ * @field vote_token - symbol_name of token used to vote
  * @field direction - direction of vote, where 0 = NO, 1 = YES, and 2 = ABSTAIN
- * @field weight - weight of vote
+ * @field weight - weight of vote, measured in token quantity
  * @field expiration - time_point of vote's expiration. Vote can be erased after expiring.
  * 
- * TODO: Could this be EOSLIB_SERIALIZED?
+ * TODO: Could this be EOSLIB_SERIALIZED? stored in vector, not directly in table
+ * TODO: reformat for removal of voterID struct, instead votereceipts are stored directly and indexed by 64 bit hash of code + scope + key
  */
 struct votereceipt {
-    uint64_t vote_code; //TODO: change to account_name type?
+    uint64_t vote_code;
     uint64_t vote_scope;
     uint64_t vote_key;
-    uint16_t direction; //TODO: Use enum?
+    symbol_name vote_token;
+    uint16_t direction;
     int64_t weight;
     uint32_t expiration;
 };
 
 /**
- * @brief A VoterID card, used to track and store voter information and activity.
+ * A VoterID card, used to track and store voter information and activity.
  * @field voter - account name of voter who owns the ID card
  * @field receipt_list - vector of all votereceipts
  */
@@ -51,7 +54,7 @@ struct voterid {
 };
 
 /**
- * @brief Environment struct tracking global trailservice information.
+ * Environment struct tracking global trailservice information.
  * @field publisher - account that published the contract.
  * @field total_tokens - total active number of unique tokens registered through the regtoken() action.
  * @field total_voters - total active number of unique voterid's registered through the regvoter() action.
@@ -64,7 +67,7 @@ struct environment {
     uint64_t total_ballots;
 
     uint64_t primary_key() const { return publisher; }
-    EOSLIB_SERIALIZE(environment, (publisher)(total_tokens)(total_voters))
+    EOSLIB_SERIALIZE(environment, (publisher)(total_tokens)(total_voters)(total_ballots))
 };
 
 /// @abi table ballots
@@ -78,3 +81,44 @@ struct ballot {
 typedef multi_index<N(voters), voterid> voters_table;
 typedef multi_index<N(ballots), ballot> ballots_table;
 typedef singleton<N(environment), environment> environment_singleton;
+
+bool is_voter(account_name voter) {
+    voters_table voters(N(trailservice), voter); //TODO: change to _self, not good to hardcode account_name
+    auto v = voters.find(voter);
+
+    if (v != voters.end()) {
+        return true;
+    }
+
+    return false;
+}
+
+bool has_receipt(account_name voter, uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key) {
+    voters_table voters(N(trailservice), voter); //TODO: change to _self, not good to hardcode account_name
+    auto vid = voters.get(voter);
+
+    for (votereceipt vr : vid.receipt_list) {
+        if (vr.vote_code == vote_code && vr.vote_scope == vote_scope && vr.vote_key == vote_key) {
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
+voters_table::const_iterator find_receipt(account_name voter, uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key) {
+    voters_table voters(N(trailservice), voter); //TODO: change to _self, don't hardcode account_name
+    auto vid = voters.get(voter);
+
+    auto itr = voters.begin();
+    for (votereceipt vr : vid.receipt_list) {
+        if (vr.vote_code == vote_code && vr.vote_scope == vote_scope && vr.vote_key == vote_key) {
+
+            return itr;
+        }
+        itr++;
+    }
+
+    return voters.end();
+}

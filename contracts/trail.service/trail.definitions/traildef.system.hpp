@@ -55,13 +55,27 @@ typedef eosio::multi_index< N(userres), user_resources> user_resources_table;
 
 #pragma region Custom_Functions
 
-int64_t get_token_balance(account_name registry, account_name voter) {
-    //TODO: implement later
-    
+bool is_eosio_token(symbol_name sym, account_name owner) {
+    accounts accountstable(N(eosio.token), owner);
+    auto a = accountstable.find(sym);
+
+    if (a != accountstable.end()) {
+        return true;
+    }
+
+    return false;
 }
 
-int64_t get_liquid_tlos(account_name voter) {
-    accounts accountstable(N(eosio.token), voter);
+int64_t get_eosio_token_balance(symbol_name sym, account_name owner) {
+    accounts accountstable(N(eosio.token), owner);
+    auto acct = accountstable.get(sym);
+    auto prec = acct.balance.symbol.precision();
+
+    return acct.balance.amount / (prec * 10); //NOTE: returns with precision applied
+}
+
+int64_t get_liquid_tlos(account_name owner) {
+    accounts accountstable(N(eosio.token), owner);
     auto a = accountstable.find(asset(int64_t(0), S(4, TLOS)).symbol.name()); //TODO: find better way to get TLOS symbol?
 
     int64_t liquid_tlos = 0;
@@ -74,9 +88,9 @@ int64_t get_liquid_tlos(account_name voter) {
     return liquid_tlos;
 }
 
-int64_t get_staked_tlos(account_name voter) {
-    user_resources_table userres(N(eosio), voter);
-    auto r = userres.find(voter);
+int64_t get_staked_tlos(account_name owner) {
+    user_resources_table userres(N(eosio), owner);
+    auto r = userres.find(owner);
 
     int64_t staked_tlos = 0;
 
@@ -87,5 +101,7 @@ int64_t get_staked_tlos(account_name voter) {
     
     return staked_tlos;
 }
+
+//TODO: implement get_delegated_tlos()
 
 #pragma endregion Custom_Functions
