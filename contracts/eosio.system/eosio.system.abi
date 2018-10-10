@@ -322,7 +322,7 @@
          {"name":"kick_reason_id",              "type":"uint32"},
          {"name":"kick_reason",                 "type":"string"},
          {"name":"times_kicked",                "type":"uint32"},
-         {"name":"kick_penalty",                "type":"uint32"},
+         {"name":"kick_penalty_hours",          "type":"uint32"},
          {"name":"last_time_kicked",            "type":"block_timestamp_type"}
       ]
     },{
