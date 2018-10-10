@@ -14,17 +14,17 @@
 #include <eosiolib/singleton.hpp>
 #include <eosiolib/transaction.hpp>
 #include <eosio.token/eosio.token.hpp>
-
 #include <algorithm>
 #include <cmath>
 
-#define VOTE_VARIATION 0.001
-#define TWELVE_HOURS_US 43200000000
-#define SIX_MINUTES_US 360000000 // debug version
+#define VOTE_VARIATION            0.001
+#define TWELVE_HOURS_US  5400000000
+#define SIX_HOURS_US     3600000000 //1hr
+                         
+#define SIX_MINUTES_US    360000000 // debug version
 #define TWELVE_MINUTES_US 720000000
-#define SIX_HOURS_US 21600000000
-#define MAX_PRODUCERS 51
-#define TOP_PRODUCERS 21
+#define MAX_PRODUCERS            51
+#define TOP_PRODUCERS            21
 
 namespace eosiosystem {
    using namespace eosio;
@@ -34,6 +34,7 @@ namespace eosiosystem {
    using eosio::print;
    using eosio::singleton;
    using eosio::transaction;
+   
    /**
     *  This method will create a producer_config and producer_info object for 'producer'
     *
@@ -48,35 +49,33 @@ namespace eosiosystem {
       require_auth( producer );
 
       auto prod = _producers.find( producer );
-
       if ( prod != _producers.end() ) {
-         _producers.modify( prod, producer, [&]( producer_info& info ){
-               info.producer_key = producer_key;
-               info.url          = url;
-               info.location     = location;
-              
-              //  eosio_assert( info.times_kicked >= 10 && info.kick_penalty = info.missed_blocks , "public key should not be the default value" );
-               
-               if(info.times_kicked >= 0 && info.times_kicked < 10) {
-                  info.missed_blocks = info.kick_penalty;
-                  info.is_active = true;
-               } else {
-                  // _grotations.next_rotation_time 
-                  // info.last_time_kicked
-               }
-              
+        _producers.modify(prod, producer, [&](producer_info &info) {
+          auto now = block_timestamp(eosio::time_point(eosio::microseconds(int64_t(current_time()))));
 
-               
-            });
+          uint32_t hours_out = info.kick_penalty_hours * 3600;
+
+          eosio_assert(now.slot - info.last_time_kicked.slot > hours_out,
+            "Producer is not allowed to register at this time. Please take this time to fix your node.");
+
+          info.producer_key = producer_key;
+          info.url = url;
+          info.location = location;
+          info.missed_blocks = 0;
+          info.is_active = true;
+          info.kick_reason = "";
+          info.kick_reason_id = 0;
+          // info.last_time_kicked =
+        });
       } else {
-         _producers.emplace( producer, [&]( producer_info& info ){
-               info.owner         = producer;
-               info.total_votes   = 0;
-               info.producer_key  = producer_key;
-               info.is_active     = true;
-               info.url           = url;
-               info.location      = location;
-         });
+        _producers.emplace(producer, [&](producer_info &info) {
+          info.owner = producer;
+          info.total_votes = 0;
+          info.producer_key = producer_key;
+          info.is_active = true;
+          info.url = url;
+          info.location = location;
+        });
       }
    }
 
@@ -85,8 +84,8 @@ namespace eosiosystem {
 
       const auto& prod = _producers.get( producer, "producer not found" );
 
-      _producers.modify( prod, 0, [&]( producer_info& info ){
-            info.deactivate();
+      _producers.modify( prod, 0, [&]( producer_info& info ) {
+          info.deactivate();
       });
    }
 
@@ -95,10 +94,11 @@ namespace eosiosystem {
       _grotations.sbp_currently_in = sbpIn;
    }
 
-   void system_contract::updateRotationTime(block_timestamp block_time){
+   void system_contract::updateRotationTime(block_timestamp block_time) {
       _grotations.last_rotation_time = block_time;
       _grotations.next_rotation_time = block_timestamp(block_time.to_time_point() + time_point(microseconds(SIX_HOURS_US)));
    } 
+
    //TODO: Add _grotations.is_rotation_active, that way this feature can be toggled.
    void system_contract::update_elected_producers( block_timestamp block_time ) {
       _gstate.last_producer_schedule_update = block_time;
@@ -127,8 +127,9 @@ namespace eosiosystem {
           auto pitr = _producers.find(prods[i].producer_name);
           if (pitr != _producers.end() && pitr->active()) {
             _producers.modify(pitr, 0, [&](auto &p) { 
-              if(p.times_kicked < 10) p.missed_blocks = 0;
-              // else 
+              if(p.active) {
+                p.missed_blocks = 0;
+                if(p.kick_penalty_hours > 0) p.kick_penalty_hours--;
             });  
           }
         }
@@ -140,11 +141,8 @@ namespace eosiosystem {
           account_name bp_name = prods[_grotations.bp_out_index].producer_name;
           account_name sbp_name = prods[_grotations.sbp_in_index].producer_name;
 
-          it_bp = prods.begin() + _grotations.bp_out_index;
-          it_sbp = prods.begin() + _grotations.sbp_in_index;
-
-          print("\n sb_name: ", name{sbp_name});
-          print("\n it_sbp: ", name{it_sbp->producer_name});
+          it_bp = prods.begin() + int32_t(_grotations.bp_out_index);
+          it_sbp = prods.begin() + int32_t(_grotations.sbp_in_index);
 
           setBPsRotation(bp_name, sbp_name);
         } 
@@ -180,24 +178,20 @@ namespace eosiosystem {
         }
     }
 
-      print("\nsbp name: ", name{it_sbp->producer_name});
-      print("\nsbp index: ", _grotations.sbp_in_index);
-      print("\nsbp name on prods array: ", name{prods[_grotations.sbp_in_index].producer_name});  
-
       std::vector<eosio::producer_key>  top_producers;
       
       //Rotation
       if(it_bp != prods.end() && it_sbp != prods.end()) {
         for ( auto pIt = prods.begin(); pIt != prods.end(); ++pIt) {
           auto i = std::distance(prods.begin(), pIt); 
-          print("\ni-> ", i);
+          // print("\ni-> ", i);
           if(i > TOP_PRODUCERS - 1) break;
 
           if(pIt->producer_name == it_bp->producer_name) {
-            print("\nprod sbp added to schedule -> ", name{it_sbp->producer_name});
+            // print("\nprod sbp added to schedule -> ", name{it_sbp->producer_name});
             top_producers.emplace_back(*it_sbp);
           } else {
-            print("\nprod bp added to schedule -> ", name{pIt->producer_name});
+            // print("\nprod bp added to schedule -> ", name{pIt->producer_name});
             top_producers.emplace_back(*pIt);
           } 
         }
@@ -217,11 +211,7 @@ namespace eosiosystem {
       bytes packed_schedule = pack(top_producers);
 
       if( set_proposed_producers( packed_schedule.data(),  packed_schedule.size() ) >= 0 ) {
-        print("\nschedule was proposed");
-        
-        for( const auto& item : top_producers ){
-         print("\n*producer: ", name{item.producer_name});
-        }
+        print("\n**new schedule was proposed**");
          _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>( top_producers.size() );
       }
    }
@@ -337,7 +327,7 @@ namespace eosiosystem {
 
             // propagate weight here only when switching proxies
             // otherwise propagate happens in the case below
-            if( proxy != voter->proxy ){ 
+            if( proxy != voter->proxy ) {  
                _gstate.total_activated_stake += totalStaked - voter->last_stake;
                propagate_weight_change( *old_proxy );
             }
