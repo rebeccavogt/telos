@@ -106,7 +106,7 @@ class arbitration : public contract {
         /// @abi table arbitrators i64
         struct arbitrator {
             account_name arb;
-            uint16_t status;
+            uint16_t arb_status;
             vector<uint64_t> open_case_ids;
             vector<uint64_t> closed_case_ids;
             //string credentials; //ipfs_url of credentials
@@ -170,7 +170,7 @@ class arbitration : public contract {
 
         void voteforarb(account_name candidate, uint16_t direction, account_name voter);
 
-        void endelection(); //automate in constructor?
+        void endelection(account_name candidate); //automate in constructor?
 
         #pragma endregion Arb_Elections
 
@@ -242,6 +242,10 @@ class arbitration : public contract {
         bool is_arb(account_name arb);
 
         bool is_case(uint64_t case_id);
+
+        bool is_election_open(account_name candidate);
+
+        bool is_election_expired(account_name candidate);
 
         //void require_arb(account_name arb);
 
