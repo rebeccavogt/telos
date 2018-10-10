@@ -53,11 +53,15 @@ namespace eosiosystem {
         _producers.modify(prod, producer, [&](producer_info &info) {
           auto now = block_timestamp(eosio::time_point(eosio::microseconds(int64_t(current_time()))));
 
-          uint32_t hours_out = info.kick_penalty_hours * 3600; 
-          // uint32_t hours_out = info.kick_penalty_hours * 60; // debug version is calculated in minutes
-          eosio_assert(now.slot - info.last_time_kicked.slot > hours_out,
-            "Producer is not allowed to register at this time. Please fix your node and try again later");
-
+          // uint32_t hours_out = info.kick_penalty_hours * 3600; //hours in seconds
+          uint32_t hours_out = info.kick_penalty_hours * 60; // debug version is calculated in minutes
+          block_timestamp penalty_expiration_time = block_timestamp(info.last_time_kicked.to_time_point() + time_point(microseconds(hours_out * 1000000)));
+          
+          eosio_assert(now.slot > penalty_expiration_time.slot,
+            std::string("Producer is not allowed to register at this time. Please fix your node and try again later in: " 
+            + std::to_string( uint32_t((penalty_expiration_time.slot - now.slot) / 2 ))  
+            + " seconds").c_str());
+            
           info.producer_key = producer_key;
           info.url = url;
           info.location = location;
@@ -65,7 +69,7 @@ namespace eosiosystem {
           info.is_active = true;
           info.kick_reason = "";
           info.kick_reason_id = 0;
-          // info.last_time_kicked =
+          info.last_time_kicked = block_timestamp();
         });
       } else {
         _producers.emplace(producer, [&](producer_info &info) {
@@ -124,7 +128,16 @@ namespace eosiosystem {
       if (_grotations.next_rotation_time <= block_time) {
         // restart all missed blocks to bps and sbps
         for (size_t i = 0; i < prods.size(); i++) {
-          auto pitr = _producers.find(prods[i].producer_name);
+          auto bp_name = prods[i].producer_name;
+          
+          //check if producer is online.
+           auto bp = std::find_if(_grotations.offline_bps.begin(), _grotations.offline_bps.end(), [&bp_name](const offline_producer &op) {
+              return op.name == bp_name;
+          });
+          
+          if(bp != _grotations.offline_bps.end()) continue;
+
+          auto pitr = _producers.find(bp_name);
           if (pitr != _producers.end() && pitr->active()) {
             _producers.modify(pitr, 0, [&](auto &p) {
               p.missed_blocks = 0;
