@@ -164,6 +164,8 @@ void system_contract::update_producer_blocks(account_name producer, uint32_t amo
 }
 
 void system_contract::check_missed_blocks(block_timestamp timestamp, account_name producer) { 
+    if(producer == N(eosio)) return;
+    
     if(_grotations.last_onblock_caller == 0) {
         _grotations.last_time_block_produced = timestamp;
         _grotations.last_onblock_caller = producer;
