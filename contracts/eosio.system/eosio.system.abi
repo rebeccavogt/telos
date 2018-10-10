@@ -91,6 +91,13 @@
         {"name":"state", "type":"bool"}
       ]
     },{
+      "name": "votebpout",
+      "base": "",
+      "fields": [
+        {"name":"bp", "type":"account_name"},
+        {"name":"penalty_hours", "type":"uint32"}
+      ]
+    },{
       "name": "wait_weight",
       "base": "",
       "fields": [
@@ -498,6 +505,10 @@
    },{
      "name": "setrotate",
      "type": "setrotate",
+     "ricardian_contract": ""
+   },{
+     "name": "votebpout",
+     "type": "votebpout",
      "ricardian_contract": ""
    },{
      "name": "onerror",

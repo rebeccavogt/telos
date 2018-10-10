@@ -149,6 +149,15 @@ namespace eosiosystem {
       }
    }
 
+   void system_contract::votebpout(account_name bp, uint32_t penalty_hours) {
+      auto pitr = _producers.find(bp);
+      eosio_assert(pitr != _producers.end(), "Producer was not found");
+      
+      _producers.modify(pitr, 0, [&](auto &p){
+        p.kick(kick_type::BPS_VOTING, penalty_hours);
+      });
+   }
+
    /**
     *  Called after a new account is created. This code enforces resource-limits rules
     *  for new accounts as well as new account naming conventions.
@@ -203,7 +212,7 @@ EOSIO_ABI( eosiosystem::system_contract,
      // native.hpp (newaccount definition is actually in eosio.system.cpp)
      (newaccount)(updateauth)(deleteauth)(linkauth)(unlinkauth)(canceldelay)(onerror)
      // eosio.system.cpp
-     (setram)(setparams)(setpriv)(rmvproducer)(bidname)(setkick)(setrotate)
+     (setram)(setparams)(setpriv)(rmvproducer)(bidname)(setkick)(setrotate)(votebpout)
      // delegate_bandwidth.cpp
      (buyrambytes)(buyram)(sellram)(delegatebw)(undelegatebw)(refund)
      // voting.cpp

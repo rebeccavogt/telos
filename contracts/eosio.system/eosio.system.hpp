@@ -99,10 +99,11 @@ namespace eosiosystem {
       bool     active()const      { return is_active;                               }
       void     deactivate()       { producer_key = public_key(); is_active = false; }
       
-      void kick(kick_type kt) {
+      void kick(kick_type kt, uint32_t penalty = 0) {
         times_kicked++;
         last_time_kicked = block_timestamp(eosio::time_point(eosio::microseconds(int64_t(current_time()))));
-        kick_penalty_hours  = uint32_t(std::pow(2, times_kicked));
+        
+        if(penalty == 0) kick_penalty_hours  = uint32_t(std::pow(2, times_kicked));
         
         switch(kt) {
           case kick_type::REACHED_TRESHOLD:
@@ -114,9 +115,11 @@ namespace eosiosystem {
             kick_reason = "Producer was deactivated to prevent LIB to stop moving.";
           break;
           case kick_type::BPS_VOTING:
+            require_auth(N(eosio));
+            eosio_assert(penalty != 0, "The penalty should be greater than zero.");
             kick_reason_id = uint32_t(kick_type::BPS_VOTING);
             kick_reason = "Producer was deactivated by vote.";
-            //TODO: define penalty
+            kick_penalty_hours = penalty;
           break;
         }
         
@@ -306,6 +309,7 @@ namespace eosiosystem {
 
          void bidname( account_name bidder, account_name newname, asset bid );
         
+         void votebpout(account_name bp, uint32_t penalty_hours);
       private:
          
          void recalculate_votes();
