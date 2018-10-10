@@ -71,7 +71,14 @@ int64_t get_eosio_token_balance(symbol_name sym, account_name owner) {
     auto acct = accountstable.get(sym);
     auto prec = acct.balance.symbol.precision();
 
-    return acct.balance.amount / (prec * 10); //NOTE: returns with precision applied
+    auto amount = acct.balance.amount;
+
+    int64_t p10 = 1;
+    while(prec > 0) {
+        p10 *= 10; --prec;
+    }
+
+    return amount / p10;
 }
 
 int64_t get_liquid_tlos(account_name owner) {

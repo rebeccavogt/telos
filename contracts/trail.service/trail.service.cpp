@@ -225,4 +225,27 @@ void trail::unregballot(account_name publisher) {
 
 #pragma endregion Voting
 
-EOSIO_ABI(trail, (regtoken)(unregtoken)(regvoter)(unregvoter)(addreceipt)(rmvexpvotes)(regballot)(unregballot))
+//EOSIO_ABI(trail, (regtoken)(unregtoken)(regvoter)(unregvoter)(addreceipt)(rmvexpvotes)(regballot)(unregballot))
+
+extern "C" {
+    void apply(uint64_t self, uint64_t code, uint64_t action) {
+        trail _trail(self);
+        if(code == self && action == N(regtoken)) {
+            execute_action(&_trail, &trail::regtoken);
+        } else if (code == self && action == N(unregtoken)) {
+            execute_action(&_trail, &trail::unregtoken);
+        } else if (code==self && action==N(regvoter)) {
+            execute_action(&_trail, &trail::regvoter);
+        } else if (code == self && action == N(unregvoter)) {
+            execute_action(&_trail, &trail::unregvoter);
+        } else if (code == self && action == N(addreceipt)) {
+            execute_action(&_trail, &trail::addreceipt);
+        } else if (code == self && action == N(rmvexpvotes)) {
+            execute_action(&_trail, &trail::rmvexpvotes);
+        } else if (code == self && action == N(regballot)) {
+            execute_action(&_trail, &trail::regballot);
+        } else if (code == self && action == N(unregballot)) {
+            execute_action(&_trail, &trail::unregballot);
+        }
+    }
+};

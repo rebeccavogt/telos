@@ -26,6 +26,16 @@ struct registration {
     EOSLIB_SERIALIZE(registration, (native)(publisher))
 };
 
+struct balance {
+    account_name owner;
+    asset tokens;
+
+    uint64_t primary_key() const { return owner; }
+    EOSLIB_SERIALIZE(balance, (owner)(tokens))
+};
+
+typedef multi_index<N(balances), balance> balances_table;
+
 typedef multi_index<N(registries), registration> registries_table;
 
 bool is_trail_token(symbol_name sym) {
@@ -40,8 +50,20 @@ bool is_trail_token(symbol_name sym) {
 }
 
 int64_t get_token_balance(symbol_name sym, account_name voter) {
-    //TODO: implement later
-    
+    auto reg = get_registry(sym).publisher;
+
+    balances_table balances(reg, voter);
+    auto b = balances.get(voter);
+
+    auto amount = b.tokens.amount;
+    auto prec = b.tokens.symbol.precision();
+
+    int64_t p10 = 1;
+    while(prec > 0) {
+        p10 *= 10; --prec;
+    }
+
+    return amount / p10;
 }
 
 registries_table::const_iterator find_registry(symbol_name sym) {
