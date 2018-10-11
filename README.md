@@ -28,7 +28,7 @@ For a full explanation of all the proposed Telos features, be sure to read our w
 
     a. `git clone https://github.com/Telos-Foundation/telos`
 
-    b. `git checkout stage2.0`
+    b. `git checkout stage2.1`
 
     c. `git submodule update --init --recursive`
 

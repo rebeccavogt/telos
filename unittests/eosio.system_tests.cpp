@@ -13,6 +13,265 @@ using namespace eosio_system;
 
 BOOST_AUTO_TEST_SUITE(eosio_system_tests)
 
+BOOST_FIXTURE_TEST_CASE( bp_rotations, eosio_system_tester ) try {
+   const asset net = core_from_string("80.0000");
+   const asset cpu = core_from_string("80.0000");
+   const std::vector<account_name> voters = { N(producvotera), N(producvoterb), N(producvoterc), N(producvoterd) };
+   for (const auto& v: voters) {
+      create_account_with_resources( v, config::system_account_name, core_from_string("1.0000"), false, net, cpu );
+      transfer( config::system_account_name, v, core_from_string("100000000.0000"), config::system_account_name );
+      BOOST_REQUIRE_EQUAL(success(), stake(v, core_from_string("30000000.0000"), core_from_string("30000000.0000")) );
+   }
+
+   std::vector<account_name> producer_names;
+   {
+      producer_names.reserve('z' - 'a' + 1);
+      {
+         const std::string root("produceridx");
+         for ( char c = 'a'; c <= 'z'; ++c ) {
+            producer_names.emplace_back(root + std::string(1, c));
+         }
+      }
+      {
+         const std::string root("zidproducer");
+         for ( char c = 'a'; c <= 'z'; ++c ) {
+            producer_names.emplace_back(root + std::string(1, c));
+         }
+      }
+      setup_producer_accounts(producer_names);
+      for (const auto& p: producer_names) {
+         BOOST_REQUIRE_EQUAL( success(), regproducer(p) );
+         produce_blocks(1);
+         BOOST_TEST(0 == get_producer_info(p)["total_votes"].as<double>());
+      }
+   }
+
+   // base votes to make sure anyone can be switched around
+   {
+      // top 21 !!! << voting 21 will not trigger rotation , but will increase rotation timer >> !!!
+      BOOST_REQUIRE_EQUAL(success(), vote(N(producvotera), vector<account_name>(producer_names.begin(), producer_names.begin()+21)));
+      // high stand-bys
+      BOOST_REQUIRE_EQUAL(success(), vote(N(producvoterb), vector<account_name>(producer_names.begin()+21, producer_names.begin()+41)));
+      // low stand-bys
+      BOOST_REQUIRE_EQUAL(success(), vote(N(producvoterc), vector<account_name>(producer_names.begin()+41, producer_names.end())));
+   }
+
+   produce_blocks(2);
+
+   //apply next rotation
+   auto doRotation = [&](int offset = 0) {
+      produce_block(fc::minutes(6*60 + 54 - offset)); // propose schedule with rotation
+      produce_blocks(360); // give time for schedule to become pending (3 min)
+      produce_blocks(360); // give time for schedule to become active (3 min)
+   };
+
+   //check active schedule to match expected active bps and rotation
+   auto checkSchedule = [&](const vector<account_name>active, const vector<account_name>standby, const vector<producer_key>producers, const account_name& bp_out, const account_name& sbp_in) -> bool{
+      bool isExpectedSchedule = true;
+      for(int i = 0; i < producers.size() && isExpectedSchedule; i++){
+         auto p = std::find(active.begin(), active.end(), producers[i].producer_name);
+         
+         if(p == active.end()){
+            p = std::find(standby.begin(), standby.end(), producers[i].producer_name);
+
+            // the producer from the schedule not in top 21[active] needs to be in 21-51[standby] and to be the rotated standby bp
+            isExpectedSchedule = isExpectedSchedule && p != standby.end() && *p == sbp_in;
+            continue;
+         }
+         
+         // the producer from the schedule needs to be in top 21[active] and different from rotated bp
+         isExpectedSchedule = isExpectedSchedule && *p != bp_out;
+      }
+      return isExpectedSchedule;
+   };
+
+   std::vector<account_name> active, standby;
+   std::vector<producer_key> producers;
+   int bp_rotated_out, sbp_rotated_in;
+   account_name bp_out, sbp_in;
+   
+   active.reserve(21);
+   standby.reserve(30);
+   active.insert(active.end(), producer_names.begin(), producer_names.begin()+21);
+   standby.insert(standby.end(), producer_names.begin()+21, producer_names.begin()+51);
+
+   // produceridxa should be rotated with produceridxv
+   doRotation();
+   bp_rotated_out = 0;
+   sbp_rotated_in = 21;
+   bp_out = active[bp_rotated_out];
+   sbp_in = standby[sbp_rotated_in - 21];
+   active[bp_rotated_out] = sbp_in;
+   standby[sbp_rotated_in - 21] = bp_out;
+   
+   producers = control->head_block_state()->active_schedule.producers;
+   bool isExpectedSchedule = checkSchedule(active, standby, producers, bp_out, sbp_in);
+   BOOST_REQUIRE(isExpectedSchedule);
+
+   auto rotation = get_rotation_state();
+   BOOST_REQUIRE(rotation["bp_currently_out"].as_string() == bp_out);
+   BOOST_REQUIRE(rotation["sbp_currently_in"].as_string() == sbp_in);
+   BOOST_REQUIRE(rotation["bp_out_index"].as_uint64() == bp_rotated_out);
+   BOOST_REQUIRE(rotation["sbp_in_index"].as_uint64() == sbp_rotated_in);
+
+   // produceridxb should be rotated with produceridxw
+   doRotation();
+   // undo last rotation
+   active[bp_rotated_out] = bp_out;
+   standby[sbp_rotated_in - 21] = sbp_in;
+
+   // do next rotation
+   bp_rotated_out = 1;
+   sbp_rotated_in = 22;
+   bp_out = active[ bp_rotated_out ];
+   sbp_in = standby[ sbp_rotated_in - 21 ];
+   active[bp_rotated_out] = sbp_in;
+   standby[sbp_rotated_in - 21] = bp_out;
+
+   producers = control->head_block_state()->active_schedule.producers;
+   isExpectedSchedule = checkSchedule(active, standby, producers, bp_out, sbp_in);
+   BOOST_REQUIRE(isExpectedSchedule);
+
+   rotation = get_rotation_state();
+   BOOST_REQUIRE(rotation["bp_currently_out"].as_string() == bp_out);
+   BOOST_REQUIRE(rotation["sbp_currently_in"].as_string() == sbp_in);
+   BOOST_REQUIRE(rotation["bp_out_index"].as_uint64() == bp_rotated_out);
+   BOOST_REQUIRE(rotation["sbp_in_index"].as_uint64() == sbp_rotated_in);
+
+   std::vector<account_name> tmpv;
+   {
+      // zidproducern + zidproducero will be voted in top 21
+      // move the last 2 high-standby to the top, changing the order of sbp-in and bp-out , but still keeping them in their respective lists
+      tmpv = vector<account_name>(producer_names.begin()+39, producer_names.end());
+
+      // keep low standbys + last 2 high standby
+      BOOST_REQUIRE_EQUAL(success(), vote(N(producvoterc), tmpv));
+
+      // produceridxt + produceridxu will fall from top 21 to standby
+      active.erase(active.begin()+19, active.begin()+21); 
+      standby.insert(standby.begin(), producer_names.begin()+19, producer_names.begin()+21); 
+
+      // zidproducern + zidproducero will be voted in top 21
+      active.insert(active.begin(), producer_names.begin()+39, producer_names.begin()+41);
+      standby.erase(standby.begin()+18, standby.begin()+20);
+   }
+
+   produce_blocks(360); // give time for schedule to become pending (3 min)
+   produce_blocks(360); // give time for schedule to become active (3 min)
+
+   producers = control->head_block_state()->active_schedule.producers;
+   isExpectedSchedule = checkSchedule(active, standby, producers, bp_out, sbp_in);
+   BOOST_REQUIRE(isExpectedSchedule);
+
+   rotation = get_rotation_state();
+   // local rotation info is correct and names stick after voting
+   BOOST_REQUIRE(rotation["bp_currently_out"].as_string() == bp_out);
+   BOOST_REQUIRE(rotation["sbp_currently_in"].as_string() == sbp_in);
+   BOOST_REQUIRE(rotation["bp_out_index"].as_uint64() == bp_rotated_out);
+   BOOST_REQUIRE(rotation["sbp_in_index"].as_uint64() == sbp_rotated_in);
+
+   // indexes are off by 2 after voting
+   BOOST_REQUIRE(active[bp_rotated_out + 2] == sbp_in);
+   BOOST_REQUIRE(standby[sbp_rotated_in + 2 - 21] == bp_out);
+
+   {
+      // last state
+      tmpv = vector<account_name>(producer_names.begin()+39, producer_names.end());
+      // produceridxw will be added to the vote
+      tmpv.insert(tmpv.begin(), sbp_in);
+      
+      // move produceridxw to top 21 
+      BOOST_REQUIRE_EQUAL(success(), vote(N(producvoterc), tmpv));
+      
+      // undo last rotation
+      active[bp_rotated_out + 2] = bp_out;
+      standby[sbp_rotated_in + 2 - 21] = sbp_in;
+
+      // produceridxs will fall from top 21 to standby
+      active.pop_back(); 
+      standby.insert(standby.begin(), producer_names.begin()+18, producer_names.begin()+19); 
+
+      // produceridxw will be voted in top 21
+      active.insert(active.begin(), sbp_in);
+      standby.erase(standby.begin() + (sbp_rotated_in + 2 - 21) ); 
+
+      bp_out = "";
+      sbp_in = "";
+   }
+
+   produce_blocks(360); // give time for schedule to become pending (3 min)
+   produce_blocks(360); // give time for schedule to become active (3 min)
+
+   // after reset caused by sbp going out-of-list (promoted to top21 or under 51)
+   // the rotaion indexes should stick [1, 22] but names should be ""
+   rotation = get_rotation_state();
+   BOOST_REQUIRE(rotation["bp_currently_out"].as_string() == bp_out);
+   BOOST_REQUIRE(rotation["sbp_currently_in"].as_string() == sbp_in);
+   BOOST_REQUIRE(rotation["bp_out_index"].as_uint64() == bp_rotated_out);
+   BOOST_REQUIRE(rotation["sbp_in_index"].as_uint64() == sbp_rotated_in);
+   
+   producers = control->head_block_state()->active_schedule.producers;
+   isExpectedSchedule = checkSchedule(active, standby, producers, bp_out, sbp_in);
+   BOOST_REQUIRE(isExpectedSchedule);
+
+   doRotation(6);
+
+   // do new rotation as per usual
+   // zidproducero should be rotated with produceridxu
+   bp_rotated_out = 2;
+   sbp_rotated_in = 23;
+   bp_out = active[ bp_rotated_out ];
+   sbp_in = standby[ sbp_rotated_in - 21 ];
+   active[bp_rotated_out] = sbp_in;
+   standby[sbp_rotated_in - 21] = bp_out;
+   
+   rotation = get_rotation_state();
+   BOOST_REQUIRE(rotation["bp_currently_out"].as_string() == bp_out);
+   BOOST_REQUIRE(rotation["sbp_currently_in"].as_string() == sbp_in);
+   BOOST_REQUIRE(rotation["bp_out_index"].as_uint64() == bp_rotated_out);
+   BOOST_REQUIRE(rotation["sbp_in_index"].as_uint64() == sbp_rotated_in);
+   producers = control->head_block_state()->active_schedule.producers;
+   isExpectedSchedule = checkSchedule(active, standby, producers, bp_out, sbp_in);
+   BOOST_REQUIRE(isExpectedSchedule);
+
+   //unregister producer zidproducero <rotated bp>
+   BOOST_REQUIRE_EQUAL( success(), push_action(N(zidproducero), N(unregprod), mvo()
+                                               ("producer",  "zidproducero")
+                        )
+   );
+   
+   produce_blocks(360); // give time for schedule to become pending (3 min)
+   produce_blocks(360); // give time for schedule to become active (3 min)
+
+   // undo last rotation
+   active[bp_rotated_out] = bp_out;
+   standby[sbp_rotated_in - 21] = sbp_in;
+
+   // produceridxs will rise to top 21 from standby
+   active.emplace_back(producer_names[18]); 
+   standby.erase(standby.begin()); 
+
+   // zidproducerp will rise from candidate to standby
+   standby.emplace_back();
+
+   // rotations resets
+   bp_out = "";
+   sbp_in = "";
+   
+   rotation = get_rotation_state();
+   BOOST_REQUIRE(rotation["bp_currently_out"].as_string() == bp_out);
+   BOOST_REQUIRE(rotation["sbp_currently_in"].as_string() == sbp_in);
+   BOOST_REQUIRE(rotation["bp_out_index"].as_uint64() == bp_rotated_out);
+   BOOST_REQUIRE(rotation["sbp_in_index"].as_uint64() == sbp_rotated_in);
+   producers = control->head_block_state()->active_schedule.producers;
+   isExpectedSchedule = checkSchedule(active, standby, producers, bp_out, sbp_in);
+   BOOST_REQUIRE(isExpectedSchedule);
+
+   // after reset, it will go back to normal rotation case 
+   // this was tested above the unregister case 
+   // standby promotion reset the rotation and went back to normal
+} FC_LOG_AND_RETHROW()
+
 BOOST_FIXTURE_TEST_CASE( buysell, eosio_system_tester ) try {
 
    BOOST_REQUIRE_EQUAL( core_from_string("0.0000"), get_balance( "alice1111111" ) );
@@ -1219,7 +1478,7 @@ BOOST_FIXTURE_TEST_CASE( proxy_actions_affect_producers, eosio_system_tester, * 
 } FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE(producer_pay, eosio_system_tester, * boost::unit_test::tolerance(1e-10)) try {
-
+      
    const double usecs_per_year  = 52 * 7 * 24 * 3600 * 1000000ll;
    const double secs_per_year   = 52 * 7 * 24 * 3600;
    const double continuous_rate = 0.025; 
@@ -1258,6 +1517,9 @@ BOOST_FIXTURE_TEST_CASE(producer_pay, eosio_system_tester, * boost::unit_test::t
 
       prod = get_producer_info("defproducera");
       const uint32_t unpaid_blocks = prod["unpaid_blocks"].as<uint32_t>();
+      const bool is_active = prod["is_active"].as<bool>();
+      std::cout << "Producer defproducera unpaid_blocks: " << unpaid_blocks << " Is it greater than 1: " << (1 < unpaid_blocks) << std::endl;
+      std::cout << "Producer defproducera is_active: " << is_active << std::endl;
       BOOST_REQUIRE(1 < unpaid_blocks);
       BOOST_REQUIRE_EQUAL(0, prod["last_claim_time"].as<uint64_t>());
 
@@ -1905,7 +2167,7 @@ BOOST_FIXTURE_TEST_CASE(producer_onblock_check, eosio_system_tester) try {
    BOOST_REQUIRE_EQUAL(success(), stake("producvotera", quarter_min_activated_stake, quarter_min_activated_stake ));
    BOOST_REQUIRE_EQUAL(success(), vote( N(producvotera), vector<account_name>(producer_names.begin(), producer_names.begin()+10)));
 
-   BOOST_CHECK_EQUAL( wasm_assert_msg( "cannot undelegate bandwidth until the chain is activated (at least 15% of all tokens participate in voting)" ),
+   BOOST_CHECK_EQUAL( wasm_assert_msg( "cannot undelegate bandwidth until the chain is activated (1,000,000 blocks produced)" ),
                       unstake( "producvotera", core_from_string("50.0000"), core_from_string("50.0000") ) );
 
    // give a chance for everyone to produce blocks
@@ -1929,7 +2191,7 @@ BOOST_FIXTURE_TEST_CASE(producer_onblock_check, eosio_system_tester) try {
    }
 
    {
-      const char* claimrewards_activation_error_message = "cannot claim rewards until the chain is activated (at least 15% of all tokens participate in voting)";
+      const char* claimrewards_activation_error_message = "cannot claim rewards until the chain is activated (1,000,000 blocks produced)";
       BOOST_CHECK_EQUAL(0, get_global_state()["total_unpaid_blocks"].as<uint32_t>());
       BOOST_REQUIRE_EQUAL(wasm_assert_msg( claimrewards_activation_error_message ),
                           push_action(producer_names.front(), N(claimrewards), mvo()("owner", producer_names.front())));
@@ -2389,7 +2651,6 @@ BOOST_FIXTURE_TEST_CASE( bid_invalid_names, eosio_system_tester ) try {
 } FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE( multiple_namebids, eosio_system_tester ) try {
-
    const std::string not_closed_message("auction for name is not closed yet");
 
    std::vector<account_name> accounts = { N(alice), N(bob), N(carl), N(david), N(eve) };
@@ -2527,7 +2788,6 @@ BOOST_FIXTURE_TEST_CASE( multiple_namebids, eosio_system_tester ) try {
 } FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE( vote_producers_in_and_out, eosio_system_tester ) try {
-
    const asset net = core_from_string("80.0000");
    const asset cpu = core_from_string("80.0000");
    std::vector<account_name> voters = { N(producvotera), N(producvoterb), N(producvoterc), N(producvoterd) };

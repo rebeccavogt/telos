@@ -27,10 +27,7 @@ using namespace eosio;
 * NOTE: A full breakdown of the calculated token supply and 15% activation threshold
 * can be found at: https://docs.google.com/document/d/1K8w_Kd8Vmk_L0tAK56ETfAWlqgLo7r7Ae3JX25A5zVk/edit?usp=sharing
 */
-const int64_t min_activated_stake = 28'570'987'3500; // calculated from max TLOS supply of 190,473,249 (fluctuating value until mainnet activation)
 const double continuous_rate = 0.025;                // 2.5% annual inflation rate
-const double producer_rate = 0.01;                   // 1% TLOS rate to BP/Standby
-const double worker_rate = 0.015;                    // 1.5% TLOS rate to worker fund
 const uint64_t min_unpaid_blocks_threshold = 342;    // Minimum unpaid blocks required to qualify for Producer level payout
 
 // Calculated constants
@@ -41,13 +38,72 @@ const uint32_t blocks_per_hour = 2 * 3600;
 const uint64_t useconds_per_day = 24 * 3600 * uint64_t(1000000);
 const uint64_t useconds_per_year = seconds_per_year * 1000000ll;
 
+uint32_t active_schedule_size = 0;
+
+bool system_contract::reach_consensus() {
+    return _grotations.offline_bps.size() < (active_schedule_size / 3) - 1;
+}
+
+void system_contract::add_producer_to_kick_list(offline_producer producer) {
+    //add unique producer to the list
+    account_name bp_name = producer.name;
+    auto bp = std::find_if(_grotations.offline_bps.begin(), _grotations.offline_bps.end(), [&bp_name](const offline_producer &op) {
+        return op.name == bp_name; 
+    }); 
+
+    if(bp == _grotations.offline_bps.end())  _grotations.offline_bps.push_back(producer);
+    else { // update producer missed blocks and total votes
+       for(size_t i = 0; i < _grotations.offline_bps.size(); i++) {
+           if(bp_name == _grotations.offline_bps[i].name){
+               _grotations.offline_bps[i].total_votes = producer.total_votes;
+               _grotations.offline_bps[i].missed_blocks = producer.missed_blocks;
+               break;
+           }
+       }    
+    }
+     
+    if(active_schedule_size > 1 && !reach_consensus()) kick_producer();
+}
+
+void system_contract::remove_producer_to_kick_list(offline_producer producer) {
+  // verify if bp was missing blocks
+    account_name bp_name = producer.name;
+    auto bp = std::find_if(_grotations.offline_bps.begin(), _grotations.offline_bps.end(), [&bp_name](const offline_producer &op) {
+        return op.name == bp_name; 
+    });   
+   
+  // producer found
+  if (bp != _grotations.offline_bps.end()) _grotations.offline_bps.erase(bp, _grotations.offline_bps.end());
+}
+
+void system_contract::kick_producer() {
+    std::vector<offline_producer> o_bps = _grotations.offline_bps;
+    std::sort(o_bps.begin(), o_bps.end(), [](const offline_producer &op1, const offline_producer &op2){
+        if(op1.missed_blocks != op2.missed_blocks) return op1.missed_blocks > op2.missed_blocks;
+        else return op1.total_votes < op2.total_votes;
+    });
+    for(uint32_t i = 0; i < o_bps.size(); i++) {
+        auto obp = o_bps[i];
+        auto bp = _producers.find(obp.name);
+
+        _producers.modify(bp, 0, [&](auto &p) {
+            p.deactivate();
+            remove_producer_to_kick_list(obp);
+        });
+
+        if(reach_consensus()) break;
+    }
+}
+
 bool system_contract::crossed_missed_blocks_threshold(uint32_t amountBlocksMissed) {
+    if(active_schedule_size <= 1) return false;
+
     //6hrs
     auto timeframe = (_grotations.next_rotation_time.to_time_point() - _grotations.last_rotation_time.to_time_point()).to_seconds();
    
     //get_active_producers returns the number of bytes populated
-    account_name prods[21];
-    uint32_t totalProds = get_active_producers(prods, sizeof(account_name) * 21) / 8;
+    // account_name prods[21];
+    auto totalProds = active_schedule_size;//get_active_producers(prods, sizeof(account_name) * 21) / 8;
     //Total blocks that can be produced in a cycle
     auto maxBlocksPerCycle = (totalProds - 1) * MAX_BLOCK_PER_CYCLE;
     //total block that can be produced in the current timeframe
@@ -56,15 +112,20 @@ bool system_contract::crossed_missed_blocks_threshold(uint32_t amountBlocksMisse
     auto maxBlocksPerProducer = (totalBlocksPerTimeframe * MAX_BLOCK_PER_CYCLE) / maxBlocksPerCycle;
     //15% is the max allowed missed blocks per single producer
     auto thresholdMissedBlocks = maxBlocksPerProducer * 0.15;
-
+    
     return amountBlocksMissed > thresholdMissedBlocks;
 }
 
 void system_contract::set_producer_block_produced(account_name producer, uint32_t amount) {
   auto pitr = _producers.find(producer);
   if (pitr != _producers.end()) {
-      if(amount == 0) _producers.modify(pitr, 0, [&](auto &p) { p.blocks_per_cycle = amount; });
-      else _producers.modify(pitr, 0, [&](auto &p) { p.blocks_per_cycle += amount; });
+    _producers.modify(pitr, 0, [&](auto &p) {
+        if(amount == 0) p.blocks_per_cycle = amount;
+        else p.blocks_per_cycle += amount;
+        
+        offline_producer op{p.owner, p.total_votes, p.missed_blocks};
+        remove_producer_to_kick_list(op);
+    });
   }
 }
 
@@ -73,7 +134,12 @@ void system_contract::set_producer_block_missed(account_name producer, uint32_t 
   if (pitr != _producers.end() && pitr->active()) {
     _producers.modify(pitr, 0, [&](auto &p) {
         p.missed_blocks += amount;
-        if(crossed_missed_blocks_threshold(p.missed_blocks)) p.deactivate();
+
+        offline_producer op{p.owner, p.total_votes, p.missed_blocks};
+        if(crossed_missed_blocks_threshold(p.missed_blocks)) {
+            p.deactivate();
+            remove_producer_to_kick_list(op);
+        } else if(op.missed_blocks > 0) add_producer_to_kick_list(op);
     });
   }
 }
@@ -84,46 +150,54 @@ void system_contract::update_producer_blocks(account_name producer, uint32_t amo
       _producers.modify(pitr, 0, [&](auto &p) { 
         p.blocks_per_cycle += amountBlocksProduced; 
         p.missed_blocks += amountBlocksMissed;
-        if(crossed_missed_blocks_threshold(p.missed_blocks)) p.deactivate();
-      });
+
+        offline_producer op{p.owner, p.total_votes, p.missed_blocks};
+        if(crossed_missed_blocks_threshold(p.missed_blocks)) {
+            p.deactivate();
+            remove_producer_to_kick_list(op);
+        } else if(op.missed_blocks > 0) add_producer_to_kick_list(op);
+      });    
   }
 }
 
-void system_contract::check_missed_blocks(block_timestamp timestamp, account_name producer) {
-    if(_grotations.current_bp == 0) {
+void system_contract::check_missed_blocks(block_timestamp timestamp, account_name producer) { 
+    if(_grotations.last_onblock_caller == 0) {
         _grotations.last_time_block_produced = timestamp;
-        _grotations.current_bp = producer;
+        _grotations.last_onblock_caller = producer;
         set_producer_block_produced(producer, 1);
         return;
     }
   
     //12 == 6s
     auto producedTimeDiff = timestamp.slot - _grotations.last_time_block_produced.slot;
-    if(producedTimeDiff == 1 && producer == _grotations.current_bp) set_producer_block_produced(producer, producedTimeDiff); 
-    else if(producedTimeDiff == 1 && producer != _grotations.current_bp) {
+
+    if(producedTimeDiff == 1 && producer == _grotations.last_onblock_caller) set_producer_block_produced(producer, producedTimeDiff); 
+    else if(producedTimeDiff == 1 && producer != _grotations.last_onblock_caller) {
         //set zero to last producer blocks_per_cycle 
-        set_producer_block_produced(_grotations.current_bp, RESET_BLOCKS_PRODUCED);
+        set_producer_block_produced(_grotations.last_onblock_caller, RESET_BLOCKS_PRODUCED);
         //update current producer blocks_per_cycle 
         set_producer_block_produced(producer, producedTimeDiff);
     } 
-    else if(producedTimeDiff > 1 && producer == _grotations.current_bp) update_producer_blocks(producer, 1, producedTimeDiff - 1);
+    else if(producedTimeDiff > 1 && producer == _grotations.last_onblock_caller) update_producer_blocks(producer, 1, producedTimeDiff - 1);
     else {
-        auto lastPitr = _producers.find(_grotations.current_bp);
+        auto lastPitr = _producers.find(_grotations.last_onblock_caller);
         if (lastPitr == _producers.end()) return;
             
         account_name producers_schedule[21];
-        uint32_t bytes_populated = get_active_producers(producers_schedule, sizeof(account_name)*21);
+        uint32_t total_prods = get_active_producers(producers_schedule, sizeof(account_name) * 21) / 8;
         
-        auto currentProducerIndex = std::distance(producers_schedule, std::find(producers_schedule, producers_schedule + 21, producer));
-        
+        active_schedule_size = total_prods;
+        auto currentProducerIndex = std::distance(producers_schedule, std::find(producers_schedule, producers_schedule + total_prods, producer));
         auto totalMissedSlots = std::fabs(producedTimeDiff - 1 - lastPitr->blocks_per_cycle);
 
         //last producer didn't miss blocks    
-        if(totalMissedSlots == 0) {
+        if(totalMissedSlots == 0.0) {
             //set zero to last producer blocks_per_cycle 
-            set_producer_block_produced(_grotations.current_bp, RESET_BLOCKS_PRODUCED);
-
-            update_producer_blocks(producers_schedule[currentProducerIndex - 1], RESET_BLOCKS_PRODUCED, producedTimeDiff - 1);
+            set_producer_block_produced(_grotations.last_onblock_caller, RESET_BLOCKS_PRODUCED);
+            
+            account_name bp_offline = currentProducerIndex == 0 ? producers_schedule[total_prods - 1] : producers_schedule[currentProducerIndex - 1];
+            
+            update_producer_blocks(bp_offline, RESET_BLOCKS_PRODUCED, producedTimeDiff - 1);
             
             set_producer_block_produced(producer, 1);
         } else { //more than one producer missed blocks
@@ -136,7 +210,7 @@ void system_contract::check_missed_blocks(block_timestamp timestamp, account_nam
                     auto lastProdTotalMissedBlocks = MAX_BLOCK_PER_CYCLE - lastPitr->blocks_per_cycle;
                     if(lastProdTotalMissedBlocks > 0) set_producer_block_missed(producers_schedule[currentProducerIndex - 1], lastProdTotalMissedBlocks);
                     
-                    update_producer_blocks(producer, 1, totalCurrentProdMissedBlocks - lastProdTotalMissedBlocks);
+                    update_producer_blocks(producer, 1, uint32_t(totalCurrentProdMissedBlocks - lastProdTotalMissedBlocks));
                 }  else set_producer_block_produced(producer, 1);
                 
                 for(int i = 0; i <= totalProdsMissedSlots; i++) {
@@ -147,24 +221,27 @@ void system_contract::check_missed_blocks(block_timestamp timestamp, account_nam
                     set_producer_block_missed(prod, MAX_BLOCK_PER_CYCLE);                       
                 }
 
-                set_producer_block_produced(_grotations.current_bp, RESET_BLOCKS_PRODUCED);
+                set_producer_block_produced(_grotations.last_onblock_caller, RESET_BLOCKS_PRODUCED);
             } else {
-                set_producer_block_produced(_grotations.current_bp, RESET_BLOCKS_PRODUCED);
-                update_producer_blocks(producer, 1, totalMissedSlots);
+                set_producer_block_produced(_grotations.last_onblock_caller, RESET_BLOCKS_PRODUCED);
+                update_producer_blocks(producer, 1, uint32_t(totalMissedSlots) );
             }
         }
     }    
 
     _grotations.last_time_block_produced = timestamp;
-    _grotations.current_bp = producer;
+    _grotations.last_onblock_caller = producer;
 }
 
 void system_contract::onblock(block_timestamp timestamp, account_name producer) {
     require_auth(N(eosio));
-    recalculate_votes();
     
     // Until activated stake crosses this threshold no new rewards are paid
-    if (_gstate.total_activated_stake < min_activated_stake && _gstate.thresh_activated_stake_time == 0){
+    if (_gstate.thresh_activated_stake_time == 0) {
+        _gstate.block_num++;
+        
+        if(_gstate.block_num >= block_num_network_activation && _gstate.total_producer_vote_weight > 0) _gstate.thresh_activated_stake_time = current_time();
+        
         return;
     }
      
@@ -182,6 +259,8 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer) 
             p.unpaid_blocks++;
         });
     }
+
+    recalculate_votes();
 
     check_missed_blocks(timestamp, producer);
 
@@ -213,23 +292,9 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer) 
 
     //called once per day to set payments snapshot
     if (_gstate.last_claimrewards + uint32_t(172800) <= timestamp.slot) { //172800 blocks in a day
-        print("\nClaimRewards Snapshot");
-        claimrewards(producer);
+        print("\nNew ClaimRewards Snapshot");
+        claimrewards_snapshot();
         _gstate.last_claimrewards = timestamp.slot;
-    }
-
-    auto p = payments.begin();
-
-    //execute every 5 minutes, should run through all 51 within 4.5 hours
-    if (timestamp.slot >= _gstate.next_payment && p != payments.end()) {
-        auto first = *p;
-
-        INLINE_ACTION_SENDER(eosio::token, transfer)
-        (N(eosio.token), {N(eosio.bpay), N(active)}, {N(eosio.bpay), first.bp, first.pay, std::string("Automatic Producer/Standby Payment")});
-
-        payments.erase(p);
-
-        _gstate.next_payment = (timestamp.slot + uint32_t(600)); //600 blocks in 5 minutes
     }
 }
 
@@ -278,21 +343,11 @@ void system_contract::recalculate_votes(){
     }
 }
 
-/**
- * RATIONALE: Minimum Unpaid Blocks Threshold
- *
- * In the Telos Payment Architecture, block reward payments are calculated on the fly at the time
- * of the call to claimrewards. When called, the claimrewards function determines which payment level
- * each producer qualifies for and saves their payment to the payments table. Payments are then doled
- * out over the course of a day to the intended recipient.
- *
- * In order to qualify for a Producer level payout, the caller must be in the top 21 producers AND have
- * at least 12 hours worth of block production as a producer.
- */
-void system_contract::claimrewards(const account_name &owner) {
+void system_contract::claimrewards_snapshot(){
     require_auth(N(eosio)); //can only come from bp's onblock call
 
-    eosio_assert(_gstate.total_activated_stake >= min_activated_stake, "cannot claim rewards until chain is activated");
+    eosio_assert(_gstate.thresh_activated_stake_time > 0, "cannot take snapshot until chain is activated");
+
     if (_gstate.total_unpaid_blocks <= 0) { //skips action, since there are no rewards to claim
         return;
     }
@@ -346,6 +401,10 @@ void system_contract::claimrewards(const account_name &owner) {
 
     for (const auto &prod : sortedprods) {
 
+        if (!prod.active()) { //skip inactive producers
+            continue;
+        }
+
         int64_t pay_amount = 0;
         index++;
         
@@ -367,20 +426,44 @@ void system_contract::claimrewards(const account_name &owner) {
             p.unpaid_blocks = 0;
         });
 
-        auto itr = payments.find(prod.owner); //check for active()?
+        auto itr = payments.find(prod.owner);
         
         if (itr == payments.end()) {
             payments.emplace(prod.owner, [&]( auto& a ) { //have eosio pay? no issues so far...
                 a.bp = prod.owner;
                 a.pay = asset(pay_amount);
             });
-        } else { //should never run, all payments should be resolved by the time the next payment snapshot happens
+        } else { //adds new payment to existing payment
             payments.modify(itr, 0, [&]( auto& a ) {
                 a.pay += asset(pay_amount);
             });
         }
     }
+}
 
+/**
+ * RATIONALE: Minimum Unpaid Blocks Threshold
+ *
+ * In the Telos Payment Architecture, block reward payments are calculated on the fly at the time
+ * of the call to claimrewards. When called, the claimrewards function determines which payment level
+ * each producer qualifies for and saves their payment to the payments table. Payments are then doled
+ * out over the course of a day to the intended recipient.
+ *
+ * In order to qualify for a Producer level payout, the caller must be in the top 21 producers AND have
+ * at least 12 hours worth of block production as a producer.
+ */
+void system_contract::claimrewards(const account_name &owner) {
+    require_auth(owner);
+
+    auto p = payments.find(owner);
+    eosio_assert(p != payments.end(), "No payment exists for account");
+    auto prod_payment = *p;
+    auto pay_amount = prod_payment.pay;
+
+    INLINE_ACTION_SENDER(eosio::token, transfer)
+    (N(eosio.token), {N(eosio.bpay), N(active)}, {N(eosio.bpay), owner, pay_amount, std::string("Automatic Producer/Standby Payment")});
+
+    payments.erase(p);
 }
 
 } //namespace eosiosystem

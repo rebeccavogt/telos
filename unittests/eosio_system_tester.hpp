@@ -76,6 +76,7 @@ public:
          abi_ser.set_abi(abi, abi_serializer_max_time);
       }
 
+      set_kick(false);
       produce_blocks();
 
       create_account_with_resources( N(alice1111111), config::system_account_name, core_from_string("1.0000"), false );
@@ -84,7 +85,21 @@ public:
 
       BOOST_REQUIRE_EQUAL( core_from_string("1000000000.0000"), get_balance("eosio")  + get_balance("eosio.ramfee") + get_balance("eosio.stake") + get_balance("eosio.ram") );
    }
+   
+   transaction_trace_ptr set_kick(bool state) {
+        signed_transaction trx;
+        set_transaction_headers(trx);
+        trx.actions.emplace_back( vector<permission_level>{{N(eosio),config::active_name}},
+                                setkick{
+                                   .state  = state
+                                });
 
+      set_transaction_headers(trx);
+      trx.sign( get_private_key( N(eosio), "active" ), control->get_chain_id()  );
+      return push_transaction( trx );
+   }
+
+   //transaction_trace_ptr set_rotate(bool state) {}
 
    void create_accounts_with_resources( vector<account_name> accounts, account_name creator = config::system_account_name ) {
       for( auto a : accounts ) {
@@ -170,7 +185,7 @@ public:
       trx.sign( get_private_key( creator, "active" ), control->get_chain_id()  );
       return push_transaction( trx );
    }
-
+   
    transaction_trace_ptr setup_producer_accounts( const std::vector<account_name>& accounts ) {
       account_name creator(config::system_account_name);
       signed_transaction trx;
@@ -408,7 +423,12 @@ public:
       vector<char> data = get_row_by_account( config::system_account_name, config::system_account_name, N(global), N(global) );
       if (data.empty()) std::cout << "\nData is empty\n" << std::endl;
       return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "eosio_global_state", data, abi_serializer_max_time );
+   }
 
+   fc::variant get_rotation_state() {
+      vector<char> data = get_row_by_account( config::system_account_name, config::system_account_name, N(rotations), N(rotations) );
+      if (data.empty()) std::cout << "\nData is empty\n" << std::endl;
+      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "rotation_info", data, abi_serializer_max_time );
    }
 
    fc::variant get_refund_request( name account ) {

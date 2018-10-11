@@ -26,8 +26,8 @@ set( CMAKE_CXX_EXTENSIONS ON )
 set( CXX_STANDARD_REQUIRED ON)
 
 set(VERSION_MAJOR 1)
-set(VERSION_MINOR 2)
-set(VERSION_PATCH 5)
+set(VERSION_MINOR 3)
+set(VERSION_PATCH 1)
 
 # TELOS CHANGES:
 # 
@@ -76,8 +76,6 @@ if ("${OPENSSL_ROOT_DIR}" STREQUAL "")
       message(FATAL_ERROR "openssl not found and don't know where to look, please specify OPENSSL_ROOT_DIR")
    endif()
 endif()
-
-find_package(Secp256k1 REQUIRED)
 
 if(UNIX)
   if(APPLE)

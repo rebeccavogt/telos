@@ -18,9 +18,10 @@
 #include <algorithm>
 #include <cmath>
 
-#define VOTE_VARIATION 0.1
+#define VOTE_VARIATION 0.001
 #define TWELVE_HOURS_US 43200000000
 #define SIX_MINUTES_US 360000000 // debug version
+#define TWELVE_MINUTES_US 720000000
 #define SIX_HOURS_US 21600000000
 #define MAX_PRODUCERS 51
 #define TOP_PRODUCERS 21
@@ -86,17 +87,17 @@ namespace eosiosystem {
       _grotations.last_rotation_time = block_time;
       _grotations.next_rotation_time = block_timestamp(block_time.to_time_point() + time_point(microseconds(SIX_HOURS_US)));
    } 
-
+   //TODO: Add _grotations.is_rotation_active, that way this feature can be toggled.
    void system_contract::update_elected_producers( block_timestamp block_time ) {
       _gstate.last_producer_schedule_update = block_time;
 
       auto idx = _producers.get_index<N(prototalvote)>();
 
-      auto totalActiveVotedProds = std::distance(idx.begin(), idx.end());
+      uint32_t totalActiveVotedProds = uint32_t(std::distance(idx.begin(), idx.end()));
       totalActiveVotedProds = totalActiveVotedProds > MAX_PRODUCERS ? MAX_PRODUCERS : totalActiveVotedProds;
       
       std::vector<eosio::producer_key> prods;
-      prods.reserve(totalActiveVotedProds);
+      prods.reserve(size_t(totalActiveVotedProds));
 
       //add active producers with vote > 0
       for ( auto it = idx.cbegin(); it != idx.cend() && prods.size() < totalActiveVotedProds && it->total_votes > 0 && it->active(); ++it ) {
@@ -110,7 +111,7 @@ namespace eosiosystem {
 
       if (_grotations.next_rotation_time <= block_time) {
         // restart all missed blocks to bps and sbps
-        for (int i = 0; i < prods.size(); i++) {
+        for (size_t i = 0; i < prods.size(); i++) {
           auto pitr = _producers.find(prods[i].producer_name);
           if (pitr != _producers.end() && pitr->active()) {
             _producers.modify(pitr, 0, [&](auto &p) { 
@@ -126,52 +127,16 @@ namespace eosiosystem {
           account_name bp_name = prods[_grotations.bp_out_index].producer_name;
           account_name sbp_name = prods[_grotations.sbp_in_index].producer_name;
 
-          it_bp = std::find_if(prods.begin(), prods.end(), [&bp_name](const eosio::producer_key &g) {
-            return g.producer_name == bp_name; 
-          });   
-
-          it_sbp = std::find_if(prods.begin(), prods.end(), [&sbp_name](const eosio::producer_key &g) {
-            return g.producer_name == sbp_name; 
-          });
-
+          it_bp = prods.begin() + _grotations.bp_out_index;
+          it_sbp = prods.begin() + _grotations.sbp_in_index;
 
           print("\n sb_name: ", name{sbp_name});
           print("\n it_sbp: ", name{it_sbp->producer_name});
 
-          if(it_bp == prods.end() && it_sbp == prods.end()) {
-            setBPsRotation(0, 0);
+          setBPsRotation(bp_name, sbp_name);
+        } 
 
-            _grotations.bp_out_index = TOP_PRODUCERS;
-            _grotations.sbp_in_index = MAX_PRODUCERS + 1;
-
-            it_bp = prods.end();
-            it_sbp = prods.end();
-
-          } else {
-            if(it_bp != prods.end() && it_sbp == prods.end()) {
-              if(_grotations.sbp_in_index > totalActiveVotedProds - 1) {
-                _grotations.sbp_in_index = TOP_PRODUCERS;
-                 
-                sbp_name = prods[_grotations.sbp_in_index].producer_name;
-                it_sbp = std::find_if(prods.begin(), prods.end(), [&sbp_name](const eosio::producer_key &g) {
-                  return g.producer_name == sbp_name; 
-                });
-              }
-            } else if (it_bp == prods.end() && it_sbp != prods.end()) {
-              if(_grotations.bp_out_index > TOP_PRODUCERS - 1) {
-                _grotations.bp_out_index = 0;
-                
-                bp_name = prods[_grotations.bp_out_index].producer_name;
-                it_bp = std::find_if(prods.begin(), prods.end(), [&bp_name](const eosio::producer_key &g) {
-                  return g.producer_name == bp_name; 
-                });
-              }
-            } else {
-              setBPsRotation(bp_name, sbp_name);
-            }
-          }
-      } 
-      updateRotationTime(block_time);
+        updateRotationTime(block_time);
       }
       else {
         if(_grotations.bp_currently_out != 0 && _grotations.sbp_currently_in != 0) {
@@ -184,7 +149,6 @@ namespace eosiosystem {
           it_sbp = std::find_if(prods.begin(), prods.end(), [&sbp_name](const eosio::producer_key &g) {
             return g.producer_name == sbp_name; 
           });
-
           auto _bp_index = std::distance(prods.begin(), it_bp);
           auto _sbp_index = std::distance(prods.begin(), it_sbp);
 
@@ -197,6 +161,8 @@ namespace eosiosystem {
             }
           } else if (totalActiveVotedProds > TOP_PRODUCERS && (!is_in_range(_bp_index, 0, TOP_PRODUCERS) || !is_in_range(_sbp_index, TOP_PRODUCERS, MAX_PRODUCERS))) {
               setBPsRotation(0, 0);
+              it_bp = prods.end();
+              it_sbp = prods.end();
           }
         }
     }
@@ -216,8 +182,7 @@ namespace eosiosystem {
 
           if(pIt->producer_name == it_bp->producer_name) {
             print("\nprod sbp added to schedule -> ", name{it_sbp->producer_name});
-            if(it_sbp->producer_name == prods[_grotations.sbp_in_index].producer_name) top_producers.emplace_back(*it_sbp);
-            else  top_producers.emplace_back(prods[_grotations.sbp_in_index]);
+            top_producers.emplace_back(*it_sbp);
           } else {
             print("\nprod bp added to schedule -> ", name{pIt->producer_name});
             top_producers.emplace_back(*pIt);
@@ -304,12 +269,6 @@ namespace eosiosystem {
      update_votes(voter_name, proxy, producers, true);
    }
    
-   void system_contract::checkNetworkActivation(){
-     if( _gstate.total_activated_stake >= min_activated_stake && _gstate.thresh_activated_stake_time == 0 ) {
-            _gstate.thresh_activated_stake_time = current_time();
-    }
-   } 
-
    void system_contract::update_votes( const account_name voter_name, const account_name proxy, const std::vector<account_name>& producers, bool voting ) {
       //validate input
       if ( proxy ) {
@@ -343,7 +302,6 @@ namespace eosiosystem {
       // if(_gstate.thresh_activated_stake_time == 0 && !proxy && !voter->proxy){
       if(!proxy && !voter->proxy){
          _gstate.total_activated_stake += totalStaked - voter->last_stake;
-         checkNetworkActivation();
       }
 
       auto new_vote_weight = inverseVoteWeight((double )totalStaked, (double) producers.size());
@@ -367,11 +325,7 @@ namespace eosiosystem {
             // propagate weight here only when switching proxies
             // otherwise propagate happens in the case below
             if( proxy != voter->proxy ){ 
-               // if(_gstate.thresh_activated_stake_time == 0){
-                  _gstate.total_activated_stake += totalStaked - voter->last_stake;
-                  checkNetworkActivation();
-               // }
-
+               _gstate.total_activated_stake += totalStaked - voter->last_stake;
                propagate_weight_change( *old_proxy );
             }
          } else {
@@ -393,11 +347,7 @@ namespace eosiosystem {
          });
          
          if((*new_proxy).last_vote_weight > 0){
-            // if(_gstate.thresh_activated_stake_time == 0){
-               _gstate.total_activated_stake += totalStaked - voter->last_stake;
-               checkNetworkActivation();
-            // }
-            
+            _gstate.total_activated_stake += totalStaked - voter->last_stake;
             propagate_weight_change( *new_proxy );
          }
       } else {
@@ -428,7 +378,7 @@ namespace eosiosystem {
 
       _voters.modify( voter, 0, [&]( auto& av ) {
          av.last_vote_weight = new_vote_weight;
-         av.last_stake = totalStaked;
+         av.last_stake = int64_t(totalStaked);
          av.producers = producers;
          av.proxy     = proxy;
       });
@@ -473,7 +423,7 @@ namespace eosiosystem {
     
       if (new_weight - voter.last_vote_weight > 1){
          if (voter.proxy) {
-            if(voter.last_stake != totalStake){
+            if(voter.last_stake != int64_t(totalStake)){
                // this part should never happen since the function is called only on proxies
                auto &proxy = _voters.get(voter.proxy, "proxy not found"); // data corruption
                _voters.modify(proxy, 0, [&](auto &p) { 
@@ -495,7 +445,7 @@ namespace eosiosystem {
       
       _voters.modify(voter, 0, [&](auto &v) { 
          v.last_vote_weight = new_weight; 
-         v.last_stake = totalStake;
+         v.last_stake = int64_t(totalStake);
       });
    }
 

@@ -11,10 +11,7 @@
 #include <eosiolib/multi_index.hpp>
 #include <eosiolib/privileged.h>
 #include <eosiolib/transaction.hpp>
-
 #include <eosio.token/eosio.token.hpp>
-
-
 #include <cmath>
 #include <map>
 
@@ -370,9 +367,10 @@ namespace eosiosystem {
                });
          }
          eosio_assert( 0 <= from_voter->staked, "stake for voting cannot be negative");
-         if( from == N(b1) ) {
-            validate_b1_vesting( from_voter->staked );
-         }
+      // update to telosfoundation account
+      //    if( from == N(b1) ) {
+      //       validate_b1_vesting( from_voter->staked );
+      //    }
 
          if( from_voter->producers.size() || from_voter->proxy ) {
             update_votes( from, from_voter->proxy, from_voter->producers, false );
@@ -398,8 +396,8 @@ namespace eosiosystem {
       eosio_assert( asset() <= unstake_cpu_quantity, "must unstake a positive amount" );
       eosio_assert( asset() <= unstake_net_quantity, "must unstake a positive amount" );
       eosio_assert( asset() < unstake_cpu_quantity + unstake_net_quantity, "must unstake a positive amount" );
-      eosio_assert( _gstate.total_activated_stake >= min_activated_stake || _gstate.thresh_activated_stake_time > 0,
-                    "cannot undelegate bandwidth until the chain is activated (at least 15% of all tokens participate in voting)" );
+      eosio_assert( _gstate.block_num > block_num_network_activation || _gstate.thresh_activated_stake_time > 0,
+                    "cannot undelegate bandwidth until the chain is activated (1,000,000 blocks produced)" );
 
       changebw( from, receiver, -unstake_net_quantity, -unstake_cpu_quantity, false);
    } // undelegatebw

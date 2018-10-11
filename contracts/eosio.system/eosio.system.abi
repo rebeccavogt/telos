@@ -19,17 +19,35 @@
    }],
    "____comment": "eosio.bios structs: set_account_limits, setpriv, set_global_limits, producer_key, set_producers, require_auth are provided so abi available for deserialization in future.",
    "structs": [{
+     "name": "offline_producer",
+      "base": "",
+      "fields": [
+        {"name":"name",          "type":"account_name"},
+        {"name":"total_votes",   "type":"float64"},
+        {"name":"missed_blocks", "type":"uint32"}
+      ]
+   },{
       "name": "rotation_info",
       "base": "",
       "fields": [
-        {"name":"bp_currently_out",     "type":"account_name"},
-        {"name":"sbp_currently_in",     "type":"account_name"},
-        {"name":"bp_out_index",         "type":"uint32"},
-        {"name":"sbp_in_index",         "type":"uint32"},
-        {"name":"next_rotation_time",   "type":"block_timestamp_type"},
-        {"name":"last_rotation_time",   "type":"block_timestamp_type"},
-        {"name":"current_bp",                 "type":"account_name"},
-        {"name":"last_time_block_produced",   "type":"block_timestamp_type"}
+        {"name":"is_rotation_active",         "type":"bool"},
+        {"name":"bp_currently_out",           "type":"account_name"},
+        {"name":"sbp_currently_in",           "type":"account_name"},
+        {"name":"bp_out_index",               "type":"uint32"},
+        {"name":"sbp_in_index",               "type":"uint32"},
+        {"name":"next_rotation_time",         "type":"block_timestamp_type"},
+        {"name":"last_rotation_time",         "type":"block_timestamp_type"},
+        {"name":"is_kick_active",             "type":"bool"},
+        {"name":"last_onblock_caller",        "type":"account_name"},
+        {"name":"last_time_block_produced",   "type":"block_timestamp_type"},
+        {"name":"offline_bps",                "type":"offline_producer[]"}
+      ]
+    },{
+      "name": "payment",
+      "base": "",
+      "fields": [
+        {"name": "bp", "type": "account_name"},
+        {"name": "pay", "type": "asset"}
       ]
     },{
       "name": "permission_level",
@@ -59,6 +77,18 @@
       "fields": [
         {"name":"permission", "type":"permission_level"},
         {"name":"weight",     "type":"weight_type"}
+      ]
+    },{
+      "name": "setkick",
+      "base": "",
+      "fields": [
+        {"name":"state", "type":"bool"}
+      ]
+    },{
+      "name": "setrotate",
+      "base": "",
+      "fields": [
+        {"name":"state", "type":"bool"}
       ]
     },{
       "name": "wait_weight",
@@ -272,7 +302,8 @@
          {"name":"thresh_activated_stake_time",   "type":"uint64"},
          {"name":"last_producer_schedule_size",   "type":"uint16"},
          {"name":"total_producer_vote_weight",    "type":"float64"},
-         {"name":"last_name_close",               "type":"block_timestamp_type"}
+         {"name":"last_name_close",               "type":"block_timestamp_type"},
+         {"name":"block_num",                     "type":"uint32"}
       ]
     },{
       "name": "producer_info",
@@ -456,6 +487,14 @@
      "type": "canceldelay",
      "ricardian_contract": ""
    },{
+     "name": "setkick",
+     "type": "setkick",
+     "ricardian_contract": ""
+   },{
+     "name": "setrotate",
+     "type": "setrotate",
+     "ricardian_contract": ""
+   },{
      "name": "onerror",
      "type": "onerror",
      "ricardian_contract": ""
@@ -546,6 +585,12 @@
       "index_type": "i64",
       "key_names" : ["bp_currently_out"],
       "key_types" : ["uint64"]
+    },{
+      "name": "payments",
+      "type": "payment",
+      "index_type": "i64",
+      "key_names": ["bp"],
+      "key_types": ["account_name"]
     },{
       "name": "producers",
       "type": "producer_info",

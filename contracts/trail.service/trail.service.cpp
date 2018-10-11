@@ -6,7 +6,8 @@ trail::trail(account_name self) : contract(self), env_singleton(self, self) {
         env_struct = environment{
             self, //publisher
             0, //total_tokens
-            0 //total_voters
+            0, //total_voters
+            0 //total_ballots
         };
 
         env_singleton.set(env_struct, self);
@@ -25,10 +26,14 @@ void trail::regtoken(asset native, account_name publisher) {
     require_auth(publisher);
 
     auto sym = native.symbol.name();
+
+    stats statstable(N(eosio.token), sym);
+    auto eosio_existing = statstable.find(sym);
+    eosio_assert(eosio_existing == statstable.end(), "Token with symbol already exists in eosio.token" );
+
     registries_table registries(_self, sym);
     auto r = registries.find(sym);
-
-    eosio_assert(r == registries.end(), "Token Registry with that symbol already exists.");
+    eosio_assert(r == registries.end(), "Token Registry with that symbol already exists in Trail");
 
     registries.emplace(publisher, [&]( auto& a ){
         a.native = native;
@@ -92,8 +97,7 @@ void trail::unregvoter(account_name voter) {
     print("\nVoterID Unregistration: SUCCESS");
 }
 
-void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, uint16_t direction, account_name voter) {
-    //NOTE: Maybe require_auth2? Call should only come from voting contract
+void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, uint16_t direction, uint32_t expiration, account_name voter) {
     require_auth(voter);
 
     voters_table voters(_self, voter);
@@ -109,7 +113,8 @@ void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_ke
         vote_scope,
         vote_key,
         direction,
-        new_weight
+        new_weight,
+        expiration
     };
 
     auto itr = vid.receipt_list.begin();
@@ -127,6 +132,7 @@ void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_ke
         itr++;
     }
 
+    //if receipt not found in list
     if (itr == vid.receipt_list.end()) {
         vid.receipt_list.push_back(new_vr);
     } 
@@ -138,6 +144,37 @@ void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_ke
     print("\nVoteReceipt Addition: SUCCESS");
 }
 
+void trail::rmvexpvotes(account_name voter) {
+    require_auth(voter);
+
+    voters_table voters(_self, voter);
+    auto v = voters.find(voter);
+
+    eosio_assert(v != voters.end(), "Voter doesn't exist");
+    auto vid = *v;
+
+    uint32_t now_time = now(); //better name than now_time?
+
+    auto itr = vid.receipt_list.begin();
+
+    uint64_t votes_removed = 0;
+
+    for (votereceipt r : vid.receipt_list) {
+        if (now_time > r.expiration) {
+            vid.receipt_list.erase(itr);
+            votes_removed++;
+        }
+        itr++;
+    }
+
+    voters.modify(v, 0, [&]( auto& a ) {
+        a.receipt_list = vid.receipt_list;
+    });
+
+    print("\nVotes Removed: ", votes_removed);
+}
+
+/*
 void trail::rmvreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, account_name voter) {
     require_auth(voter);
 
@@ -174,5 +211,38 @@ void trail::rmvreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_ke
 
     print("\nVoteReceipt Removal: SUCCESS");
 }
+*/
 
-EOSIO_ABI(trail, (regtoken)(unregtoken)(regvoter)(unregvoter)(addreceipt)(rmvreceipt))
+void trail::regballot(account_name publisher) {
+    require_auth(publisher);
+
+    ballots_table ballots(_self, publisher);
+    auto b = ballots.find(publisher);
+
+    eosio_assert(b == ballots.end(), "Ballot already exists");
+
+    ballots.emplace(publisher, [&]( auto& a ){
+        a.publisher = publisher;
+    });
+
+    env_struct.total_ballots++;
+
+    print("\nBallot Registration: SUCCESS");
+}
+
+void trail::unregballot(account_name publisher) {
+    require_auth(publisher);
+
+    ballots_table ballots(_self, publisher);
+    auto b = ballots.find(publisher);
+
+    eosio_assert(b != ballots.end(), "Ballot Doesn't Exist");
+
+    ballots.erase(b);
+
+    env_struct.total_ballots--;
+
+    print("\nBallot Unregistration: SUCCESS");
+}
+
+EOSIO_ABI(trail, (regtoken)(unregtoken)(regvoter)(unregvoter)(addreceipt)(rmvexpvotes)(regballot)(unregballot))
