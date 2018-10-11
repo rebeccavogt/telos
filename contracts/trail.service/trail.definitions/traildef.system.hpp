@@ -48,6 +48,14 @@ struct user_resources {
     EOSLIB_SERIALIZE( user_resources, (owner)(net_weight)(cpu_weight)(ram_bytes) )
 };
 
+struct delegatebw_args {
+    account_name from;
+    account_name receiver;
+    asset stake_net_quantity;
+    asset stake_cpu_quantity;
+    bool transfer;
+};
+
 typedef eosio::multi_index<N(accounts), account> accounts;
 typedef eosio::multi_index<N(stat), currency_stats> stats;
 

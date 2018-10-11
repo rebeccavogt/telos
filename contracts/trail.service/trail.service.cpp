@@ -247,9 +247,29 @@ extern "C" {
         } else if (code == self && action == N(unregballot)) {
             execute_action(&_trail, &trail::unregballot);
         } else if (code == N(eosio) && action == N(delegatebw)) {
-            //TODO: propagate stake change to each active receipt
             print("\neosio.trail received delegatebw action from eosio");
-            require_recipient(N(eosio.amend)); //forwards changebw action to eosio.amend account (or maybe its trail action? unsure)
+            auto args = unpack_action_data<delegatebw_args>(); //NOTE: custom struct to represent delegatebw params
+
+            if (args.from == args.receiver) { //only care about delegatebw to self
+                voters_table voters(self, self);
+                auto v = voters.find(args.from);
+
+                if (v != voters.end()) { //only forwards action if user is a registered voter
+                    //require_recipient(N(eosio.amend)); //forwards delegatebw action to eosio.amend account
+                    auto vid = *v;
+
+                    for (votereceipt vr : vid.receipt_list) {
+                        if (vr.vote_token == args.stake_cpu_quantity.symbol.name() && vr.expiration > now()) {
+                            action::action(permission_level{ args.from, N(active) }, vr.vote_code, N(vote), make_tuple(
+    	                        vr.vote_key,
+                                vr.direction,
+                                args.receiver
+	                        )).send();
+                            print("\nvote action sent to: ", args.from);
+                        }
+                    }
+                }
+            }
         }
-    }
+    } //end apply
 };
