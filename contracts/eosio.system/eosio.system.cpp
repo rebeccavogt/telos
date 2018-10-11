@@ -150,6 +150,9 @@ namespace eosiosystem {
    }
 
    void system_contract::votebpout(account_name bp, uint32_t penalty_hours) {
+      require_auth(_self);
+      eosio_assert(penalty_hours != 0, "The penalty should be greater than zero.");
+      
       auto pitr = _producers.find(bp);
       eosio_assert(pitr != _producers.end(), "Producer account was not found");
       

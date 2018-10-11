@@ -115,8 +115,6 @@ namespace eosiosystem {
             kick_reason = "Producer account was deactivated to prevent the LIB from halting.";
           break;
           case kick_type::BPS_VOTING:
-            require_auth(N(eosio));
-            eosio_assert(penalty != 0, "The penalty should be greater than zero.");
             kick_reason_id = uint32_t(kick_type::BPS_VOTING);
             kick_reason = "Producer account was deactivated by vote.";
             kick_penalty_hours = penalty;
