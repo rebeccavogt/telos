@@ -54,7 +54,7 @@ struct voterid {
 };
 
 /**
- * Environment struct tracking global trailservice information.
+ * Environment struct tracking global eosio.trail information.
  * @field publisher - account that published the contract.
  * @field total_tokens - total active number of unique tokens registered through the regtoken() action.
  * @field total_voters - total active number of unique voterid's registered through the regvoter() action.
@@ -83,7 +83,7 @@ typedef multi_index<N(ballots), ballot> ballots_table;
 typedef singleton<N(environment), environment> environment_singleton;
 
 bool is_voter(account_name voter) {
-    voters_table voters(N(trailservice), voter); //TODO: change to _self, not good to hardcode account_name
+    voters_table voters(N(eosio.trail), voter); //TODO: change to _self, not good to hardcode account_name
     auto v = voters.find(voter);
 
     if (v != voters.end()) {
@@ -94,7 +94,7 @@ bool is_voter(account_name voter) {
 }
 
 bool has_receipt(account_name voter, uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key) {
-    voters_table voters(N(trailservice), voter); //TODO: change to _self, not good to hardcode account_name
+    voters_table voters(N(eosio.trail), voter); //TODO: change to _self, not good to hardcode account_name
     auto vid = voters.get(voter);
 
     for (votereceipt vr : vid.receipt_list) {
@@ -108,7 +108,7 @@ bool has_receipt(account_name voter, uint64_t vote_code, uint64_t vote_scope, ui
 }
 
 voters_table::const_iterator find_receipt(account_name voter, uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key) {
-    voters_table voters(N(trailservice), voter); //TODO: change to _self, don't hardcode account_name
+    voters_table voters(N(eosio.trail), voter); //TODO: change to _self, don't hardcode account_name
     auto vid = voters.get(voter);
 
     auto itr = voters.begin();

@@ -246,6 +246,9 @@ extern "C" {
             execute_action(&_trail, &trail::regballot);
         } else if (code == self && action == N(unregballot)) {
             execute_action(&_trail, &trail::unregballot);
+        } else if (code == N(eosio) && action == N(changebw)) {
+            //TODO: propagate stake change to each active receipt
+            require_recipient(N(eosio.amend)); //forwards changebw action to eosio.amend account (or maybe its trail action? unsure)
         }
     }
 };

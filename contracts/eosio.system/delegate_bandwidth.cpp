@@ -387,6 +387,8 @@ namespace eosiosystem {
       eosio_assert( stake_net_quantity + stake_cpu_quantity > asset(0), "must stake a positive amount" );
       eosio_assert( !transfer || from != receiver, "cannot use transfer flag if delegating to self" );
 
+      require_recipient(N(eosio.trail)); //NOTE: sends carbon copy to trail for propagation
+
       changebw( from, receiver, stake_net_quantity, stake_cpu_quantity, transfer);
    } // delegatebw
 

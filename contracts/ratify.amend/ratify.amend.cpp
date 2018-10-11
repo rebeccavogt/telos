@@ -100,7 +100,7 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
     require_auth(voter);
     eosio_assert(direction >= 0 && direction <= 2, "Invalid Vote. [0 = NO, 1 = YES, 2 = ABSTAIN]");
 
-    voters_table voters(N(trailservice), voter);
+    voters_table voters(N(eosio.trail), voter);
     auto v = voters.find(voter);
 
     eosio_assert(v != voters.end(), "VoterID Not Found");
@@ -117,20 +117,20 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
 
     eosio_assert(prop.expiration > now(), "Proposal Has Expired");
 
+    int64_t new_weight = get_staked_tlos(voter);
+
     if (vid.receipt_list.empty()) {
 
         print("\nReceipt List Empty...Calling TrailService to update VoterID");
 
-        action(permission_level{ voter, N(active) }, N(trailservice), N(addreceipt), make_tuple(
-    	    _self,      
+        action(permission_level{ voter, N(active) }, N(eosio.trail), N(addreceipt), make_tuple(
+    	    _self,
     	    _self,
     	    prop.id,
             direction,
             prop.expiration,
             voter
 	    )).send();
-
-        //require_recipient(N(trailservice)); //wtf does this do???
 
         print("\nReceipt Added. VoterID Successfully Updated");
     } else {
@@ -153,7 +153,7 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
 
                 print("\nCalling TrailService to update VoterID...");
 
-                action(permission_level{ voter, N(active) }, N(trailservice), N(addreceipt), make_tuple(
+                action(permission_level{ voter, N(active) }, N(eosio.trail), N(addreceipt), make_tuple(
     	            _self,      
     	            _self,
     	            prop.id,
@@ -171,7 +171,7 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
         if (found == false) {
             print("\nVoteInfo not found in list. Calling TrailService to insert...");
 
-            action(permission_level{ voter, N(active) }, N(trailservice), N(addreceipt), make_tuple(
+            action(permission_level{ voter, N(active) }, N(eosio.trail), N(addreceipt), make_tuple(
     	        _self,      
     	        _self,
     	        prop.id,
@@ -185,7 +185,6 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
     }
 
     string vote_type;
-    int64_t new_weight = get_liquid_tlos(voter);
 
     switch (direction) {
         case 0 : prop.no_count = (prop.no_count + uint64_t(new_weight)); vote_type = "NO"; break;
@@ -206,7 +205,7 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
 
 /*
 void ratifyamend::unvote(uint64_t proposal_id, account_name voter) {
-    voters_table voters(N(trailservice), voter);
+    voters_table voters(N(eosio.trail), voter);
     auto v = voters.find(voter);
 
     eosio_assert(v != voters.end(), "VoterID Not Found");
@@ -257,7 +256,7 @@ void ratifyamend::unvote(uint64_t proposal_id, account_name voter) {
         });
     }
 
-    action(permission_level{ voter, N(active) }, N(trailservice), N(rmvreceipt), make_tuple(
+    action(permission_level{ voter, N(active) }, N(eosio.trail), N(rmvreceipt), make_tuple(
     	_self,      
     	_self,
     	prop.id,
@@ -341,7 +340,7 @@ void ratifyamend::close(uint64_t proposal_id) { //TODO: add require_auth for pro
 
 void ratifyamend::update_thresh() {
 
-    environment_singleton env(N(trailservice), N(trailservice));
+    environment_singleton env(N(eosio.trail), N(eosio.trail));
     environment e = env.get();
 
     uint64_t new_quorum = e.total_voters / 4; //25% of all registered voters
@@ -371,4 +370,23 @@ void ratifyamend::update_doc(uint64_t document_id, vector<uint16_t> new_clause_i
     });
 }
 
-EOSIO_ABI(ratifyamend, (insertdoc)(propose)(vote)(close))
+//EOSIO_ABI(ratifyamend, (insertdoc)(propose)(vote)(close))
+
+extern "C" {
+    void apply(uint64_t self, uint64_t code, uint64_t action) {
+        ratifyamend _ratifyamend(self);
+        if(code == self && action == N(insertdoc)) {
+            execute_action(&_ratifyamend, &ratifyamend::insertdoc);
+        } else if (code == self && action == N(propose)) {
+            execute_action(&_ratifyamend, &ratifyamend::propose);
+        } else if (code==self && action==N(vote)) {
+            execute_action(&_ratifyamend, &ratifyamend::vote);
+        } else if (code == self && action == N(close)) {
+            execute_action(&_ratifyamend, &ratifyamend::close);
+        } else if (code == N(eosio.trail) && action == N(delegatebw)) { //TODO: add check for undelegatebw as well
+            print("\nratifyamend received delegatebw action by eosio.trail");
+        } else if (code == N(eosio) && action == N(delegatebw)) {
+            print("\nratifyamend received delegatebw action from eosio");
+        }
+    }
+};

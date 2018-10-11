@@ -69,6 +69,9 @@ class trail : public contract {
         //add param for symbol_name vote_token
         void addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, symbol_name vote_token, uint16_t direction, uint32_t expiration, account_name voter);
 
+        /**
+         * 
+         */
         void rmvexpvotes(account_name voter);
 
         /**
@@ -80,8 +83,14 @@ class trail : public contract {
         */
         //void rmvreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, account_name voter);
 
+        /**
+         * 
+         */
         void regballot(account_name publisher);
 
+        /**
+         * 
+         */
         void unregballot(account_name publisher);
 
     protected:

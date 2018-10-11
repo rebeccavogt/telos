@@ -39,7 +39,7 @@ typedef multi_index<N(balances), balance> balances_table;
 typedef multi_index<N(registries), registration> registries_table;
 
 bool is_trail_token(symbol_name sym) {
-    registries_table registries(N(trailservice), sym);
+    registries_table registries(N(eosio.trail), sym);
     auto r = registries.find(sym);
 
     if (r != registries.end()) {
@@ -67,7 +67,7 @@ int64_t get_token_balance(symbol_name sym, account_name voter) {
 }
 
 registries_table::const_iterator find_registry(symbol_name sym) {
-    registries_table registries(N(trailservice), sym);
+    registries_table registries(N(eosio.trail), sym);
     auto itr = registries.find(sym);
 
     if (itr != registries.end()) {
@@ -78,6 +78,6 @@ registries_table::const_iterator find_registry(symbol_name sym) {
 }
 
 registration get_registry(symbol_name sym) {
-    registries_table registries(N(trailservice), sym);
+    registries_table registries(N(eosio.trail), sym);
     return registries.get(sym);
 }
