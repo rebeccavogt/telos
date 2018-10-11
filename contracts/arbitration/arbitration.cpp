@@ -47,6 +47,8 @@ void arbitration::setconfig(uint16_t max_arbs, uint32_t default_time, vector<int
     print("\nSettings Configured: SUCCESS");
 }
 
+#pragma region Arb_Elections
+
 void arbitration::applyforarb(account_name candidate, string creds_ipfs_url) {
     require_auth(candidate);
     eosio_assert(!is_candidate(candidate), "candidate is already a candidate");
@@ -215,6 +217,9 @@ void arbitration::endelection(account_name candidate) {
     }
 
 }
+#pragma endregion Arb_Elections
+
+#pragma region Case_Setup
 
 void arbitration::filecase(account_name claimant, uint16_t class_suggestion, string ev_ipfs_url) {
     require_auth(claimant);
@@ -240,6 +245,23 @@ void arbitration::filecase(account_name claimant, uint16_t class_suggestion, str
     print("\nCased Filed: SUCCESS");
 }
 
+#pragma endregion Case_Setup
+
+#pragma region Member_Only
+
+void arbitration::vetoarb(uint64_t case_id, account_name arb, account_name selector) {
+    require_auth(selector);
+    eosio_assert(is_case(case_id), "no case for given case_id");
+    eosio_assert(is_arb(arb), "account in list is not an arbitrator");
+
+    //TODO: check that case is in AWAITING_ARBS state
+
+}
+
+#pragma endregion Member_Only
+
+#pragma region Arb_Only
+
 void arbitration::closecase(uint64_t case_id, account_name arb) {
     require_auth(arb);
     eosio_assert(is_arb(arb), "only arbitrator can close case");
@@ -253,14 +275,12 @@ void arbitration::closecase(uint64_t case_id, account_name arb) {
     print("\nCase Close: SUCCESS");
 }
 
-void arbitration::vetoarb(uint64_t case_id, account_name arb, account_name selector) {
-    require_auth(selector);
-    eosio_assert(is_case(case_id), "no case for given case_id");
-    eosio_assert(is_arb(arb), "account in list is not an arbitrator");
+#pragma endregion Arb_Only
 
-    //TODO: check that case is in AWAITING_ARBS state
+#pragma region BP_Multisig_Actions
+#pragma endregion BP_Multisig_Actions
 
-}
+#pragma region Helper_Functions
 
 bool arbitration::is_candidate(account_name candidate) {
     elections_table elections(_self, _self);
@@ -324,3 +344,5 @@ bool arbitration::is_election_expired(account_name candidate) {
 
     return false;
 }
+
+#pragma endregion Helper_Functions
