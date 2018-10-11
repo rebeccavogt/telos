@@ -26,6 +26,7 @@ struct registration {
     EOSLIB_SERIALIZE(registration, (native)(publisher))
 };
 
+/// @abi table balances i64
 struct balance {
     account_name owner;
     asset tokens;
