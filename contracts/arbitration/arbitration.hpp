@@ -58,7 +58,7 @@ class arbitration : public contract {
         enum arb_status {
             AVAILABLE, //0
             UNAVAILABLE, //1
-            INACTIVE, //2
+            INACTIVE //2
         };
 
         enum election_status {
@@ -118,7 +118,7 @@ class arbitration : public contract {
 
         struct claim {
             uint16_t class_suggestion;
-            vector<string> submitted_evidence; //submitted by claimant
+            string submitted_evidence; //submitted by claimant
             vector<uint64_t> accepted_ev_ids; //accepted and emplaced by arb
             uint16_t class_decision; //initialized to UNDECIDED (0)
 
@@ -180,9 +180,11 @@ class arbitration : public contract {
 
         void addclaim(uint64_t case_id, uint16_t class_suggestion, string ev_ipfs_url, account_name claimant); //NOTE: adds subsequent claims to a case
 
-        void removeclaim(uint64_t case_id, uint16_t claim_num, account_name arb);
+        void removeclaim(uint64_t case_id, uint16_t claim_num, account_name claimant); //NOTE: Claims can only be removed by a claimant during case setup. Enfore that have atleas one claim before awaiting arbs
 
         void shredcase(uint64_t case_id, account_name claimant); //NOTE: member-level case removal, called during CASE_SETUP
+
+		void readycase(uint64_t case_id, account_name claimant);
 
         #pragma endregion Case_Setup
 
@@ -193,6 +195,8 @@ class arbitration : public contract {
         #pragma endregion Member_Only
 
         #pragma region Arb_Only
+
+		//TODO: Set case respondant action
 
         void dismisscase(uint64_t case_id, account_name arb); //TODO: require rationale?
 
@@ -218,7 +222,7 @@ class arbitration : public contract {
 
         #pragma region BP_Multisig_Actions
 
-        void dismissarb(account_name arb, account_name bp);
+        void dismissarb(account_name arb);
 
         #pragma endregion BP_Multisig_Actions
 
@@ -236,6 +240,8 @@ class arbitration : public contract {
     protected:
 
         #pragma region Helper_Functions
+
+		void validate_ipfs_url(string ipfs_url);
 
         bool is_candidate(account_name candidate);
 

@@ -223,26 +223,111 @@ void arbitration::endelection(account_name candidate) {
 
 void arbitration::filecase(account_name claimant, uint16_t class_suggestion, string ev_ipfs_url) {
     require_auth(claimant);
-    casefiles_table casefiles(_self, _self);
+	eosio_assert(class_suggestion >= UNDECIDED && class_suggestion <= MISC, "class suggestion must be between 0 and 14"); //TODO: improve this message to include directions
+	validate_ipfs_url(ev_ipfs_url);
 
-    //TODO: implement deposit
+	action(permission_level{ claimant, N(active)}, N(eosio.token), N(transfer), make_tuple(
+		claimant,
+		_self,
+		asset(int64_t(1000000), S(4, TLOS)), //TODO: Check initial filing fee
+		std::string("Arbitration Case Filing Fee")
+	)).send();
 
+	casefiles_table casefiles(_self, _self);
     vector<account_name> arbs; //empty vector of arbitrator accounts
-
+	vector<claim> claims;
+	auto case_id = casefiles.available_primary_key();
     casefiles.emplace(_self, [&]( auto& a ){
-        a.case_id = pendingcases.available_primary_key();
+        a.case_id = case_id;
         a.claimant = claimant;
+		a.respondant = 0;
         a.claims = claims;
         a.arbitrators = arbs;
-        a.status = AWAITING_ARBS;
+        a.status = CASE_SETUP;
         a.last_edit = now();
     });
 
-    //if (arb_status::) {
-        //TODO: change enums to classes, check table storage?
-    //}
+	addclaim(case_id, class_suggestion, ev_ipfs_url, claimant);
 
-    print("\nCased Filed: SUCCESS");
+    print("\nCased Filed!");
+}
+
+void arbitration::addclaim(uint64_t case_id, uint16_t class_suggestion, string ev_ipfs_url, account_name claimant) {
+	require_auth(claimant);
+	eosio_assert(class_suggestion >= UNDECIDED && class_suggestion <= MISC, "class suggestion must be between 0 and 14"); //TODO: improve this message to include directions
+	validate_ipfs_url(ev_ipfs_url);
+
+	casefiles_table casefiles(_self, _self);
+	auto c = casefiles.get(case_id, "Case Not Found");
+	print("\nProposal Found!");
+
+	require_auth(c.claimant);
+	eosio_assert(c.case_status == CASE_SETUP, "claims cannot be added after CASE_SETUP is complete.");
+
+	vector<uint64_t> accepted_ev_ids;
+
+	auto new_claims = c.claims;
+	new_claims.emplace_back(claim { class_suggestion, ev_ipfs_url, accepted_ev_ids, UNDECIDED });
+	casefiles.modify(c, 0, [&](auto& a) { 
+		a.claims = new_claims;
+	});
+
+	print("\nClaim Added!");
+}
+
+void arbitration::removeclaim(uint64_t case_id, uint16_t claim_num, account_name claimant) {
+	require_auth(claimant);
+
+	casefiles_table casefiles(_self, _self);
+	auto c = casefiles.get(case_id, "Case Not Found");
+	print("\nProposal Found!");
+
+	require_auth(c.claimant);
+	eosio_assert(c.case_status == CASE_SETUP, "claims cannot be removed after CASE_SETUP is complete.");
+
+	vector<claim> new_claims = c.claims;
+	eosio_assert(new_claims.size > 0, "no claims to remove");
+	eosio_assert(claim_num < new_claims.size() - 1, "claim number does not exist");
+	new_claims.erase(new_claims.begin() + claim_num);
+
+	casefiles.modify(c, 0, [&](auto& a) {
+		a.claims = new_claims;
+	});
+
+	print("\nClaim Removed!");
+}
+
+void arbitration::shredcase(uint64_t case_id, account_name claimant) {
+	require_auth(claimant);
+
+	casefiles_table casefiles(_self, _self);
+	auto c_itr = casefiles.find(case_id);
+	print("\nProposal Found!");
+	eosio_assert(c_itr != casefiles.end(), "Case Not Found");
+
+	require_auth(c_itr->claimant);
+	eosio_assert(c_itr->case_status == CASE_SETUP, "cases can only be shredded during CASE_SETUP");
+
+	casefiles.erase(c_itr);
+
+	print("\nCase Shredded!");
+}
+
+void arbitration::readycase(uint64_t case_id, account_name claimant) {
+	require_auth(claimant);
+
+	casefiles_table casefiles(_self, _self);
+	auto c = casefiles.get(case_id, "Case Not Found");
+
+	require_auth(c.claimant);
+	eosio_assert(c.case_status == CASE_SETUP, "cases can only be readied during CASE_SETUP");
+	eosio_assert(c.claims.size() >= 1, "cases must have atleast one claim");
+
+	casefiles.modify(c, 0, [&](auto& a) {
+		c.case_status = AWAITING_ARBS;
+	});
+
+	print("\nCase Readied!");
 }
 
 #pragma endregion Case_Setup
@@ -278,9 +363,31 @@ void arbitration::closecase(uint64_t case_id, account_name arb) {
 #pragma endregion Arb_Only
 
 #pragma region BP_Multisig_Actions
+
+void arbitration::dismissarb(account_name arb) {
+	require_auth2(N(eosio.prods), N(active)); //REQUIRES 2/3+1 Vote from eosio.prods for MSIG
+
+	arbitrators_table arbitrators(_self, _self);
+	auto a = arbitrators.get(arb, "Arbitrator Not Found");
+
+	eosio_assert(a.arb_status != INACTIVE, "Arbitrator is already inactive");
+
+	arbitrators.modify(a, 0, [&](auto& a) {
+		a.arb_status = INACTIVE;
+	});
+
+	print("\nArbitrator Dismissed!");
+}
+
 #pragma endregion BP_Multisig_Actions
 
 #pragma region Helper_Functions
+
+void arbitration::validate_ipfs_url(string ipfs_url) {
+	//TODO: Base58 character checker 
+	eosio_assert(!ipfs_url.empty(), "ev_ipfs_url cannot be empty, evidence for claims must be submitted.");
+	eosio_assert(ipfs_url.length == 53 && ipfs_url.substr(0, 5) == "/ipfs/", "invalid ipfs string, valid schema: /ipfs/<hash>/");
+}
 
 bool arbitration::is_candidate(account_name candidate) {
     elections_table elections(_self, _self);
