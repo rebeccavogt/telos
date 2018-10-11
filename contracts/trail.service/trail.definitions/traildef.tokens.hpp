@@ -49,6 +49,22 @@ bool is_trail_token(symbol_name sym) {
     return false;
 }
 
+registries_table::const_iterator find_registry(symbol_name sym) {
+    registries_table registries(N(eosio.trail), sym);
+    auto itr = registries.find(sym);
+
+    if (itr != registries.end()) {
+        return itr;
+    }
+
+    return registries.end();
+}
+
+registration get_registry(symbol_name sym) {
+    registries_table registries(N(eosio.trail), sym);
+    return registries.get(sym);
+}
+
 int64_t get_token_balance(symbol_name sym, account_name voter) {
     auto reg = get_registry(sym).publisher;
 
@@ -64,20 +80,4 @@ int64_t get_token_balance(symbol_name sym, account_name voter) {
     }
 
     return amount / p10;
-}
-
-registries_table::const_iterator find_registry(symbol_name sym) {
-    registries_table registries(N(eosio.trail), sym);
-    auto itr = registries.find(sym);
-
-    if (itr != registries.end()) {
-        return itr;
-    }
-
-    return registries.end();
-}
-
-registration get_registry(symbol_name sym) {
-    registries_table registries(N(eosio.trail), sym);
-    return registries.get(sym);
 }
