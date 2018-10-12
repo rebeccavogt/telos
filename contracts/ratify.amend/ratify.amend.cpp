@@ -118,6 +118,7 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
     eosio_assert(prop.expiration > now(), "Proposal Has Expired");
 
     int64_t new_weight = get_staked_tlos(voter);
+    symbol_name tlos_sym = asset(0).symbol.name();
 
     if (vid.receipt_list.empty()) {
 
@@ -127,6 +128,7 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
     	    _self,
     	    _self,
     	    prop.id,
+            tlos_sym,
             direction,
             prop.expiration,
             voter

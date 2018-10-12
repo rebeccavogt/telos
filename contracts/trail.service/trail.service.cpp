@@ -257,17 +257,17 @@ extern "C" {
 
             print("\nvoter found: ", name{args.from});
 
-            if (v != voters.end()) { //only forwards action if user is a registered voter
+            if (v != voters.end()) { //only forwards delegate/undelegate action if sent by a registered voter
                 auto vid = *v;
 
                 for (votereceipt vr : vid.receipt_list) {
                     if (vr.expiration > now() && vr.vote_token == args.stake_cpu_quantity.symbol.name()) { //NOTE: only works when voted token is TLOS
 
-                        //action::action(permission_level{ args.from, N(active) }, vr.vote_code, N(vote), make_tuple(
-    	                    //vr.vote_key,
-                            //vr.direction,
-                            //args.receiver
-	                    //)).send();
+                        action::action(permission_level{ args.from, N(active) }, vr.vote_code, N(vote), make_tuple(
+    	                    vr.vote_key,
+                            vr.direction,
+                            args.receiver
+	                    )).send();
 
                         print("\nvote action sent to: ", name{vr.vote_code});
                         print(" for proposal: ", vr.vote_key);
@@ -276,7 +276,7 @@ extern "C" {
                 }
             }
 
-            print("\nvoter not found");
+            //print("\nvoter not found");
         }
     } //end apply
 };
