@@ -383,11 +383,11 @@ extern "C" {
             execute_action(&_ratifyamend, &ratifyamend::vote);
         } else if (code == self && action == N(close)) {
             execute_action(&_ratifyamend, &ratifyamend::close);
-        } else if (code == N(eosio) && action == N(delegatebw)) {
-            print("\nratifyamend received delegatebw action from eosio");
+        } //else if (code == N(eosio) && action == N(delegatebw)) {
+            //print("\nratifyamend received delegatebw action from eosio");
 
-        } else if (code == N(eosio) && action == N(undelegatebw)) {
-            print("\nratifyamend received undelegatebw action from eosio");
-        }
+        //} else if (code == N(eosio) && action == N(undelegatebw)) {
+            //print("\nratifyamend received undelegatebw action from eosio");
+        //}
     }
 };
