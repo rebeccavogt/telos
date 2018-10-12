@@ -32,6 +32,7 @@ class trail : public contract {
          * @param native - native asset of token registry
          * @param publisher - account publishing token registry
         */
+        /// @abi action
         void regtoken(asset native, account_name publisher);
 
         /**
@@ -39,12 +40,14 @@ class trail : public contract {
          * @param native - native asset of the token registry
          * @param publisher - account where the token registry is published
         */
+        /// @abi action
         void unregtoken(asset native, account_name publisher);
 
         /**
          * Registers an account with a new VoterID.
          * @param voter - account for which to create a new VoterID
         */
+        /// @abi action
         void regvoter(account_name voter);
 
         /**
@@ -53,6 +56,7 @@ class trail : public contract {
          * 
          * NOTE: All votereceipts must be removed first.
         */
+        /// @abi action
         void unregvoter(account_name voter);
 
         /**
@@ -66,12 +70,13 @@ class trail : public contract {
          * @param expiration - 
          * @param voter - 
         */
-        //add param for symbol_name vote_token
+        /// @action
         void addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, symbol_name vote_token, uint16_t direction, uint32_t expiration, account_name voter);
 
         /**
          * 
          */
+        /// @abi action
         void rmvexpvotes(account_name voter);
 
         /**
@@ -86,11 +91,13 @@ class trail : public contract {
         /**
          * 
          */
+        /// @abi action
         void regballot(account_name publisher);
 
         /**
          * 
          */
+        /// @abi action
         void unregballot(account_name publisher);
 
     protected:

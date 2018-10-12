@@ -29,18 +29,22 @@ class ratifyamend : public contract {
 
         ~ratifyamend();
 
+        /// @abi action
         void insertdoc(string title, vector<string> clauses);
 
+        /// @abi action
         void propose(string title, uint64_t document_id, vector<uint16_t> new_clause_ids, vector<string> new_ipfs_urls, account_name proposer);
 
+        /// @abi action
         void vote(uint64_t proposal_id, uint16_t vote, account_name voter);
 
         //void unvote(uint64_t proposal_id, account_name voter);
 
+        /// @abi action
         void close(uint64_t proposal_id);
 
     protected:
-
+    
         void update_thresh();
 
         void update_doc(uint64_t document_id, vector<uint16_t> new_clause_ids, vector<string> new_ipfs_urls);
