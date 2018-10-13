@@ -111,13 +111,12 @@ void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_ke
     eosio_assert(v != voters.end(), "VoterID doesn't exist");
     auto vid = *v;
 
-    int64_t new_weight = 10;
+    int64_t new_weight = 1; //NOTE: base weight of at least 1?
 
     if (vote_token == asset(0).symbol.name()) {
-        new_weight = get_staked_tlos(voter); //BUG: returns 0??
+        new_weight = get_staked_tlos(voter);
         print("\nvote_token is TLOS...");
         print("using staked bandwidth from account: ", name{voter});
-        print("\nget_staked_tlos return: ", new_weight);
     } else if (is_trail_token(vote_token)) {
         new_weight = get_token_balance(vote_token, voter);
         print("\nvote_token is registered on Trail...using token balance as weight");
@@ -125,10 +124,8 @@ void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_ke
         new_weight = get_eosio_token_balance(vote_token, voter);
         print("\nvote_token is registered on eosio.token...using token balance as weight");
     } else {
-        print("\nNo token balance found for given symbol, defaulting to 0");
+        print("\nNo token balance found for given symbol, defaulting to 1");
     }
-
-    print("\nnew weight: ", asset{new_weight});
 
     votereceipt new_vr = votereceipt{
         vote_code,
@@ -139,6 +136,8 @@ void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_ke
         new_weight,
         expiration
     };
+
+    print("\nnew weight: ", new_weight);
 
     auto itr = vid.receipt_list.begin();
 
@@ -259,15 +258,19 @@ extern "C" {
             //require_recipient(N(eosio.amend)); //forwards delegatebw action to eosio.amend account
             auto args = unpack_action_data<delegatebw_args>(); //NOTE: custom struct to represent delegatebw params
 
+            print("\nsearching for: ", name{args.from});
+
             voters_table voters(self, self);
             auto v = voters.find(args.from);
 
-            print("\nvoter found: ", name{args.from});
+            if (v == voters.end()) {
+                print("\nvoter not found");
+            }
 
             if (v != voters.end()) { //only forwards delegate/undelegate action if sent by a registered voter
                 auto vid = *v;
 
-                print("\nsearching receipt list...");
+                print("\nvoter found...searching receipt list...");
 
                 for (votereceipt vr : vid.receipt_list) {
                     if (vr.expiration > now() && vr.vote_token == asset(0).symbol.name()) { //NOTE: only works when voted token is TLOS
