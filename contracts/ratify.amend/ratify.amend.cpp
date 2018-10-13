@@ -125,13 +125,13 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
         print("\nReceipt List Empty...Calling TrailService to update VoterID");
 
         action(permission_level{ voter, N(active) }, N(eosio.trail), N(addreceipt), make_tuple(
-    	    _self,
-    	    _self,
-    	    prop.id,
-            tlos_sym,
-            direction,
-            prop.expiration,
-            voter
+    	    _self, //vote_code
+    	    _self, //vote_scope
+    	    prop.id, //vote_key
+            tlos_sym,  //vote_token
+            direction, //direction
+            prop.expiration, //expiration
+            voter //voter
 	    )).send();
 
         print("\nReceipt Added. VoterID Successfully Updated");
@@ -144,7 +144,7 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
         for (votereceipt r : vid.receipt_list) {
             if (r.vote_key == proposal_id) {
 
-                print("\nVoteReceipt receipt found");
+                print("\nVoteReceipt found");
                 found = true;
 
                 switch (r.direction) {
@@ -159,6 +159,7 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
     	            _self,      
     	            _self,
     	            prop.id,
+                    tlos_sym,
                     direction,
                     prop.expiration,
                     voter
@@ -177,6 +178,7 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
     	        _self,      
     	        _self,
     	        prop.id,
+                tlos_sym,
                 direction,
                 prop.expiration,
                 voter
