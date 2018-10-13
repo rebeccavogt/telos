@@ -260,7 +260,7 @@ extern "C" {
 
             print("\nsearching for: ", name{args.from});
 
-            voters_table voters(self, self);
+            voters_table voters(self, args.from);
             auto v = voters.find(args.from);
 
             if (v == voters.end()) {
