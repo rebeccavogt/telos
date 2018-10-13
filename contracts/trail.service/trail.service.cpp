@@ -114,14 +114,14 @@ void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_ke
     int64_t new_weight = 0;
 
     if (vote_token == asset(0).symbol.name()) {
-        int64_t new_weight = get_staked_tlos(voter);
+        new_weight = get_staked_tlos(voter);
         print("\nvote_token is TLOS...");
         print("using staked bandwidth from account: ", name{voter});
     } else if (is_trail_token(vote_token)) {
-        int64_t new_weight = get_token_balance(vote_token, voter);
+        new_weight = get_token_balance(vote_token, voter);
         print("\nvote_token is registered on Trail...using token balance as weight");
     } else if (is_eosio_token(vote_token, voter)) {
-        int64_t new_weight = get_eosio_token_balance(vote_token, voter);
+        new_weight = get_eosio_token_balance(vote_token, voter);
         print("\nvote_token is registered on eosio.token...using token balance as weight");
     } else {
         print("\nNo token balance found for given symbol, defaulting to 0");

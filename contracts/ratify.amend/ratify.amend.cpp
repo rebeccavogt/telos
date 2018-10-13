@@ -9,7 +9,7 @@ ratifyamend::ratifyamend(account_name self) : contract(self), thresh_singleton(s
             _self, //publisher
             0, //initial total_voters
             0, //initial quorum_threshold
-            uint32_t(600) //expiration_length in seconds (default is 5,000,000 or ~58 days)
+            uint32_t(5000) //expiration_length in seconds (default is 5,000,000 or ~58 days)
         };
 
         update_thresh();
