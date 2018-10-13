@@ -203,6 +203,8 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
     });
 
     print("\n\nVote: SUCCESSFUL");
+    print("\n=========================");
+    print("\nVoting Account: ", name{voter});
     print("\nYour Vote: ", vote_type);
     print("\nVote Weight: ", new_weight);
 }

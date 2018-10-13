@@ -115,7 +115,8 @@ void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_ke
 
     if (vote_token == asset(0).symbol.name()) {
         int64_t new_weight = get_staked_tlos(voter);
-        print("\nvote_token is TLOS...using staked bandwidth as weight");
+        print("\nvote_token is TLOS...");
+        print("using staked bandwidth from account: ", name{voter});
     } else if (is_trail_token(vote_token)) {
         int64_t new_weight = get_token_balance(vote_token, voter);
         print("\nvote_token is registered on Trail...using token balance as weight");
