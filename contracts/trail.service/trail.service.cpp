@@ -275,7 +275,7 @@ extern "C" {
                 for (votereceipt vr : vid.receipt_list) {
                     if (vr.expiration > now() && vr.vote_token == asset(0).symbol.name()) { //NOTE: only works when voted token is TLOS
 
-                        action::action(permission_level{ args.from, N(active) }, vr.vote_code, N(vote), make_tuple(
+                        action::action(permission_level{ N(eosio.trail), N(active) }, vr.vote_code, N(vote), make_tuple(
     	                    vr.vote_key,
                             vr.direction,
                             args.receiver
