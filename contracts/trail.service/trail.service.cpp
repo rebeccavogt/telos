@@ -111,12 +111,13 @@ void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_ke
     eosio_assert(v != voters.end(), "VoterID doesn't exist");
     auto vid = *v;
 
-    int64_t new_weight = 0;
+    int64_t new_weight = 10;
 
     if (vote_token == asset(0).symbol.name()) {
-        new_weight = get_staked_tlos(voter);
+        new_weight = get_staked_tlos(voter); //BUG: returns 0??
         print("\nvote_token is TLOS...");
         print("using staked bandwidth from account: ", name{voter});
+        print("\nget_staked_tlos return: ", new_weight);
     } else if (is_trail_token(vote_token)) {
         new_weight = get_token_balance(vote_token, voter);
         print("\nvote_token is registered on Trail...using token balance as weight");
