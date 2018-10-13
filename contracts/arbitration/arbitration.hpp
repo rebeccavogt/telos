@@ -118,7 +118,7 @@ class arbitration : public contract {
 
         struct claim {
             uint16_t class_suggestion;
-            string submitted_evidence; //submitted by claimant
+            vector<string> submitted_pending_evidence; //submitted by claimant
             vector<uint64_t> accepted_ev_ids; //accepted and emplaced by arb
             uint16_t class_decision; //initialized to UNDECIDED (0)
 
@@ -146,12 +146,13 @@ class arbitration : public contract {
             vector<account_name> arbitrators; //CLARIFY: do arbitrators get added when joining?
             uint16_t case_status;
             uint32_t last_edit;
+            vector<string> findings_ipfs;
             //vector<asset> additional_fees; //NOTE: case by case?
             //TODO: add messages field
 
             uint64_t primary_key() const { return case_id; }
             uint64_t by_claimant() const { return claimant; }
-            EOSLIB_SERIALIZE(casefile, (case_id)(claimant)(claims)(arbitrators)(case_status)(last_edit))
+            EOSLIB_SERIALIZE(casefile, (case_id)(claimant)(claims)(arbitrators)(case_status)(last_edit)(findings_ipfs))
         };
 
         #pragma endregion Structs
@@ -200,9 +201,9 @@ class arbitration : public contract {
 
         void dismisscase(uint64_t case_id, account_name arb); //TODO: require rationale?
 
-        void closecase(uint64_t case_id, account_name closer); //TODO: require decision?
+        void closecase(uint64_t case_id, account_name closer, string ipfs_url); //TODO: require decision?
 
-        void dismissev(uint64_t case_id, uint16_t claim_num, uint16_t ev_num, account_name arb); //NOTE: moves to dismissed_evidence table
+        void dismissev(uint64_t case_id, uint16_t claim_num, uint16_t ev_num, account_name arb, string ipfs_url); //NOTE: moves to dismissed_evidence table
 
         void acceptev(uint64_t case_id, uint16_t claim_num, uint16_t ev_num, account_name arb); //NOTE: moves to evidence_table and assigns ID
 
@@ -210,7 +211,7 @@ class arbitration : public contract {
 
         void casestatus(uint64_t case_id, uint16_t new_status, account_name arb);
 
-        void changeclass(uint64_t case_id, uint16_t claim_key, uint16_t new_class, account_name arb);
+        void changeclass(uint64_t case_id, uint16_t claim_index, uint16_t new_class, account_name arb);
 
         //void joincases(vector<uint64_t> case_ids, account_name arb); //CLARIFY: joined case is rolled into Base case?
 
