@@ -7,7 +7,7 @@
  * @copyright defined in telos/LICENSE.txt
  */
 
-// #include <../trail.service/trail.connections/trailconn.voting.hpp>
+#include <../trail.service/trail.connections/trailconn.voting.hpp>
 
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/permission.hpp>

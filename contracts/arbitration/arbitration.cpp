@@ -267,8 +267,6 @@ void arbitration::addclaim(uint64_t case_id, uint16_t class_suggestion, string e
 	vector<uint64_t> accepted_ev_ids;
 
 	auto new_claims = c.claims;
-    // auto new_ev_list = c.submitted_pending_evidence;
-    // new_ev_list.emplace_back(ev_ipfs_url);
 	new_claims.emplace_back(claim { class_suggestion, vector<string>{ev_ipfs_url}, accepted_ev_ids, UNDECIDED });
 	casefiles.modify(c, 0, [&](auto& a) { 
 		a.claims = new_claims;
