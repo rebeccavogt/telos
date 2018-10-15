@@ -3022,7 +3022,7 @@ BOOST_FIXTURE_TEST_CASE( setram_effect, eosio_system_tester ) try {
 
 } FC_LOG_AND_RETHROW()
 
-BOOST_FIXTURE_TEST_CASE( test_test, eosio_system_tester ) try {
+BOOST_FIXTURE_TEST_CASE( worker_proposal, eosio_system_tester ) try {
 
       // base_tester::set_authority( N(eosio.saving), name(config::active_name).to_string(), 
       //                         authority(

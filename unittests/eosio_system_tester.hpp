@@ -560,6 +560,8 @@ public:
       );
       BOOST_REQUIRE_EQUAL(transaction_receipt::executed, trace_auth->receipt->status);
 
+      produce_blocks(3600);
+
       //vote for producers
       {
          transfer( config::system_account_name, "alice1111111", core_from_string("100000000.0000"), config::system_account_name );
@@ -621,6 +623,8 @@ public:
          trx.sign( get_private_key( N(producer1111), "active" ), control->get_chain_id()  );
          push_transaction( trx );
       }
+
+      produce_blocks(3600);
    }
 
    abi_serializer abi_ser;
