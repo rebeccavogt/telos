@@ -255,7 +255,7 @@ extern "C" {
         } else if (code == N(eosio) && action == N(delegatebw)) {
             auto args = unpack_action_data<delegatebw_args>();
             deltas_table votedeltas(self, self);
-            auto by_acct_idx = votedeltas.get_index<N(byaccount)>();
+            auto by_acct_idx = votedeltas.get_index<N(byvoter)>();
             auto deltas = by_acct_idx.find(args.from);
             asset new_weight = (args.stake_cpu_quantity + args.stake_net_quantity);
 
