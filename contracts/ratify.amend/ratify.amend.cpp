@@ -71,11 +71,11 @@ void ratifyamend::propose(string title, uint64_t document_id, vector<uint16_t> n
         }
     }
 
-    //NOTE: 100.0000 TLOS fee, refunded if proposal passes
+    //NOTE: 100.0000 EOS fee, refunded if proposal passes
     action(permission_level{ proposer, N(active) }, N(eosio.token), N(transfer), make_tuple( //NOTE: susceptible to ram-drain bug
     	proposer,
         _self,
-        asset(int64_t(1000000), S(4, TLOS)),
+        asset(int64_t(1000000), S(4, EOS)),
         std::string("Ratify/Amend Proposal Fee")
 	)).send();
 
@@ -305,7 +305,7 @@ void ratifyamend::close(uint64_t proposal_id) { //TODO: add require_auth for pro
         action(permission_level{ _self, N(active) }, N(eosio.token), N(transfer), make_tuple( //NOTE: susceptible to ram-drain bug
     	    _self,
             po.proposer,
-            asset(int64_t(1000000), S(4, TLOS)),
+            asset(int64_t(1000000), S(4, EOS)),
             std::string("Ratify/Amend Proposal Fee Refund")
 	    )).send();
 
@@ -322,7 +322,7 @@ void ratifyamend::close(uint64_t proposal_id) { //TODO: add require_auth for pro
         action(permission_level{ _self, N(active) }, N(eosio.token), N(transfer), make_tuple( //NOTE: susceptible to ram-drain bug
     	    _self,
             po.proposer,
-            asset(int64_t(1000000), S(4, TLOS)),
+            asset(int64_t(1000000), S(4, EOS)),
             std::string("Ratify/Amend Proposal Fee Refund")
 	    )).send();
 

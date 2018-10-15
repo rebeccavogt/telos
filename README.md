@@ -50,7 +50,7 @@ For a full explanation of all the proposed Telos features, be sure to read our w
 
     b. Determine your Signature Provider. Run `teclos create key`, and import your keys into your wallet.
 
-        signature-provider = TLOS{public key}=KEY:{private key}
+        signature-provider = EOS{public key}=KEY:{private key}
 
     c. Determine your p2p and http endpoints. Choose your own p2p and http ports.
 
@@ -98,7 +98,7 @@ The Telos Testnet is a sandbox for testing newly implemented features and findin
 
 * __Voting__ Voting is an important part of the network, and with Telos' proposed changes to the voting stucture each vote will carry more weight and whales will have significantly less influence on the direction of the network. 
 
-* __Claiming Producer/Standby Rewards__ In order to receive your hard-earned Producer/Standby payout, registered producers will make a call to `claimrewards` no more than once per day. When `claimrewards` is called, the calling producer's share of TLOS is calculated and paid to their account. In addition to sending the producer's earned payout, `claimrewards` will also make a deposit to the Worker Proposal Fund. This deposit is not taken out of the producer's share, but rather from the newly minted tokens from the claimrewards call. For a more in depth explanation of this process, please consult the whitepaper or join a discussion on our many public channels.
+* __Claiming Producer/Standby Rewards__ In order to receive your hard-earned Producer/Standby payout, registered producers will make a call to `claimrewards` no more than once per day. When `claimrewards` is called, the calling producer's share of EOS is calculated and paid to their account. In addition to sending the producer's earned payout, `claimrewards` will also make a deposit to the Worker Proposal Fund. This deposit is not taken out of the producer's share, but rather from the newly minted tokens from the claimrewards call. For a more in depth explanation of this process, please consult the whitepaper or join a discussion on our many public channels.
 
 # Testnet Road Map
 The Telos Roadmap is broken into four separate stages. Each stage implements new features outlined in the white paper. Once all the features of a stage have been implemented, tested, and peer reviewed, the group will move onto implementing the next stage. Each stage may contain versions. These versions will contain amendments and features that have yet to be completed and/or tested. Below you will see an outline of the stages.
