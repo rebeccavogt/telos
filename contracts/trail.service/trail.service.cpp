@@ -264,9 +264,10 @@ extern "C" {
 
             for (auto itr = first_row; itr != last_row; itr++) {
                 if (now() <= itr->expiration) {
-                    votedeltas.modify(itr, 0, [&]( auto& a ) {
-                        a.weight = new_weight;
-                    });
+                    print("\nupdating weight for receipt_id: ", itr->receipt_id);
+                    //votedeltas.modify(itr, 0, [&]( auto& a ) {
+                        //a.weight = new_weight;
+                    //});
                 }
             }
 
