@@ -100,6 +100,35 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
     require_auth(voter);
     eosio_assert(direction >= 0 && direction <= 2, "Invalid Vote. [0 = NO, 1 = YES, 2 = ABSTAIN]");
 
+    proposals_table proposals(_self, _self);
+    auto p = proposals.find(proposal_id);
+    eosio_assert(p != proposals.end(), "Proposal Not Found");
+    
+    print("\nProposal Found");
+    auto prop = *p;
+
+    eosio_assert(prop.expiration > now(), "Proposal Has Expired");
+
+    deltas_table votedeltas(_self, _self);
+    auto by_acct_idx = votedeltas.get_index<N(byvoter)>();
+    auto first_row = by_acct_idx.lower_bound(voter);
+    auto last_row = by_acct_idx.upper_bound(voter);
+
+    for (auto itr = first_row; itr != last_row; itr++) {
+        if (now() <= itr->expiration && itr->vote_code == _self && itr->vote_scope == _self && itr->prop_id == proposal_id) {
+            print("\nupdating weight for receipt_id: ", itr->receipt_id);
+            //votedeltas.modify(itr, 0, [&]( auto& a ) {
+                //a.weight = new_weight;
+            //});
+        }
+    }
+
+    if (first_row == votedeltas.end()) {
+        print("\nemplaced new votereceipt");
+        //emplace new
+    }
+
+    /*
     voters_table voters(N(eosio.trail), voter);
     auto v = voters.find(voter);
 
@@ -201,12 +230,14 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
         a.yes_count = prop.yes_count;
         a.abstain_count = prop.abstain_count;
     });
+    
 
     print("\n\nVote: SUCCESSFUL");
     print("\n=========================");
     print("\nVoting Account: ", name{voter});
     print("\nYour Vote: ", vote_type);
     print("\nVote Weight: ", new_weight);
+    */
 }
 
 /*
@@ -392,7 +423,7 @@ extern "C" {
         } else if (code == N(eosio) && (action == N(delegatebw) || action == N(undelegatebw))) {
             print("\nratifyamend received delegatebw/undelegate action from eosio");
             auto args = unpack_action_data<delegatebw_args>();
-            
+
         }
     }
 };
