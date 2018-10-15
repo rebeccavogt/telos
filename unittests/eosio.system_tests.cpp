@@ -3022,4 +3022,231 @@ BOOST_FIXTURE_TEST_CASE( setram_effect, eosio_system_tester ) try {
 
 } FC_LOG_AND_RETHROW()
 
+BOOST_FIXTURE_TEST_CASE( test_test, eosio_system_tester ) try {
+
+      // base_tester::set_authority( N(eosio.saving), name(config::active_name).to_string(), 
+      //                         authority(
+      //                               1,
+      //                               {key_weight{get_public_key( N(eosio.saving), "active" ), 1}},
+      //                               {
+      //                                     permission_level_weight{{N(eosio.saving), config::eosio_code_name}, 1},
+      //                                     permission_level_weight{{N(eosio.wps),  config::active_name}, 1}
+      //                               }
+      //                         ),
+      //                         name(config::owner_name).to_string()
+      //                         );
+
+      // CREATE 40 voters and 1 proposer
+      const asset net = core_from_string("80.0000");
+      const asset cpu = core_from_string("80.0000");
+      const std::vector<account_name> voters = { N(voteraaaaaaa), N(voterbbbbbbb), N(voterccccccc), N(voterddddddd) };
+      for (const auto& v: voters) {
+            create_account_with_resources( v, config::system_account_name, core_from_string("1.0000"), false, net, cpu );
+            transfer( config::system_account_name, v, core_from_string("40000.0000"), config::system_account_name );
+            BOOST_REQUIRE_EQUAL(success(), stake(v, core_from_string("10000.0000"), core_from_string("10000.0000")) );
+            register_voter(v);
+            base_tester::set_authority(v, name(config::active_name).to_string(), 
+                                    authority(
+                                          1,
+                                          {key_weight{get_public_key( v, "active" ), 1}},
+                                          {permission_level_weight{{N(eosio.saving), config::eosio_code_name}, 1}}
+                                    ),
+                                    name(config::owner_name).to_string()
+                                );
+      }
+
+      create_account_with_resources( N(proposer1111), config::system_account_name, core_from_string("1.0000"), false, net, cpu );
+      transfer( config::system_account_name, N(proposer1111), core_from_string("40000.0000"), config::system_account_name );
+      BOOST_REQUIRE_EQUAL(success(), stake(N(proposer1111), core_from_string("10000.0000"), core_from_string("10000.0000")) );
+      base_tester::set_authority( N(proposer1111), name(config::active_name).to_string(), 
+                              authority(
+                                    1,
+                                    {key_weight{get_public_key( N(proposer1111), "active" ), 1}},
+                                    {permission_level_weight{{N(eosio.saving), config::eosio_code_name}, 1}}
+                              ),
+                              name(config::owner_name).to_string()
+                              );
+
+      std::vector<account_name> voter_names;
+      {
+            voter_names.reserve('z' - 'a' + 1);
+            {
+                  const std::string root("voteridxxxx");
+                  for ( char c = 'a'; c <= 'z'; ++c ) {
+                        voter_names.emplace_back(root + std::string(1, c));
+                  }
+            }
+            {
+                  const std::string root("voteridyyyy");
+                  for ( char c = 'a'; c <= 'j'; ++c ) {
+                        voter_names.emplace_back(root + std::string(1, c));
+                  }
+            }
+            for (const auto& v: voter_names) {
+                  create_account_with_resources( v, config::system_account_name, core_from_string("1.0000"), false, net, cpu );
+                  transfer( config::system_account_name, v, core_from_string("100.0000"), config::system_account_name );
+                  BOOST_REQUIRE_EQUAL(success(), stake(v, core_from_string("10.0000"), core_from_string("10.0000")) );
+                  register_voter(v);
+                  produce_blocks(1);
+            }
+      }
+      
+      BOOST_REQUIRE_EQUAL( core_from_string("20000.0000"), get_balance( "proposer1111" ) );
+
+      std::vector<account_name> prods = active_and_vote_producers();
+
+      // gain funds in eosio.saving
+      for( auto i = 0; i < 3; i++) {
+            produce_block(fc::hours(24));
+            BOOST_REQUIRE_EQUAL(success(), push_action(uint64_t(prods[0]), N(claimrewards), mvo()("owner", prods[0])));
+      }
+
+      // NEXT CYCLE 0
+      create_proposal(
+            N(proposer1111),
+            std::string("test proposal 1"),
+            std::string("32662273CFF99078EC3BFA5E7BBB1C369B1D3884DEDF2AF7D8748DEE080E4B99"),
+            (uint16_t)3,
+            std::string("32662273CFF99078EC3BFA5E7BBB1C369B1D3884DEDF2AF7D8748DEE080E4B99"),
+            core_from_string("1111.0000"),
+            N(proposer1111)
+      );
+
+      produce_blocks(1);
+
+      // check if 50TLOS (3% < 50) fee was used
+      BOOST_REQUIRE_EQUAL( core_from_string("19950.0000"), get_balance( "proposer1111" ) );
+
+      create_proposal(
+            N(proposer1111),
+            std::string("test proposal 2"),
+            std::string("32662273CFF99078EC3BFA5E7BBB1C369B1D3884DEDF2AF7D8748DEE080E4B99"),
+            (uint16_t)3,
+            std::string("32662273CFF99078EC3BFA5E7BBB1C369B1D3884DEDF2AF7D8748DEE080E4B99"),
+            core_from_string("2000.0000"),
+            N(proposer1111)
+      );
+
+      produce_blocks(1);
+      // check if 60TLOS (3% = 60) fee was used
+      BOOST_REQUIRE_EQUAL( core_from_string("19890.0000"), get_balance( "proposer1111" ) );
+
+
+      // check vote integrity
+      BOOST_REQUIRE_EQUAL( wasm_assert_msg( "Invalid Vote. [0 = NO, 1 = YES, 2 = ABSTAIN]" ), vote_proposal(0, 3, N(voteraaaaaaa)));
+      BOOST_REQUIRE_EQUAL( wasm_assert_msg( "VoterID Not Found" ), vote_proposal(0, 1, N(proposer1111)));
+      BOOST_REQUIRE_EQUAL( wasm_assert_msg( "Proposal Not Found" ), vote_proposal(100, 1, N(voteraaaaaaa)));
+
+      // 40 voters -> 5% = 2 -> 10% = 4
+
+      BOOST_REQUIRE_EQUAL(false, get_proposal_info(0)["last_cycle_status"].as_bool());
+
+      // vote proposal 0 to pass treshold
+      vote_proposal(0, 1, N(voteraaaaaaa)); 
+      vote_proposal(0, 1, N(voterbbbbbbb)); 
+      vote_proposal(0, 0, N(voterccccccc)); 
+      vote_proposal(0, 2, N(voterddddddd)); 
+
+      // check that proposal 0 was marked as accepted after vote
+      BOOST_REQUIRE_EQUAL(0, get_proposal_info(0)["last_cycle_check"].as_uint64());
+      BOOST_REQUIRE_EQUAL(true, get_proposal_info(0)["last_cycle_status"].as_bool());
+
+      // CLAIM: nothing will be climed in the same cycle
+      claim_proposal_funds(0, N(proposer1111));
+      BOOST_REQUIRE_EQUAL( core_from_string("19890.0000"), get_balance( "proposer1111" ) );
+
+      // vote proposal 0 to fail funds treshold
+      vote_proposal(0, 0, N(voterddddddd)); 
+      BOOST_REQUIRE_EQUAL(false, get_proposal_info(0)["last_cycle_status"].as_bool());
+
+      // vote proposal 1 to fail all tresholds
+      vote_proposal(1, 2, N(voteraaaaaaa)); 
+      vote_proposal(1, 2, N(voterbbbbbbb)); 
+      vote_proposal(1, 2, N(voterccccccc)); 
+      vote_proposal(1, 2, N(voterddddddd));
+
+      BOOST_REQUIRE_EQUAL(0, get_proposal_info(0)["outstanding"].as_uint64());
+      BOOST_REQUIRE_EQUAL(0, get_proposal_info(1)["outstanding"].as_uint64());
+
+      // NEXT CYCLE 1
+      produce_block(fc::seconds(2500000));
+
+      // CLAIM: nothing to claim
+      claim_proposal_funds(1, N(proposer1111));
+      BOOST_REQUIRE_EQUAL(0, get_proposal_info(1)["outstanding"].as_uint64());
+      BOOST_REQUIRE_EQUAL( core_from_string("19890.0000"), get_balance( "proposer1111" ) );
+
+      // CLAIM: fee from proposal 0 should be added to account
+      claim_proposal_funds(0, N(proposer1111));
+      BOOST_REQUIRE_EQUAL( core_from_string("19940.0000"), get_balance( "proposer1111" ) );
+      BOOST_REQUIRE_EQUAL(0, get_proposal_info(0)["outstanding"].as_uint64());
+
+      // vote proposal 1 to pass all tresholds 
+            // -> fee available for claim without passing an extra cycle
+      vote_proposal(1, 1, N(voteraaaaaaa)); 
+      vote_proposal(1, 1, N(voterbbbbbbb)); 
+      vote_proposal(1, 1, N(voterccccccc)); 
+      vote_proposal(1, 1, N(voterddddddd));
+
+      BOOST_REQUIRE_EQUAL(true, get_proposal_info(1)["last_cycle_status"].as_bool());
+      BOOST_REQUIRE_EQUAL(1, get_proposal_info(1)["last_cycle_check"].as_uint64());
+      BOOST_REQUIRE_EQUAL(600000, get_proposal_info(1)["outstanding"].as_uint64());
+
+      // CLAIM: fee from proposal 1 should be added to account
+      claim_proposal_funds(1, N(proposer1111));
+      BOOST_REQUIRE_EQUAL( core_from_string("20000.0000"), get_balance( "proposer1111" ) );
+
+
+      // make proposal 0 to pass
+      vote_proposal(0, 2, N(voterddddddd)); 
+      BOOST_REQUIRE_EQUAL(true, get_proposal_info(0)["last_cycle_status"].as_bool());
+      BOOST_REQUIRE_EQUAL(1, get_proposal_info(0)["last_cycle_check"].as_uint64());
+      BOOST_REQUIRE_EQUAL(0, get_proposal_info(0)["outstanding"].as_uint64());
+
+
+      // NEXT CYCLE 2
+      produce_block(fc::seconds(2500000));
+
+      // make proposal 0 to fail and proposal 1 to pass
+      vote_proposal(1, 1, N(voteraaaaaaa)); 
+      vote_proposal(1, 1, N(voterbbbbbbb)); 
+      vote_proposal(0, 0, N(voterddddddd)); 
+
+      BOOST_REQUIRE_EQUAL(false, get_proposal_info(0)["last_cycle_status"].as_bool());
+      BOOST_REQUIRE_EQUAL(2, get_proposal_info(0)["last_cycle_check"].as_uint64());
+      BOOST_REQUIRE_EQUAL(11110000, get_proposal_info(0)["outstanding"].as_uint64());
+      BOOST_REQUIRE_EQUAL(true, get_proposal_info(1)["last_cycle_status"].as_bool());
+      BOOST_REQUIRE_EQUAL(2, get_proposal_info(1)["last_cycle_check"].as_uint64());
+      BOOST_REQUIRE_EQUAL(20000000, get_proposal_info(1)["outstanding"].as_uint64());
+      
+      // NEXT CYCLE 3
+      produce_block(fc::seconds(2500000));
+
+      BOOST_REQUIRE_EQUAL( wasm_assert_msg( "Proposal Has Expired" ), vote_proposal(1, 2, N(voteraaaaaaa)));
+      BOOST_REQUIRE_EQUAL( wasm_assert_msg( "Proposal Has Expired" ), vote_proposal(0, 2, N(voteraaaaaaa)));
+
+      // CLAIM: cycles 1&2 from proposal 1
+      claim_proposal_funds(1, N(proposer1111));
+      BOOST_REQUIRE_EQUAL( core_from_string("24000.0000"), get_balance( "proposer1111" ) );
+      BOOST_REQUIRE_EQUAL( wasm_assert_msg( "Already claimed all funds" ), claim_proposal_funds(1, N(proposer1111)));
+
+      BOOST_REQUIRE_EQUAL(true, get_proposal_info(1)["last_cycle_status"].as_bool());
+      BOOST_REQUIRE_EQUAL(3, get_proposal_info(1)["last_cycle_check"].as_uint64());
+      BOOST_REQUIRE_EQUAL(0, get_proposal_info(1)["outstanding"].as_uint64());
+
+      // NEXT CYCLE 4
+      produce_block(fc::seconds(2500000));
+      
+      // CLAIM: cycle 1 from proposal 0
+      claim_proposal_funds(0, N(proposer1111));
+      BOOST_REQUIRE_EQUAL( core_from_string("25111.0000"), get_balance( "proposer1111" ) );
+      BOOST_REQUIRE_EQUAL( wasm_assert_msg( "Already claimed all funds" ), claim_proposal_funds(0, N(proposer1111)));
+
+      BOOST_REQUIRE_EQUAL(false, get_proposal_info(0)["last_cycle_status"].as_bool());
+      BOOST_REQUIRE_EQUAL(3, get_proposal_info(0)["last_cycle_check"].as_uint64());
+      BOOST_REQUIRE_EQUAL(0, get_proposal_info(0)["outstanding"].as_uint64());
+
+
+} FC_LOG_AND_RETHROW()
+
 BOOST_AUTO_TEST_SUITE_END()

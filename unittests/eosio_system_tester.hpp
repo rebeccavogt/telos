@@ -16,6 +16,12 @@
 #include <eosio.msig/eosio.msig.wast.hpp>
 #include <eosio.msig/eosio.msig.abi.hpp>
 
+#include <worker_proposal/worker_proposal.wast.hpp>
+#include <worker_proposal/worker_proposal.abi.hpp>
+
+#include <trail.service/trail.service.wast.hpp>
+#include <trail.service/trail.service.abi.hpp>
+
 #include <fc/variant_object.hpp>
 
 using namespace eosio::chain;
@@ -47,8 +53,7 @@ public:
       produce_blocks( 2 );
 
       create_accounts({ N(eosio.token), N(eosio.ram), N(eosio.ramfee), N(eosio.stake),
-               N(eosio.bpay), N(eosio.vpay), N(eosio.saving), N(eosio.names) });
-
+               N(eosio.bpay), N(eosio.vpay), N(eosio.saving), N(eosio.names), N(trailservice) });
 
       produce_blocks( 100 );
 
@@ -77,6 +82,28 @@ public:
       }
 
       set_kick(false);
+      
+      set_code( N(trailservice), trail_service_wast );
+      set_abi( N(trailservice), trail_service_abi );
+
+      {
+         const auto& accnt = control->db().get<account_object,by_name>( N(trailservice) );
+         abi_def abi;
+         BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt.abi, abi), true);
+         trail_abi_ser.set_abi(abi, abi_serializer_max_time);
+      }
+
+
+      set_code( N(eosio.saving), worker_proposal_wast );
+      set_abi( N(eosio.saving), worker_proposal_abi );
+
+      {
+         const auto& accnt = control->db().get<account_object,by_name>( N(eosio.saving) );
+         abi_def abi;
+         BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt.abi, abi), true);
+         wp_abi_ser.set_abi(abi, abi_serializer_max_time);
+      }
+
       produce_blocks();
 
       create_account_with_resources( N(alice1111111), config::system_account_name, core_from_string("1.0000"), false );
@@ -100,6 +127,45 @@ public:
    }
 
    //transaction_trace_ptr set_rotate(bool state) {}
+   
+   void create_proposal( account_name proposer, std::string title, std::string text, uint16_t cycles, std::string ipfs_location, asset amount, account_name send_to) {
+      base_tester::push_action(N(eosio.saving), N(propose), proposer, mvo()
+                              ("proposer",      proposer)
+                              ("title",         title)
+                              ("text",          text)
+                              ("cycles",        cycles)
+                              ("ipfs_location", ipfs_location)
+                              ("amount",        amount)
+                              ("send_to",       send_to));
+   }
+
+   void register_voter(account_name voter) {
+      base_tester::push_action(N(trailservice), N(regvoter), voter, mvo()("voter", voter));
+   }
+
+   action_result vote_proposal(uint64_t proposal_id, uint16_t direction, account_name voter) {
+      return push_wps_action(voter, N(vote), mvo()("proposal_id", proposal_id)("direction", direction)("voter", voter));
+   }
+
+   action_result claim_proposal_funds(uint64_t proposal_id, account_name receiver) {
+      return push_wps_action(receiver, N(claim), mvo()("proposal_id", proposal_id));
+   }
+
+   action_result push_wps_action( const account_name& signer, const action_name &name, const variant_object &data ) {
+      string action_type_name = wp_abi_ser.get_action_type(name);
+
+      action act;
+      act.account = N(eosio.saving);
+      act.name = name;
+      act.data = wp_abi_ser.variant_to_binary( action_type_name, data, abi_serializer_max_time );
+
+      return base_tester::push_action( std::move(act), uint64_t(signer));
+   }
+
+   fc::variant get_proposal_info( const uint64_t id ) {
+      vector<char> data = get_row_by_account( N(eosio.saving), N(eosio.saving), N(proposals), id );
+      return wp_abi_ser.binary_to_variant( "proposal", data, abi_serializer_max_time );
+   }
 
    void create_accounts_with_resources( vector<account_name> accounts, account_name creator = config::system_account_name ) {
       for( auto a : accounts ) {
@@ -559,6 +625,8 @@ public:
 
    abi_serializer abi_ser;
    abi_serializer token_abi_ser;
+   abi_serializer wp_abi_ser;
+   abi_serializer trail_abi_ser;
 };
 
 inline fc::mutable_variant_object voter( account_name acct ) {
