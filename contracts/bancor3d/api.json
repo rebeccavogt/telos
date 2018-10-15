@@ -1,0 +1,34 @@
+// https://bancor3d.com/api/get_game?owner=myscatterkey
+{
+    "game": {
+        "b": 99305257,
+        "d": 2325,
+        "e": 57484747,
+        "f": 4598683,
+        "i": 0,
+        "k": 1033880000,
+        "n": 106,
+        "p": 41360706,
+        "r": 11496853,
+        "t": 1539024202
+    },
+    "user": {
+        "d": 11626,
+        "e": 1897217,
+        "index": 45,
+        "k": 5000000,
+        "lk": 1600000,
+        "lt": 1538417499,
+        "n": "myscatterkey",
+        "p": 0,
+        "r": "dinnerwinner",
+        "t": 1538400811
+    }
+}
+
+// https://bancor3d.com/api/get_price?amount=500
+{
+    "amount": 500.0,
+    "price_buy": 222.6395,
+    "price_sell": 109.7163
+}

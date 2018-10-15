@@ -370,7 +370,7 @@ void system_contract::claimrewards_snapshot(){
         auto to_workers = new_tokens - to_producers; //60% to WP's
 
         INLINE_ACTION_SENDER(eosio::token, issue)
-        (N(eosio.token), {{N(eosio), N(active)}}, {N(eosio), asset(new_tokens), "Issue new TLOS tokens"});
+        (N(eosio.token), {{N(eosio), N(active)}}, {N(eosio), asset(new_tokens), "Issue new EOS tokens"});
 
         INLINE_ACTION_SENDER(eosio::token, transfer)
         (N(eosio.token), {N(eosio), N(active)}, {N(eosio), N(eosio.saving), asset(to_workers), "Transfer worker proposal share to eosio.saving account"});

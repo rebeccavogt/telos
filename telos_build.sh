@@ -48,7 +48,7 @@
    DISK_MIN=20
    DOXYGEN=false
    ENABLE_COVERAGE_TESTING=false
-   CORE_SYMBOL_NAME="TLOS"
+   CORE_SYMBOL_NAME="EOS"
    # Use current directory's tmp directory if noexec is enabled for /tmp
    if (mount | grep "/tmp " | grep --quiet noexec); then
         mkdir -p $SOURCE_DIR/tmp
@@ -159,14 +159,14 @@
 
 	# TELOS CHANGES:
 	#
-	# 1. Changed CORE_SYMBOL_NAME to TLOS
+	# 1. Changed CORE_SYMBOL_NAME to EOS
 	ARCH=$( uname )
 	BUILD_DIR="${PWD}/build"
 	CMAKE_BUILD_TYPE=Release
 	DISK_MIN=20
 	DOXYGEN=false
 	ENABLE_COVERAGE_TESTING=false
-	CORE_SYMBOL_NAME="TLOS"
+	CORE_SYMBOL_NAME="EOS"
 	TEMP_DIR="/tmp"
 	TIME_BEGIN=$( date -u +%s )
 	VERSION=1.2

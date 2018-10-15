@@ -1,0 +1,271 @@
+<html lang="en" class="fontawesome-i2svg-active fontawesome-i2svg-complete">
+
+<head>
+    <link rel="shortcut icon" type="image/png" href="./bancor3color.png?x-oss-process=image/resize,h_10">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no">
+    <meta name="theme-color" content="#343a40">
+    <meta name="description" content="Finally, we project the bancor into reality. Here we compress the time and quickly test the game under the Bancor pricing model.">
+    <meta name="keywords" content="EOS, scam, F3D, Fomo, Fomo3D, B3D, Bancor, Bancor3D, IBO, P3D, PoWH3D, Cryptocurrency, Gambling, Jackpot, Referral, Passive Income, UBI">
+    <link rel="stylesheet" href="./bootstrap.min.css">
+    <link rel="stylesheet" href="./bancor3d.css">
+    <link rel="stylesheet" href="./base.css">
+    <script async src="https://www.googletagmanager.com/gtag/js?id=xxxxxxxxxx"></script>
+    <script>window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'xxxxxxxxxx');</script>
+    <title>BANCOR 3D - AN ACCELERATED ECONOMIC GAME</title>
+</head>
+
+<body>
+    <div id="main-wrapper">
+        <header class="topbar fixed-top">
+            <module-navbar data-is="state-navbar">
+                <nav class="navbar navbar-expand-lg navbar-dark bg-dark jumboshade">
+                    <div class="container"><a class="navbar-brand" style="font-size:1.5rem" href=""><img style="width: 1rem"
+                                src="./bancor3d-white.png">&nbsp;BANCOR
+                            3D</a>
+                        <div class="dropdown">
+                            <a href="#" id="language">English</a> &nbsp;&nbsp;&nbsp; 
+                            <a href="./Bancor3DRules_v1.0_zh.pdf"
+                                id="text-rules" target="_blank">规则</a> &nbsp;&nbsp;&nbsp; <a href="#" id="log-btn">登录</a>
+                        </div>
+                        <div id="divselect">Select Account</div>
+                    </div>
+                </nav>
+            </module-navbar>
+        </header>
+    </div>
+    <div id="tunnel"></div><!-- advise!!! -->
+    <module-template data-is="state-play">
+        <div class="jumbotron rounded-0 text-center text-light teaser-cover">
+            <div class="container" id="startedContainer">
+                <h1 class="display-1 scammed">Bancor 3D</h1>
+                <h2 class="display-3"><span class="eosglitch titleglow-slow pot"></span> <span class="headtimer" id="headtimer"></span></h2>
+            </div>
+            <div class="container" id="toStartContainer" style="display: none">
+                <h1 class="display-1 scammed">Bancor 3D</h1>
+                <h2 class="display-3"><span class="headtimer" id="headtimer3"></span></h2>
+            </div>
+            <div class="container container-main" style="display: none">
+                <h2><a href="#" id="log-btn-main">登录</a></h2><br>
+            </div>
+        </div>
+        <div class="container" style="margin-top:-3rem;">
+            <div class="row">
+                <div class="col-sm">
+                    <ul class="nav nav-tabs tabs-border-adjust" id="buyTabs" role="tablist">
+                        <li class="nav-item tab-item"><a class="nav-link tab-link active" id="purchaseTab" data-toggle="tab"
+                                href="#purchaseArea" role="tab" aria-controls="purchaseArea" aria-selected="true">购买</a></li>
+                        <li class="nav-item tab-item"><a class="nav-link tab-link" id="sellTab" data-toggle="tab" href="#sellArea"
+                                role="tab" aria-controls="sellArea" aria-selected="false">出售</a></li>
+                        <li class="nav-item tab-item"><a class="nav-link tab-link" id="inviteTab" data-toggle="tab"
+                                href="#inviteArea" role="tab" aria-controls="inviteArea" aria-selected="false">邀请奖励</a></li>
+                    </ul>
+                    <div class="tab-content" id="buyArea">
+                        <div class="tab-pane fade show active" id="purchaseArea">
+                            <div class="jumbotron jumbotron-adjust text-light bg-dark jumboshade tab-rounded">
+                                <div class="row">
+                                    <div class="col">
+                                        <div id="purchase" class="tab-pane fade show active" role="tabpanel">
+                                            <div class="row" id="purchase">
+                                                <div class="col">
+                                                    <div class="input-group mb-3">
+                                                        <div class="input-group-prepend"><span class="input-group-text"><img
+                                                                    src="./key.png"></span></div><input
+                                                            type="text" class="form-control text-center" value="10" id="keysToBuy"
+                                                            oninput="fetchPrice('BUY');">
+                                                        <div class="input-group-append"><span class="input-group-text"
+                                                                id="current-money-buy">loading...</span></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row marginb">
+                                                <div class="col">
+                                                    <div class="btn-group d-flex" role="group"><button class="btn btn-outline-yel w-100 increment"
+                                                            id="btnAdd10">+ 10 Keys</button> <button class="btn btn-outline-yel w-100 increment"
+                                                            id="btnAdd100">+ 100 Keys</button> <button class="btn btn-outline-yel w-40 increment"
+                                                            id="btnAdd200">+ 200</button> <button class="btn btn-outline-yel w-30 increment"
+                                                            id="btnAdd500">+ 500</button> <button class="btn btn-outline-yel w-30 increment"
+                                                            id="btnAdd1000">+ 1000</button></div>
+                                                </div>
+                                            </div>
+                                            <div class="row" style="position: relative;">
+                                                <div class="col"><button type="button" id="tixBuy" class="btn btn-block btn-blu btn-lg ticketProcess">购买</button></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="sellArea">
+                            <div class="jumbotron jumbotron-adjust text-light bg-dark jumboshade tab-rounded">
+                                <div class="row">
+                                    <div class="col">
+                                        <p class="lead nomarginb" id="text-sell">出售</p>
+                                    </div>
+                                </div>
+                                <div class="jumbotron jumbotron-adjust teamscore">
+                                    <div class="row">
+                                        <div class="col">
+                                            <div id="sell" class="tab-pane fade show active" role="tabpanel">
+                                                <div class="row" id="sell">
+                                                    <div class="col">
+                                                        <div class="input-group mb-3">
+                                                            <div class="input-group-prepend"><span class="input-group-text"><img
+                                                                        src="./key.png"></span></div><input
+                                                                type="text" class="form-control text-center" value="100"
+                                                                id="keysToSell" oninput="fetchPrice('SELL');">
+                                                            <div class="input-group-append"><span class="input-group-text"
+                                                                    id="current-money-sell">loading...</span></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="row" style="position: relative;">
+                                                    <div class="col"><button type="button" id="tixSell" class="btn btn-block ticketProcess">出售
+                                                            KEY</button></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <hr>
+                                    <div class="row">
+                                        <div class="col">
+                                            <p class="lead" id="text-withdraw">提出</p>
+                                        </div>
+                                        <div class="col">
+                                            <p class="h3 text-right glow-slow gains">0.0000 EOS</p>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col">
+                                            <p class="text-right nomarginb"><button href="" class="btn btn-outline-purp btn-block"
+                                                    id="withdrawEarnings">提出</button></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="inviteArea">
+                            <div class="jumbotron jumbotron-adjust text-light bg-dark jumboshade tab-rounded">
+                                <div class="row">
+                                    <div class="col">
+                                        <p class="lead nomarginb" id="text-refer">邀请好友，获得10%奖励:</p>
+                                    </div>
+                                </div><br>
+                                <div class="row">
+                                    <div class="col" id="refUrl">https://bancor3d.com?ref=dinnerwinner</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm">
+                    <ul class="nav nav-tabs tabs-border-adjust" id="statTabs" role="tablist">
+                        <li class="nav-item tab-item"><a class="nav-link tab-link active" id="potTab" data-toggle="tab"
+                                href="#potArea" role="tab" aria-controls="potArea" aria-selected="true">凯恩斯实验</a></li>
+                    </ul>
+                    <div class="tab-content" id="statArea">
+                        <div class="tab-pane fade show active" id="potArea" role="tabpanel" aria-labelledby="potArea">
+                            <div class="jumbotron jumbotron-adjust text-light bg-dark jumboshade tab-rounded">
+                                <div class="jumbotron jumbotron-adjust teamscore">
+                                    <div class="row nomarginb">
+                                        <div class="col-auto">
+                                            <p class="h4 h4-text" id="text-reward">凯恩斯大奖</p>
+                                        </div>
+                                        <div class="col">
+                                            <p class="h2 text-h2 text-right glow-slow ethglitch pot">loading...</p>
+                                        </div>
+                                    </div>
+                                    <div class="row nomarginb">
+                                        <div class="col">
+                                            <p class="h4 h4-text" id="text-keys">Key金额</p>
+                                        </div>
+                                        <div class="col">
+                                            <p class="h2 text-h2 text-right" id="your-keys">0.00 KEY</p>
+                                        </div>
+                                    </div>
+                                    <div class="row marginb">
+                                        <div class="col text-right" id="total-keys">loading...</div>
+                                    </div>
+                                    <div class="row nomarginb">
+                                        <div class="col">
+                                            <p class="h4 h4-text" id="text-hodl">持Key时间</p>
+                                        </div>
+                                        <div class="col">
+                                            <p class="h2 text-h2 text-right" id="hodl-time">0 Hours</p>
+                                        </div>
+                                    </div>
+                                    <div class="row nomarginb">
+                                        <div class="col">
+                                            <p class="h4 h4-text" id="text-eos-reward">EOS分红</p>
+                                        </div>
+                                        <div class="col">
+                                            <p class="h2 text-h2 text-right gains" id="rewards">0.0000 EOS</p>
+                                        </div>
+                                    </div>
+                                    <div class="row marginb">
+                                        <div class="col text-right" id="eos-balance">账户金额 0.00 EOS</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </module-template>
+    <div class="modal" id="exampleModal" role="dialog" aria-labelledby="exampleModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">祝贺你</h5><button type="button" class="close"
+                        data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="modal-img">
+                        <div id="modal-text"></div>
+                        <div id="modal-advice"></div>
+                        <div id="modal-keynes"></div>
+                        <div id="modal-date"></div><br>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div id="text-bancor3d" style="padding-right: 2rem;">Bancor3D.com 一场加速版经济学实验</div><button type="button"
+                        class="btn btn-secondary" data-dismiss="modal" id="text-close">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <noscript id="deferred-styles">
+        <link rel="stylesheet" href="./alertify.css">
+        <link rel="stylesheet" href="./dialog.css">
+    </noscript>
+
+    <script>var loadDeferredStyles = function () {
+            var addStylesNode = document.getElementById("deferred-styles");
+            var replacement = document.createElement("div");
+            replacement.innerHTML = addStylesNode.textContent;
+            document.body.appendChild(replacement)
+            addStylesNode.parentElement.removeChild(addStylesNode);
+        };
+        var raf = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
+            window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+        if (raf) raf(function () { window.setTimeout(loadDeferredStyles, 0); });
+        else window.addEventListener('load', loadDeferredStyles);
+    </script>
+    <script src="./js/jquery.min.js"></script>
+    <script src="./js/alertify.js"></script>
+    <script src="./js/bootstrap.min.js"></script>
+    <script src="./js/eos.min.js"></script>
+    <script src="./js/tp.js"></script>
+    <script src="./js/mDialogMin.js"></script>
+    <script src="./js/three.min.js"></script>
+    <script src="./js/tunnel.min.js"></script>
+    <script src="./js/bancor3d.js"></script>
+</body>
+
+</html>

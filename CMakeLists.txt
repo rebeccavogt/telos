@@ -193,9 +193,9 @@ add_subdirectory( externals )
 
 # TELOS CHANGES:
 #
-# 1. Changed core symbol to TLOS
+# 1. Changed core symbol to EOS
 if ("${CORE_SYMBOL_NAME}" STREQUAL "")
-  set( CORE_SYMBOL_NAME "TLOS" )
+  set( CORE_SYMBOL_NAME "EOS" )
 endif()
 string(TOUPPER ${CORE_SYMBOL_NAME} CORE_SYMBOL_NAME)
 
@@ -208,7 +208,7 @@ message( STATUS "Using '${CORE_SYMBOL_NAME}' as CORE symbol name" )
 
 # TELOS CHANGES:
 #
-# 1. Updated EOSIO_ROOT_KEY with TLOS prepend
+# 1. Updated EOSIO_ROOT_KEY with EOS prepend
 if ("${EOSIO_ROOT_KEY}" STREQUAL "")
    set(EOSIO_ROOT_KEY "EOS6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV")
 endif()
