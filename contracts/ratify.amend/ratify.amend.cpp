@@ -123,11 +123,6 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
         }
     }
 
-    if (first_row == votedeltas.end()) {
-        print("\nemplaced new votereceipt");
-        //emplace new
-    }
-
     /*
     voters_table voters(N(eosio.trail), voter);
     auto v = voters.find(voter);

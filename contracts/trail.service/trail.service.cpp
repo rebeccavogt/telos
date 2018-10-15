@@ -261,13 +261,14 @@ extern "C" {
             auto by_acct_idx = votedeltas.get_index<N(byvoter)>();
             auto first_row = by_acct_idx.lower_bound(args.from);
             auto last_row = by_acct_idx.upper_bound(args.from);
-            
+
             for (auto itr = first_row; itr != last_row; itr++) {
                 if (now() <= itr->expiration) {
                     print("\nupdating weight for receipt_id: ", itr->receipt_id);
-                    //votedeltas.modify(itr, 0, [&]( auto& a ) {
-                        //a.weight = new_weight;
-                    //});
+
+                    votedeltas.modify(itr, 0, [&]( auto& a ) {
+                        a.weight = new_weight;
+                    });
                 }
             }
 
