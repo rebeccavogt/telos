@@ -65,7 +65,7 @@ void system_contract::add_producer_to_kick_list(offline_producer producer) {
     if(active_schedule_size > 1 && !reach_consensus()) kick_producer();
 }
 
-void system_contract::remove_producer_to_kick_list(offline_producer producer) {
+void system_contract::remove_producer_from_kick_list(offline_producer producer) {
   // verify if bp was missing blocks
     account_name bp_name = producer.name;
     auto bp = std::find_if(_grotations.offline_bps.begin(), _grotations.offline_bps.end(), [&bp_name](const offline_producer &op) {
@@ -73,7 +73,7 @@ void system_contract::remove_producer_to_kick_list(offline_producer producer) {
     });   
    
   // producer found
-  if (bp != _grotations.offline_bps.end()) _grotations.offline_bps.erase(bp, _grotations.offline_bps.end());
+  if (bp != _grotations.offline_bps.end()) _grotations.offline_bps.erase(bp);
 }
 
 void system_contract::kick_producer() {
@@ -87,8 +87,9 @@ void system_contract::kick_producer() {
         auto bp = _producers.find(obp.name);
 
         _producers.modify(bp, 0, [&](auto &p) {
-            p.deactivate();
-            remove_producer_to_kick_list(obp);
+            // p.deactivate();
+            p.kick(kick_type::PREVENT_LIB_STOP_MOVING);
+            remove_producer_from_kick_list(obp);
         });
 
         if(reach_consensus()) break;
@@ -124,7 +125,7 @@ void system_contract::set_producer_block_produced(account_name producer, uint32_
         else p.blocks_per_cycle += amount;
         
         offline_producer op{p.owner, p.total_votes, p.missed_blocks};
-        remove_producer_to_kick_list(op);
+        remove_producer_from_kick_list(op);
     });
   }
 }
@@ -137,8 +138,9 @@ void system_contract::set_producer_block_missed(account_name producer, uint32_t 
 
         offline_producer op{p.owner, p.total_votes, p.missed_blocks};
         if(crossed_missed_blocks_threshold(p.missed_blocks)) {
-            p.deactivate();
-            remove_producer_to_kick_list(op);
+            // p.deactivate();
+            p.kick(kick_type::REACHED_TRESHOLD);
+            remove_producer_from_kick_list(op);
         } else if(op.missed_blocks > 0) add_producer_to_kick_list(op);
     });
   }
@@ -153,14 +155,17 @@ void system_contract::update_producer_blocks(account_name producer, uint32_t amo
 
         offline_producer op{p.owner, p.total_votes, p.missed_blocks};
         if(crossed_missed_blocks_threshold(p.missed_blocks)) {
-            p.deactivate();
-            remove_producer_to_kick_list(op);
+            // p.deactivate();
+            p.kick(kick_type::REACHED_TRESHOLD);
+            remove_producer_from_kick_list(op);
         } else if(op.missed_blocks > 0) add_producer_to_kick_list(op);
       });    
   }
 }
 
 void system_contract::check_missed_blocks(block_timestamp timestamp, account_name producer) { 
+    if(producer == N(eosio)) return;
+    
     if(_grotations.last_onblock_caller == 0) {
         _grotations.last_time_block_produced = timestamp;
         _grotations.last_onblock_caller = producer;
