@@ -258,51 +258,22 @@ extern "C" {
             asset new_weight = (args.stake_cpu_quantity + args.stake_net_quantity);
 
             deltas_table votedeltas(self, self);
-            auto by_acct_idx = votedeltas.get_index<N(byvoter)>();
-            auto first_row = by_acct_idx.lower_bound(args.from);
-            auto last_row = by_acct_idx.upper_bound(args.from);
+            auto by_voter = votedeltas.get_index<N(byvoter)>();
+            auto first_row = by_voter.lower_bound(args.from);
+            //auto last_row = by_acct_idx.upper_bound(args.from);
 
-            for (auto itr = first_row; itr != last_row; itr++) {
-                if (now() <= itr->expiration) {
-                    print("\nupdating weight for receipt_id: ", itr->receipt_id);
-
-                    votedeltas.modify(itr, 0, [&]( auto& a ) {
-                        a.weight = new_weight;
-                    });
-                }
+            if (first_row != votedeltas.end()) {
+                
             }
 
-            /*
-            for (const auto &d : deltas) {
-                print("\nchecking receipt of: ", name{args.from});
-                if (now() <= d.expiration) {
 
-                    votedeltas.modify(d, 0, [&]( auto& a ) {
-                        a.weight = new_weight;
-                    });
-
-                    print("\nupdated weight of receipt_id: ", d.receipt_id);
-                }
-            }
-            */
-            
-            /*
-            voters_table voters(self, args.from);
-            auto v = voters.find(args.from);
-            if (v == voters.end()) {
-                print("\nvoter not found");
-            }
-            if (v != voters.end()) {
-                auto vid = *v;
-                for (votereceipt vr : vid.receipt_list) {
-                    if (vr.expiration > now() && vr.vote_token == asset(0).symbol.name()) {
-                        //require_recipient(vr.vote_code);
-
-                        
-                    }
-                }
-            }
-            */
+            //for (auto itr = first_row; itr != last_row; itr++) {
+                //if (now() <= itr->expiration) {
+                    //votedeltas.modify(itr, 0, [&]( auto& a ) {
+                        //a.weight = new_weight;
+                    //});
+                //}
+            //}
 
         }
     } //end apply
