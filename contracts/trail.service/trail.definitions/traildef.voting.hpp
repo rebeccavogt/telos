@@ -29,7 +29,7 @@ using namespace eosio;
  * TODO: Could this be EOSLIB_SERIALIZED? stored in vector, not directly in table
  * TODO: reformat for removal of voterID struct, instead votereceipts are stored directly and indexed by 64 bit hash of code + scope + key
  */
-struct votereceipt {
+struct votereceipt { //TODO: deprecate
     uint64_t vote_code;
     uint64_t vote_scope;
     uint64_t vote_key;
@@ -51,6 +51,23 @@ struct voterid {
 
     uint64_t primary_key() const { return voter; }
     EOSLIB_SERIALIZE(voterid, (voter)(receipt_list))
+};
+
+/// @abi table votereceipts i64
+struct vote_delta {
+    uint64_t receipt_id;
+    account_name voter;
+    uint64_t vote_code;
+    uint64_t vote_scope;
+    uint64_t prop_id; //rename?
+    uint16_t direction;
+    asset weight;
+    uint32_t expiration;
+
+    uint64_t primary_key() const { return receipt_id; }
+    uint64_t by_voter() const { return voter; }
+    uint64_t by_code() const { return vote_code; }
+    EOSLIB_SERIALIZE(vote_delta, (receipt_id)(voter)(vote_code)(vote_scope)(prop_id)(direction)(weight)(expiration))
 };
 
 /**
@@ -79,7 +96,13 @@ struct ballot {
 };
 
 typedef multi_index<N(voters), voterid> voters_table;
+
 typedef multi_index<N(ballots), ballot> ballots_table;
+
+typedef multi_index<N(votedeltas), vote_delta,
+    indexed_by<N(bycode), const_mem_fun<vote_delta, uint64_t, &vote_delta::by_code>>,
+    indexed_by<N(byvoter), const_mem_fun<vote_delta, uint64_t, &vote_delta::by_voter>>> deltas_table;
+
 typedef singleton<N(environment), environment> environment_singleton;
 
 bool is_voter(account_name voter) {

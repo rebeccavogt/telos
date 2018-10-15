@@ -252,43 +252,43 @@ extern "C" {
             execute_action(&_trail, &trail::regballot);
         } else if (code == self && action == N(unregballot)) {
             execute_action(&_trail, &trail::unregballot);
-        } else if (code == N(eosio) && action == N(delegatebw)) { //TODO: case for undelegatebw
-            print("\neosio.trail received delegatebw action copy from eosio");
-            //if (args.from == args.receiver) {} //only care about delegatebw to self
-            //require_recipient(N(eosio.amend)); //forwards delegatebw action to eosio.amend account
-            auto args = unpack_action_data<delegatebw_args>(); //NOTE: custom struct to represent delegatebw params
+        } else if (code == N(eosio) && action == N(delegatebw)) {
+            auto args = unpack_action_data<delegatebw_args>();
+            deltas_table votedeltas(self, self);
+            auto by_acct_idx = votedeltas.get_index<N(byaccount)>();
+            auto deltas = by_acct_idx.find(args.from);
+            asset new_weight = (args.stake_cpu_quantity + args.stake_net_quantity);
 
-            print("\nsearching for: ", name{args.from});
+            for (vote_delta d : deltas) {
+                print("\nchecking receipt of: ", name{args.from});
+                if (now() <= d.expiration) {
 
+                    votedeltas.modify(d, 0, [&]( auto& a ) {
+                        a.weight = new_weight;
+                    });
+
+                    print("\nupdated weight of receipt_id: ", d.receipt_id);
+                }
+            }
+            
+            /*
             voters_table voters(self, args.from);
             auto v = voters.find(args.from);
-
             if (v == voters.end()) {
                 print("\nvoter not found");
             }
-
-            if (v != voters.end()) { //only forwards delegate/undelegate action if sent by a registered voter
+            if (v != voters.end()) {
                 auto vid = *v;
-
-                print("\nvoter found...searching receipt list...");
-
                 for (votereceipt vr : vid.receipt_list) {
-                    if (vr.expiration > now() && vr.vote_token == asset(0).symbol.name()) { //NOTE: only works when voted token is TLOS
+                    if (vr.expiration > now() && vr.vote_token == asset(0).symbol.name()) {
+                        //require_recipient(vr.vote_code);
 
-                        action::action(permission_level{ N(eosio.trail), N(active) }, vr.vote_code, N(vote), make_tuple(
-    	                    vr.vote_key,
-                            vr.direction,
-                            args.receiver
-	                    )).send();
-
-                        print("\nvote action sent to: ", name{vr.vote_code});
-                        print(" for proposal: ", vr.vote_key);
-                        print("\nsent by: ", args.from);
+                        
                     }
                 }
             }
+            */
 
-            //print("\nvoter not found");
         }
     } //end apply
 };

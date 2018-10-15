@@ -80,15 +80,6 @@ class trail : public contract {
         void rmvexpvotes(account_name voter);
 
         /**
-         * Removes a receipt from the receipt list on a VoterID.
-         * @param vote_code - 
-         * @param vote_scope - 
-         * @param vote_key - 
-         * @param voter - 
-        */
-        //void rmvreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, account_name voter);
-
-        /**
          * 
          */
         /// @abi action
