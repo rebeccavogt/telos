@@ -17,7 +17,7 @@
 #include <algorithm>
 #include <cmath>
 
-#define VOTE_VARIATION             0.001
+
 #define TWELVE_HOURS_US  43200000000
 #define SIX_HOURS_US     21600000000
 #define SIX_MINUTES_US     360000000 // debug version
@@ -252,9 +252,9 @@ namespace eosiosystem {
         return 0;
      }
 
-     double k = 1 - VOTE_VARIATION;
-     
-     return (k * sin(M_PI_2 * (amountVotedProducers / totalProducers)) + VOTE_VARIATION) * double(staked);
+     double percentVoted = amountVotedProducers / totalProducers;
+     double voteWeight = (sin(M_PI * percentVoted - M_PI_2) + 1.0) / 2.0;
+     return (voteWeight * staked);
    }
 
 
