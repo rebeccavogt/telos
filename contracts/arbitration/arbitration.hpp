@@ -7,7 +7,7 @@
  * @copyright defined in telos/LICENSE.txt
  */
 
-#include <../trail.service/trail.connections/trailconn.voting.hpp>
+// #include <../trail.service/trail.connections/trailconn.voting.hpp>
 
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/permission.hpp>
@@ -113,7 +113,7 @@ class arbitration : public contract {
             //vector<string> languages; //NOTE: language codes for space
 
             uint64_t primary_key() const { return arb; }
-            EOSLIB_SERIALIZE(arbitrator, (arb)(status)(open_case_ids)(closed_case_ids))
+            EOSLIB_SERIALIZE(arbitrator, (arb)(arb_status)(open_case_ids)(closed_case_ids))
         };
 
         struct claim {
@@ -122,7 +122,7 @@ class arbitration : public contract {
             vector<uint64_t> accepted_ev_ids; //accepted and emplaced by arb
             uint16_t class_decision; //initialized to UNDECIDED (0)
 
-            EOSLIB_SERIALIZE(claim, (class_suggestion)(submitted_evidence)(accepted_ev_ids)(class_decision))
+            EOSLIB_SERIALIZE(claim, (class_suggestion)(submitted_pending_evidence)(accepted_ev_ids)(class_decision))
         };
 
         //TODO: evidence types?
@@ -199,7 +199,7 @@ class arbitration : public contract {
 
 		//TODO: Set case respondant action
 
-        void dismisscase(uint64_t case_id, account_name arb); //TODO: require rationale?
+        void dismisscase(uint64_t case_id, account_name arb, string ipfs_url); //TODO: require rationale?
 
         void closecase(uint64_t case_id, account_name closer, string ipfs_url); //TODO: require decision?
 
