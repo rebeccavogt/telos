@@ -92,7 +92,6 @@ class trail : public contract {
         void unregballot(account_name publisher);
 
     protected:
-
         environment_singleton env_singleton;
         environment env_struct;
 };

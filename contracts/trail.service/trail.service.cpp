@@ -253,14 +253,24 @@ extern "C" {
         } else if (code == self && action == N(unregballot)) {
             execute_action(&_trail, &trail::unregballot);
         } else if (code == N(eosio) && action == N(delegatebw)) {
+
             auto args = unpack_action_data<delegatebw_args>();
-            deltas_table votedeltas(self, self);
-            auto by_acct_idx = votedeltas.get_index<N(byvoter)>();
-            auto deltas = by_acct_idx.lower_bound(args.from);
             asset new_weight = (args.stake_cpu_quantity + args.stake_net_quantity);
 
-            //auto itr = by_acct_idx.begin();
+            deltas_table votedeltas(self, self);
+            auto by_acct_idx = votedeltas.get_index<N(byvoter)>();
+            auto first_row = by_acct_idx.lower_bound(args.from);
+            auto last_row = by_acct_idx.upper_bound(args.from);
 
+            for (auto itr = first_row; itr != last_row; itr++) {
+                if (now() <= itr->expiration) {
+                    votedeltas.modify(itr, 0, [&]( auto& a ) {
+                        a.weight = new_weight;
+                    });
+                }
+            }
+
+            /*
             for (const auto &d : deltas) {
                 print("\nchecking receipt of: ", name{args.from});
                 if (now() <= d.expiration) {
@@ -272,7 +282,7 @@ extern "C" {
                     print("\nupdated weight of receipt_id: ", d.receipt_id);
                 }
             }
-            
+            */
             
             /*
             voters_table voters(self, args.from);
