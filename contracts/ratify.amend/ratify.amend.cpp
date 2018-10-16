@@ -109,6 +109,7 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
     deltas_table votedeltas(N(eosio.trail), N(eosio.trail));
     auto by_voter = votedeltas.get_index<N(byvoter)>();
     auto itr = by_voter.lower_bound(voter);
+    auto new_weight = get_staked_tlos(voter);
 
     if (itr != by_voter.end()) {
         while(itr->voter == voter && itr != by_voter.end()) {
@@ -116,7 +117,7 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
                 
                 by_voter.modify(itr, 0, [&]( auto& a ) {
                     a.direction = direction;
-                    a.weight = get_staked_tlos(voter);
+                    a.weight = new_weight;
                 });
 
                 print("\nupdated weight for id: ", itr->receipt_id);
