@@ -126,7 +126,6 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
         }
     } else {
         auto new_pk = by_voter.available_primary_key();
-        auto new_weight = get_staked_tlos(voter);
 
         by_voter.emplace(voter, [&]( auto& a ){
             a.receipt_id = new_pk;

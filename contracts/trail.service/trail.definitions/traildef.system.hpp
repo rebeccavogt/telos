@@ -89,34 +89,32 @@ int64_t get_eosio_token_balance(symbol_name sym, account_name owner) {
     return amount / p10;
 }
 
-int64_t get_liquid_tlos(account_name owner) {
+asset get_liquid_tlos(account_name owner) {
     accounts accountstable(N(eosio.token), owner);
-    auto a = accountstable.find(asset(int64_t(0), S(4, TLOS)).symbol.name()); //TODO: find better way to get TLOS symbol?
+    auto a = accountstable.find(asset(0).symbol.name());
 
-    int64_t liquid_tlos = 0;
+    int64_t amount = 0;
 
     if (a != accountstable.end()) {
         auto acct = *a;
-        liquid_tlos = acct.balance.amount / int64_t(10000); //divide to get post-precision balance
+        amount = acct.balance.amount;
     }
     
-    return liquid_tlos;
+    return asset(amount);
 }
 
-int64_t get_staked_tlos(account_name owner) {
+asset get_staked_tlos(account_name owner) {
     user_resources_table userres(N(eosio), owner);
     auto r = userres.find(owner);
 
-    int64_t staked_tlos = 0;
+    int64_t amount = 0;
 
     if (r != userres.end()) {
         auto res = *r;
-        staked_tlos = (res.cpu_weight.amount + res.net_weight.amount) / int64_t(10000); //divide to get post-precision balance
+        amount = (res.cpu_weight.amount + res.net_weight.amount);
     }
     
-    return staked_tlos;
+    return asset(amount);
 }
-
-//TODO: implement get_delegated_tlos()
 
 #pragma endregion Custom_Functions
