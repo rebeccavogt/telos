@@ -259,21 +259,17 @@ extern "C" {
 
             deltas_table votedeltas(self, self);
             auto by_voter = votedeltas.get_index<N(byvoter)>();
-            auto first_row = by_voter.lower_bound(args.from);
-            //auto last_row = by_acct_idx.upper_bound(args.from);
+            auto itr = by_voter.lower_bound(args.from);
 
-            if (first_row != votedeltas.cend()) {
-                
+            while(itr->voter == args.from) {
+                if (now() <= itr->expiration) {
+                    by_voter.modify(itr, 0, [&]( auto& a ) {
+                        a.weight = new_weight;
+                    });
+                    print("\npropagated weight change to id: ", itr->receipt_id);
+                }
+                itr++;
             }
-
-
-            //for (auto itr = first_row; itr != last_row; itr++) {
-                //if (now() <= itr->expiration) {
-                    //votedeltas.modify(itr, 0, [&]( auto& a ) {
-                        //a.weight = new_weight;
-                    //});
-                //}
-            //}
 
         }
     } //end apply

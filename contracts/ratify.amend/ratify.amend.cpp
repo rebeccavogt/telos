@@ -103,25 +103,40 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
     proposals_table proposals(_self, _self);
     auto p = proposals.find(proposal_id);
     eosio_assert(p != proposals.end(), "Proposal Not Found");
-    
-    print("\nProposal Found");
     auto prop = *p;
-
     eosio_assert(prop.expiration > now(), "Proposal Has Expired");
 
-    deltas_table votedeltas(_self, _self);
-    auto by_acct_idx = votedeltas.get_index<N(byvoter)>();
-    auto first_row = by_acct_idx.lower_bound(voter);
-    auto last_row = by_acct_idx.upper_bound(voter);
+    deltas_table votedeltas(N(eosio.trail), N(eosio.trail));
+    auto by_voter = votedeltas.get_index<N(byvoter)>();
+    auto itr = by_voter.lower_bound(voter);
 
-    for (auto itr = first_row; itr != last_row; itr++) {
-        if (now() <= itr->expiration && itr->vote_code == _self && itr->vote_scope == _self && itr->prop_id == proposal_id) {
-            print("\nupdating weight for receipt_id: ", itr->receipt_id);
-            //votedeltas.modify(itr, 0, [&]( auto& a ) {
-                //a.weight = new_weight;
-            //});
+    if (itr != by_voter.end()) {
+        while(itr->voter == voter && itr != by_voter.end()) {
+            if (now() <= itr->expiration && itr->prop_id == proposal_id) {
+                
+                by_voter.modify(itr, 0, [&]( auto& a ) {
+                    a.direction = direction;
+                    a.weight = new_weight;
+                });
+
+                print("\nupdated weight for id: ", itr->receipt_id);
+            }
+            itr++;
         }
+    } else {
+        by_voter.emplace(voter, [&]( auto& a ){
+            a.receipt_id = by_voters.available_primary_key();
+            a.voter = voter;
+            a.vote_code = _self;
+            a.vote_scope = _self;
+            a.prop_id = proposal_id;
+            a.direction = direction;
+            a.weight = get_staked_tlos(voter);
+            a.expiration = prop.expiration;
+        });
     }
+
+    
 
     /*
     voters_table voters(N(eosio.trail), voter);
@@ -235,69 +250,7 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
     */
 }
 
-/*
-void ratifyamend::unvote(uint64_t proposal_id, account_name voter) {
-    voters_table voters(N(eosio.trail), voter);
-    auto v = voters.find(voter);
-
-    eosio_assert(v != voters.end(), "VoterID Not Found");
-    
-    print("\nVoterID Found");
-    auto vid = *v;
-
-    eosio_assert(vid.receipt_list.size() > 0, "No votes in list to unvote");
-
-    proposals_table proposals(_self, _self);
-    auto p = proposals.find(proposal_id);
-    eosio_assert(p != proposals.end(), "Proposal Not Found");
-    
-    print("\nProposal Found");
-    auto prop = *p;
-
-    auto itr = vid.receipt_list.begin();
-    int64_t weight = 0;
-    uint16_t direction;
-
-    for (votereceipt r : vid.receipt_list) {
-        if (r.vote_key == proposal_id) {
-            weight = r.weight;
-            direction = r.direction;
-
-            print("\nReceipt removed");
-
-            break;
-        }
-
-        itr++;
-    }
-
-    eosio_assert(itr != vid.receipt_list.end(), "Receipt doesn't exist");
-
-    if (prop.status == 0) {
-
-        switch (direction) {
-            case 0 : prop.no_count = (prop.no_count - uint64_t(weight)); break;
-            case 1 : prop.yes_count = (prop.yes_count - uint64_t(weight)); break;
-            case 2 : prop.abstain_count = (prop.abstain_count - uint64_t(weight)); break;
-        }
-
-        proposals.modify(p, 0, [&]( auto& a ) {
-            a.no_count = prop.no_count;
-            a.yes_count = prop.yes_count;
-            a.abstain_count = prop.abstain_count;
-        });
-    }
-
-    action(permission_level{ voter, N(active) }, N(eosio.trail), N(rmvreceipt), make_tuple(
-    	_self,      
-    	_self,
-    	prop.id,
-        voter
-	)).send();
-}
-*/
-
-void ratifyamend::close(uint64_t proposal_id) { //TODO: add require_auth for proposer?
+void ratifyamend::close(uint64_t proposal_id) {
     proposals_table proposals(_self, _self);
     auto p = proposals.find(proposal_id);
 
