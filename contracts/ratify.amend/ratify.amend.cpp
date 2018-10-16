@@ -115,7 +115,7 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
         while(itr->voter == voter && itr != by_voter.end()) {
             if (now() <= itr->expiration && itr->prop_id == proposal_id) {
                 
-                by_voter.emplace(itr, 0, [&]( auto& a ) {
+                by_voter.modify(itr, 0, [&]( auto& a ) {
                     a.direction = direction;
                     a.weight = new_weight;
                 });
@@ -125,9 +125,9 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
             itr++;
         }
     } else {
-        auto new_pk = by_voter.available_primary_key();
+        auto new_pk = votedeltas.available_primary_key();
 
-        by_voter.modify(voter, [&]( auto& a ){
+        votedeltas.emplace(voter, [&]( auto& a ){
             a.receipt_id = new_pk;
             a.voter = voter;
             a.vote_code = _self;
