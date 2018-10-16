@@ -259,7 +259,7 @@ extern "C" {
 
             deltas_table votedeltas(self, self);
             auto by_voter = votedeltas.get_index<N(byvoter)>();
-            deltas_table::const_iterator first_row = by_voter.lower_bound(args.from);
+            auto first_row = by_voter.lower_bound(args.from);
             //auto last_row = by_acct_idx.upper_bound(args.from);
 
             if (first_row != votedeltas.cend()) {
