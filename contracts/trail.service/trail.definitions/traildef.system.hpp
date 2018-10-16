@@ -74,19 +74,13 @@ bool is_eosio_token(symbol_name sym, account_name owner) {
     return false;
 }
 
-int64_t get_eosio_token_balance(symbol_name sym, account_name owner) {
+asset get_eosio_token_balance(symbol_name sym, account_name owner) {
     accounts accountstable(N(eosio.token), owner);
     auto acct = accountstable.get(sym);
-    auto prec = acct.balance.symbol.precision();
 
-    auto amount = acct.balance.amount;
+    auto amount = acct.balance;
 
-    int64_t p10 = 1;
-    while(prec > 0) {
-        p10 *= 10; --prec;
-    }
-
-    return amount / p10;
+    return amount;
 }
 
 asset get_liquid_tlos(account_name owner) {

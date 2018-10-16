@@ -104,6 +104,8 @@ void trail::unregvoter(account_name voter) {
 }
 
 void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, symbol_name vote_token, uint16_t direction, uint32_t expiration, account_name voter) {
+    
+    /*
     require_auth(voter);
 
     voters_table voters(_self, voter);
@@ -111,14 +113,15 @@ void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_ke
     eosio_assert(v != voters.end(), "VoterID doesn't exist");
     auto vid = *v;
 
-    int64_t new_weight = 1; //NOTE: base weight of at least 1?
+    asset new_weight; //NOTE: base weight of at least 1?
 
     if (vote_token == asset(0).symbol.name()) {
         new_weight = get_staked_tlos(voter);
         print("\nvote_token is TLOS...");
         print("using staked bandwidth from account: ", name{voter});
     } else if (is_trail_token(vote_token)) {
-        new_weight = get_token_balance(vote_token, voter);
+        //new_weight = get_token_balance(vote_token, voter);
+        new_weight = asset(1000);
         print("\nvote_token is registered on Trail...using token balance as weight");
     } else if (is_eosio_token(vote_token, voter)) {
         new_weight = get_eosio_token_balance(vote_token, voter);
@@ -133,7 +136,7 @@ void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_ke
         vote_key,
         vote_token,
         direction,
-        new_weight,
+        new_weight.amount,
         expiration
     };
 
@@ -164,6 +167,7 @@ void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_ke
     });
 
     print("\nVoteReceipt Addition: SUCCESS");
+    */
 }
 
 void trail::rmvexpvotes(account_name voter) {
