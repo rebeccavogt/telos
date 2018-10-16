@@ -127,16 +127,16 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
     } else {
         // auto new_pk = by_voter.available_primary_key();
 
-        by_voter.emplace(voter, [&]( auto& a ){
+        //by_voter.emplace(voter, [&]( auto& a ){
             // a.receipt_id = new_pk;
-            a.voter = voter;
-            a.vote_code = _self;
-            a.vote_scope = _self;
-            a.prop_id = proposal_id;
-            a.direction = direction;
-            a.weight = new_weight;
-            a.expiration = prop.expiration;
-        });
+            //a.voter = voter;
+            //a.vote_code = _self;
+            //a.vote_scope = _self;
+            //a.prop_id = proposal_id;
+            //a.direction = direction;
+            //a.weight = new_weight;
+            //a.expiration = prop.expiration;
+        //});
     }
 
 }
