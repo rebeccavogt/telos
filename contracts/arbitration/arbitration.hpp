@@ -203,9 +203,9 @@ class arbitration : public contract {
 
         void closecase(uint64_t case_id, account_name closer, string ipfs_url); //TODO: require decision?
 
-        void dismissev(uint64_t case_id, uint16_t claim_num, uint16_t ev_num, account_name arb, string ipfs_url); //NOTE: moves to dismissed_evidence table
+        void dismissev(uint64_t case_id, uint16_t claim_index, uint16_t ev_index, account_name arb, string ipfs_url); //NOTE: moves to dismissed_evidence table
 
-        void acceptev(uint64_t case_id, uint16_t claim_num, uint16_t ev_num, account_name arb); //NOTE: moves to evidence_table and assigns ID
+        void acceptev(uint64_t case_id, uint16_t claim_index, uint16_t ev_index, account_name arb, string ipfs_url); //NOTE: moves to evidence_table and assigns ID
 
         void arbstatus(uint16_t new_status, account_name arb);
 
