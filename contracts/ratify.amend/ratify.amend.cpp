@@ -71,7 +71,7 @@ void ratifyamend::propose(string title, uint64_t document_id, vector<uint16_t> n
         }
     }
 
-    //NOTE: 100.0000 EOS fee, refunded if proposal passes
+    //NOTE: 100.0000 TLOS fee, refunded if proposal passes
     action(permission_level{ proposer, N(active) }, N(eosio.token), N(transfer), make_tuple( //NOTE: susceptible to ram-drain bug
     	proposer,
         _self,

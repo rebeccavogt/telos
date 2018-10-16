@@ -42,7 +42,7 @@ typedef eosio::multi_index<N(stat), currency_stats> stats;
 
 int64_t get_liquid_tlos(account_name voter) {
     accounts accountstable(N(eosio.token), voter);
-    auto a = accountstable.find(asset(int64_t(0), S(4, TLOS)).symbol.name()); //TODO: find better way to get EOS symbol?
+    auto a = accountstable.find(asset(int64_t(0), S(4, TLOS)).symbol.name()); //TODO: find better way to get TLOS symbol?
 
     int64_t liquid_tlos = 0;
 
