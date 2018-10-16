@@ -48,12 +48,12 @@ using mvo = fc::mutable_variant_object;
 // constants
 const string ten_times_max_supply_string = "1904732490.0000";
 const string max_supply_string = "190473249.0000";
-const uint64_t max_supply_count = 190'473'249'0000;   // max EOS supply of 190,473,249 (fluctuating value until mainnet activation)
+const uint64_t max_supply_count = 190'473'249'0000;   // max TLOS supply of 190,473,249 (fluctuating value until mainnet activation)
 const uint32_t activation_threshold = 15;             // 15% treshold required for vote
-const uint64_t min_activated_stake = 28'570'987'0000; // calculated from max EOS supply of 190,473,249 (fluctuating value until mainnet activation)
+const uint64_t min_activated_stake = 28'570'987'0000; // calculated from max TLOS supply of 190,473,249 (fluctuating value until mainnet activation)
 const double continuous_rate = 0.025;                // 2.5% annual inflation rate
-const double producer_rate = 0.01;                   // 1% EOS rate to BP/Standby
-const double worker_rate = 0.015;                    // 1.5% EOS rate to worker fund
+const double producer_rate = 0.01;                   // 1% TLOS rate to BP/Standby
+const double worker_rate = 0.015;                    // 1.5% TLOS rate to worker fund
 const uint64_t min_unpaid_blocks_threshold = 342;    // Minimum unpaid blocks required to qualify for Producer level payout
 
 // Calculated constants

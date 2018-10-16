@@ -40,16 +40,16 @@ struct transfer_args {
 typedef eosio::multi_index<N(accounts), account> accounts;
 typedef eosio::multi_index<N(stat), currency_stats> stats;
 
-int64_t get_liquid_eos(account_name voter) {
+int64_t get_liquid_tlos(account_name voter) {
     accounts accountstable(N(eosio.token), voter);
-    auto a = accountstable.find(asset(int64_t(0), S(4, EOS)).symbol.name()); //TODO: find better way to get EOS symbol?
+    auto a = accountstable.find(asset(int64_t(0), S(4, TLOS)).symbol.name()); //TODO: find better way to get EOS symbol?
 
-    int64_t liquid_eos = 0;
+    int64_t liquid_tlos = 0;
 
     if (a != accountstable.end()) {
         auto acct = *a;
-        liquid_eos = acct.balance.amount / int64_t(10000); //divide to get actual balance
+        liquid_tlos = acct.balance.amount / int64_t(10000); //divide to get actual balance
     }
     
-    return liquid_eos;
+    return liquid_tlos;
 }
