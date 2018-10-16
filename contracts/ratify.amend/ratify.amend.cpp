@@ -116,7 +116,7 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
                 
                 by_voter.modify(itr, 0, [&]( auto& a ) {
                     a.direction = direction;
-                    a.weight = new_weight;
+                    a.weight = get_staked_tlos(voter);
                 });
 
                 print("\nupdated weight for id: ", itr->receipt_id);
@@ -125,7 +125,7 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
         }
     } else {
         by_voter.emplace(voter, [&]( auto& a ){
-            a.receipt_id = by_voters.available_primary_key();
+            a.receipt_id = by_voter.available_primary_key();
             a.voter = voter;
             a.vote_code = _self;
             a.vote_scope = _self;
@@ -136,118 +136,6 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
         });
     }
 
-    
-
-    /*
-    voters_table voters(N(eosio.trail), voter);
-    auto v = voters.find(voter);
-
-    eosio_assert(v != voters.end(), "VoterID Not Found");
-    
-    print("\nVoterID Found");
-    auto vid = *v;
-
-    proposals_table proposals(_self, _self);
-    auto p = proposals.find(proposal_id);
-    eosio_assert(p != proposals.end(), "Proposal Not Found");
-    
-    print("\nProposal Found");
-    auto prop = *p;
-
-    eosio_assert(prop.expiration > now(), "Proposal Has Expired");
-
-    int64_t new_weight = get_staked_tlos(voter);
-    symbol_name tlos_sym = asset(0).symbol.name();
-
-    if (vid.receipt_list.empty()) {
-
-        print("\nReceipt List Empty...Calling TrailService to update VoterID");
-
-        action(permission_level{ voter, N(active) }, N(eosio.trail), N(addreceipt), make_tuple(
-    	    _self, //vote_code
-    	    _self, //vote_scope
-    	    prop.id, //vote_key
-            tlos_sym,  //vote_token
-            direction, //direction
-            prop.expiration, //expiration
-            voter //voter
-	    )).send();
-
-        print("\nReceipt Added. VoterID Successfully Updated");
-    } else {
-
-        print("\nSearching receipts list for existing VoteReceipt...");
-
-        bool found = false;
-
-        for (votereceipt r : vid.receipt_list) {
-            if (r.vote_key == proposal_id) {
-
-                print("\nVoteReceipt found");
-                found = true;
-
-                switch (r.direction) {
-                    case 0 : prop.no_count = (prop.no_count - uint64_t(r.weight)); break;
-                    case 1 : prop.yes_count = (prop.yes_count - uint64_t(r.weight)); break;
-                    case 2 : prop.abstain_count = (prop.abstain_count - uint64_t(r.weight)); break;
-                }
-
-                print("\nCalling TrailService to update VoterID...");
-
-                action(permission_level{ voter, N(active) }, N(eosio.trail), N(addreceipt), make_tuple(
-    	            _self,      
-    	            _self,
-    	            prop.id,
-                    tlos_sym,
-                    direction,
-                    prop.expiration,
-                    voter
-	            )).send();
-
-                print("\nVoterID Successfully Updated");
-
-                break;
-            }
-        }
-
-        if (found == false) {
-            print("\nVoteInfo not found in list. Calling TrailService to insert...");
-
-            action(permission_level{ voter, N(active) }, N(eosio.trail), N(addreceipt), make_tuple(
-    	        _self,      
-    	        _self,
-    	        prop.id,
-                tlos_sym,
-                direction,
-                prop.expiration,
-                voter
-	        )).send();
-
-            print("\nVoterID Successfully Updated");
-        }
-    }
-
-    string vote_type;
-
-    switch (direction) {
-        case 0 : prop.no_count = (prop.no_count + uint64_t(new_weight)); vote_type = "NO"; break;
-        case 1 : prop.yes_count = (prop.yes_count + uint64_t(new_weight)); vote_type = "YES"; break;
-        case 2 : prop.abstain_count = (prop.abstain_count + uint64_t(new_weight)); vote_type = "ABSTAIN"; break;
-    }
-
-    proposals.modify(p, 0, [&]( auto& a ) {
-        a.no_count = prop.no_count;
-        a.yes_count = prop.yes_count;
-        a.abstain_count = prop.abstain_count;
-    });
-    
-
-    print("\n\nVote: SUCCESSFUL");
-    print("\n=========================");
-    print("\nVoting Account: ", name{voter});
-    print("\nYour Vote: ", vote_type);
-    print("\nVote Weight: ", new_weight);
-    */
 }
 
 void ratifyamend::close(uint64_t proposal_id) {
