@@ -64,6 +64,8 @@ class ratifyamend : public contract {
             uint64_t no_count;
             uint64_t abstain_count;
             account_name proposer;
+            uint64_t vote_code;
+            uint64_t vote_scope;
             uint32_t expiration;
             uint64_t status; // 0 = OPEN, 1 = PASSED, 2 = FAILED
 

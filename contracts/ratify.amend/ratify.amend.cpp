@@ -91,6 +91,8 @@ void ratifyamend::propose(string title, uint64_t document_id, vector<uint16_t> n
         a.no_count = 0;
         a.abstain_count = 0;
         a.proposer = proposer;
+        a.vote_code = _self;
+        a.vote_scope = _self;
         a.expiration = now() + thresh_struct.expiration_length;
         a.status = 0;
     });
