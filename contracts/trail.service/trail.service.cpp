@@ -174,6 +174,7 @@ extern "C" {
         } else if (code == N(eosio) && action == N(undelegatebw)) {
             //TODO: implement
         } else if (code == N(eosio.amend) && action == N(vote)) { //TODO: change code to be any registered ballot
+            print("\nvote action receiped by trail");
             auto args = unpack_action_data<vote_args>();
 
             receipts_table votereceipts(self, self);
@@ -181,20 +182,40 @@ extern "C" {
             auto itr = by_voter.lower_bound(args.voter);
             asset new_weight = get_staked_tlos(args.voter);
 
-            while(itr->voter == args.voter) {
-                if (now() <= itr->expiration && 
-                    itr->vote_code == args.vote_code && 
-                    itr->vote_scope == args.vote_scope && 
-                    itr->prop_id == args.proposal_id) {
+            if (itr == by_voter.cend()) {
+                print("\nvoter doesnt have receipt yet");
 
-                    by_voter.modify(itr, 0, [&]( auto& a ) {
-                        a.direction = args.direction;
-                        a.weight = new_weight;
-                    });
-                    print("\nVR found and updated");
+                votereceipts.emplace(args.voter, [&]( auto& a ){
+                    a.receipt_id = votereceipts.available_primary_key();
+                    a.voter = args.voter;
+                    a.vote_code = args.vote_code;
+                    a.vote_scope = args.vote_scope;
+                    a.prop_id = args.proposal_id;
+                    a.direction = args.direction;
+                    a.weight = new_weight;
+                    a.expiration = args.expiration;
+                });
 
+                print("\nvotereceipt emplaced by trail");
+            } else {
+                print("\nvotereceipt exits");
+
+                while(itr->voter == args.voter) {
+                    if (now() <= itr->expiration && 
+                        itr->vote_code == args.vote_code && 
+                        itr->vote_scope == args.vote_scope && 
+                        itr->prop_id == args.proposal_id) {
+
+                        by_voter.modify(itr, 0, [&]( auto& a ) {
+                            a.direction = args.direction;
+                            a.weight = new_weight;
+                        });
+                        print("\nVR found and updated");
+                    }
+                    itr++;
                 }
-                itr++;
+
+                print("\n\nvotereceipt check complete");
             }
 
         } else if (code == N(eosio.amend) && action == N(processvotes)) {

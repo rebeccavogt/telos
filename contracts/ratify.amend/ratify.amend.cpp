@@ -98,7 +98,7 @@ void ratifyamend::propose(string title, uint64_t document_id, vector<uint16_t> n
     });
 }
 
-void ratifyamend::vote(uint64_t vote_code, uint64_t vote_scope, uint64_t proposal_id, uint16_t direction, account_name voter) {
+void ratifyamend::vote(uint64_t vote_code, uint64_t vote_scope, uint64_t proposal_id, uint16_t direction, uint32_t expiration, account_name voter) {
     require_auth(voter);
     eosio_assert(direction >= 0 && direction <= 2, "Invalid Vote. [0 = NO, 1 = YES, 2 = ABSTAIN]");
 
@@ -107,6 +107,8 @@ void ratifyamend::vote(uint64_t vote_code, uint64_t vote_scope, uint64_t proposa
     eosio_assert(p != proposals.end(), "Proposal Not Found");
     auto prop = *p;
     eosio_assert(prop.expiration > now(), "Proposal Has Expired");
+
+    //TODO: more checks before sending to trail eg. check matching expire
 
     require_recipient(N(eosio.trail));
     print("\nVote sent to Trail");

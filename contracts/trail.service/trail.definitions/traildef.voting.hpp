@@ -68,6 +68,7 @@ struct vote_args {
     uint64_t vote_scope;
     uint64_t proposal_id;
     uint16_t direction;
+    uint32_t expiration;
     account_name voter;
 };
 
