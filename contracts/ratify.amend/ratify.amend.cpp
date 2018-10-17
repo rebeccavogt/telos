@@ -102,7 +102,7 @@ void ratifyamend::vote(uint64_t vote_code, uint64_t vote_scope, uint64_t proposa
     require_auth(voter);
     eosio_assert(direction >= 0 && direction <= 2, "Invalid Vote. [0 = NO, 1 = YES, 2 = ABSTAIN]");
 
-    proposals_table proposals(_self, _self);
+    proposals_table proposals(_self, _self); //TODO: change _self to vote_code and vote_scope?
     auto p = proposals.find(proposal_id);
     eosio_assert(p != proposals.end(), "Proposal Not Found");
     auto prop = *p;

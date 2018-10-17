@@ -183,7 +183,6 @@ extern "C" {
             asset new_weight = get_staked_tlos(args.voter);
 
             if (itr == by_voter.end()) {
-                print("\nvoter doesnt have receipt yet");
 
                 votereceipts.emplace(self, [&]( auto& a ){
                     a.receipt_id = votereceipts.available_primary_key();
@@ -196,11 +195,12 @@ extern "C" {
                     a.expiration = args.expiration;
                 });
 
-                print("\nvotereceipt emplacement complete");
+                print("\nfirst votereceipt emplacement complete");
             } else {
-                print("\nvotereceipt exists");
-
+                
+                bool found = false;
                 while(itr->voter == args.voter) {
+                    print("\nchecking vr...");
                     if (now() <= itr->expiration && 
                         itr->vote_code == args.vote_code && 
                         itr->vote_scope == args.vote_scope && 
@@ -211,6 +211,7 @@ extern "C" {
                             a.weight = new_weight;
                         });
 
+                        found = true;
                         break;
 
                         print("\nVR found and updated");
@@ -218,7 +219,22 @@ extern "C" {
                     itr++;
                 }
 
-                print("\n\nvotereceipt update complete");
+                if (!found) {
+                    votereceipts.emplace(self, [&]( auto& a ){
+                        a.receipt_id = votereceipts.available_primary_key();
+                        a.voter = args.voter;
+                        a.vote_code = args.vote_code;
+                        a.vote_scope = args.vote_scope;
+                        a.prop_id = args.proposal_id;
+                        a.direction = args.direction;
+                        a.weight = new_weight;
+                        a.expiration = args.expiration;
+                    });
+
+                    print("\nnew vr emplaced");
+                }
+
+                print("\n\nvotereceipt changes complete");
             }
 
         } else if (code == N(eosio.amend) && action == N(processvotes)) {
