@@ -36,18 +36,12 @@ class ratifyamend : public contract {
         void propose(string title, uint64_t document_id, vector<uint16_t> new_clause_ids, vector<string> new_ipfs_urls, account_name proposer);
 
         /// @abi action
-        void vote(uint64_t proposal_id, uint16_t vote, account_name voter);
-
-        //void unvote(uint64_t proposal_id, account_name voter);
+        void vote(uint64_t vote_code, uint64_t vote_scope, uint64_t proposal_id, uint16_t direction, account_name voter);
 
         /// @abi action
         void close(uint64_t proposal_id);
 
     protected:
-    
-        void update_thresh();
-
-        void update_doc(uint64_t document_id, vector<uint16_t> new_clause_ids, vector<string> new_ipfs_urls);
 
         /// @abi table documents i64
         struct document {
@@ -88,10 +82,34 @@ class ratifyamend : public contract {
             EOSLIB_SERIALIZE(threshold, (publisher)(quorum_threshold)(expiration_length))
         };
 
+    #pragma region Tables
+
     typedef multi_index<N(documents), document> documents_table;
+
     typedef multi_index<N(proposals), proposal> proposals_table;
 
     typedef singleton<N(threshold), threshold> threshold_singleton;
     threshold_singleton thresh_singleton;
     threshold thresh_struct;
+
+    #pragma endregion Tables
+
+    #pragma region Helper_Functions
+
+    void update_thresh();
+
+    void update_doc(uint64_t document_id, vector<uint16_t> new_clause_ids, vector<string> new_ipfs_urls);
+
+    proposals_table::const_iterator find_proposal(uint64_t proposal_id) {
+        proposals_table proposals(_self, _self);
+        auto p = proposals.find(proposal_id);
+
+        if (p != proposals.end()) {
+            return p;
+        }
+
+        return proposals.end();
+    }
+
+    #pragma endregion Helper_Functions
 };

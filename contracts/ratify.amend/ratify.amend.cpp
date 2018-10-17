@@ -96,7 +96,7 @@ void ratifyamend::propose(string title, uint64_t document_id, vector<uint16_t> n
     });
 }
 
-void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name voter) {
+void ratifyamend::vote(uint64_t vote_code, uint64_t vote_scope, uint64_t proposal_id, uint16_t direction, account_name voter) {
     require_auth(voter);
     eosio_assert(direction >= 0 && direction <= 2, "Invalid Vote. [0 = NO, 1 = YES, 2 = ABSTAIN]");
 
@@ -106,39 +106,8 @@ void ratifyamend::vote(uint64_t proposal_id, uint16_t direction, account_name vo
     auto prop = *p;
     eosio_assert(prop.expiration > now(), "Proposal Has Expired");
 
-    deltas_table votedeltas(N(eosio.trail), N(eosio.trail));
-    auto by_voter = votedeltas.get_index<N(byvoter)>();
-    auto itr = by_voter.lower_bound(voter);
-    auto new_weight = get_staked_tlos(voter);
-
-    if (itr != by_voter.end()) {
-        while(itr->voter == voter && itr != by_voter.end()) {
-            if (now() <= itr->expiration && itr->prop_id == proposal_id) {
-                
-                by_voter.modify(itr, 0, [&]( auto& a ) {
-                    a.direction = direction;
-                    a.weight = new_weight;
-                });
-
-                print("\nupdated weight for id: ", itr->receipt_id);
-            }
-            itr++;
-        }
-    } else {
-        auto new_pk = votedeltas.available_primary_key();
-
-        votedeltas.emplace(voter, [&]( auto& a ){
-            a.receipt_id = new_pk;
-            a.voter = voter;
-            a.vote_code = _self;
-            a.vote_scope = _self;
-            a.prop_id = proposal_id;
-            a.direction = direction;
-            a.weight = new_weight;
-            a.expiration = prop.expiration;
-        });
-    }
-
+    require_recipient(N(eosio.trail));
+    print("\nVote sent to Trail");
 }
 
 void ratifyamend::close(uint64_t proposal_id) {

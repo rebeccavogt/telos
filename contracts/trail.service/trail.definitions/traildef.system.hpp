@@ -16,6 +16,8 @@
 using namespace std;
 using namespace eosio;
 
+#pragma region Structs
+
 struct account {
     asset    balance;
 
@@ -44,7 +46,6 @@ struct user_resources {
     int64_t       ram_bytes = 0;
 
     uint64_t primary_key()const { return owner; }
-
     EOSLIB_SERIALIZE( user_resources, (owner)(net_weight)(cpu_weight)(ram_bytes) )
 };
 
@@ -56,10 +57,17 @@ struct delegatebw_args {
     bool transfer;
 };
 
+#pragma endregion Structs
+
+#pragma region Tables
+
 typedef eosio::multi_index<N(accounts), account> accounts;
+
 typedef eosio::multi_index<N(stat), currency_stats> stats;
 
-typedef eosio::multi_index< N(userres), user_resources> user_resources_table;
+typedef eosio::multi_index<N(userres), user_resources> user_resources_table;
+
+#pragma endregion Tables
 
 #pragma region Custom_Functions
 

@@ -92,113 +92,13 @@ void trail::unregvoter(account_name voter) {
 
     eosio_assert(v != voters.end(), "Voter Doesn't Exist");
 
-    auto vid = *v;
-
-    eosio_assert(vid.receipt_list.size() == 0, "Can't delete until all vote receipts removed");    
+    auto vid = *v;  
 
     voters.erase(v);
 
     env_struct.total_voters--;
 
     print("\nVoterID Unregistration: SUCCESS");
-}
-
-void trail::addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, symbol_name vote_token, uint16_t direction, uint32_t expiration, account_name voter) {
-    
-    /*
-    require_auth(voter);
-
-    voters_table voters(_self, voter);
-    auto v = voters.find(voter);
-    eosio_assert(v != voters.end(), "VoterID doesn't exist");
-    auto vid = *v;
-
-    asset new_weight; //NOTE: base weight of at least 1?
-
-    if (vote_token == asset(0).symbol.name()) {
-        new_weight = get_staked_tlos(voter);
-        print("\nvote_token is TLOS...");
-        print("using staked bandwidth from account: ", name{voter});
-    } else if (is_trail_token(vote_token)) {
-        //new_weight = get_token_balance(vote_token, voter);
-        new_weight = asset(1000);
-        print("\nvote_token is registered on Trail...using token balance as weight");
-    } else if (is_eosio_token(vote_token, voter)) {
-        new_weight = get_eosio_token_balance(vote_token, voter);
-        print("\nvote_token is registered on eosio.token...using token balance as weight");
-    } else {
-        print("\nNo token balance found for given symbol, defaulting to 1");
-    }
-
-    votereceipt new_vr = votereceipt{
-        vote_code,
-        vote_scope,
-        vote_key,
-        vote_token,
-        direction,
-        new_weight.amount,
-        expiration
-    };
-
-    print("\nnew weight: ", new_weight);
-
-    auto itr = vid.receipt_list.begin();
-
-    //search for existing receipt
-    for (votereceipt r : vid.receipt_list) {
-        if (r.vote_code == vote_code && r.vote_scope == vote_scope && r.vote_key == vote_key) {
-            print("\nExisting receipt found. Updating...");
-
-            auto h = vid.receipt_list.erase(itr);
-            auto i = vid.receipt_list.insert(itr, new_vr);
-
-            break;
-        }
-        itr++;
-    }
-
-    //if receipt not found in list
-    if (itr == vid.receipt_list.end()) {
-        vid.receipt_list.push_back(new_vr);
-    } 
-
-    voters.modify(v, 0, [&]( auto& a ) {
-        a.receipt_list = vid.receipt_list;
-    });
-
-    print("\nVoteReceipt Addition: SUCCESS");
-    */
-}
-
-void trail::rmvexpvotes(account_name voter) {
-    //TODO: set default param for limit of removals per call?
-    require_auth(voter);
-
-    voters_table voters(_self, voter);
-    auto v = voters.find(voter);
-
-    eosio_assert(v != voters.end(), "Voter doesn't exist");
-    auto vid = *v;
-
-    uint32_t now_time = now(); //better name than now_time?
-
-    auto itr = vid.receipt_list.begin();
-
-    uint64_t votes_removed = 0;
-
-    for (votereceipt r : vid.receipt_list) {
-        if (now_time > r.expiration) {
-            vid.receipt_list.erase(itr);
-            votes_removed++;
-        }
-        itr++;
-    }
-
-    voters.modify(v, 0, [&]( auto& a ) {
-        a.receipt_list = vid.receipt_list;
-    });
-
-    print("\nReceipts Removed: ", votes_removed);
 }
 
 void trail::regballot(account_name publisher) {
@@ -248,33 +148,57 @@ extern "C" {
             execute_action(&_trail, &trail::regvoter);
         } else if (code == self && action == N(unregvoter)) {
             execute_action(&_trail, &trail::unregvoter);
-        } else if (code == self && action == N(addreceipt)) {
-            execute_action(&_trail, &trail::addreceipt);
-        } else if (code == self && action == N(rmvexpvotes)) {
-            execute_action(&_trail, &trail::rmvexpvotes);
         } else if (code == self && action == N(regballot)) {
             execute_action(&_trail, &trail::regballot);
         } else if (code == self && action == N(unregballot)) {
             execute_action(&_trail, &trail::unregballot);
-        } else if (code == N(eosio) && action == N(delegatebw)) {
+        } else if (code == N(eosio) && action == N(delegatebw)) { //TODO: add undelegatebw()
 
             auto args = unpack_action_data<delegatebw_args>();
             asset new_weight = (args.stake_cpu_quantity + args.stake_net_quantity);
 
-            deltas_table votedeltas(self, self);
-            auto by_voter = votedeltas.get_index<N(byvoter)>();
+            receipts_table votereceipts(self, self);
+            auto by_voter = votereceipts.get_index<N(byvoter)>();
             auto itr = by_voter.lower_bound(args.from);
 
             while(itr->voter == args.from) {
                 if (now() <= itr->expiration) {
                     by_voter.modify(itr, 0, [&]( auto& a ) {
-                        a.weight = new_weight;
+                        a.weight += new_weight;
                     });
                     print("\npropagated weight change to id: ", itr->receipt_id);
                 }
                 itr++;
             }
 
+        } else if (code == N(eosio) && action == N(undelegatebw)) {
+            //TODO: implement
+        } else if (code == N(eosio.amend) && action == N(vote)) { //TODO: change code to be any registered ballot
+            auto args = unpack_action_data<vote_args>();
+
+            receipts_table votereceipts(self, self);
+            auto by_voter = votereceipts.get_index<N(byvoter)>();
+            auto itr = by_voter.lower_bound(args.voter);
+            asset new_weight = get_staked_tlos(args.voter);
+
+            while(itr->voter == args.voter) {
+                if (now() <= itr->expiration && 
+                    itr->vote_code == args.vote_code && 
+                    itr->vote_scope == args.vote_scope && 
+                    itr->proposal_id == args.proposal_id) {
+
+                    by_voter.modify(itr, 0, [&]( auto& a ) {
+                        a.direction = args.direction;
+                        a.weight = new_weight;
+                    });
+                    print("\nVR found and updated");
+
+                }
+                itr++;
+            }
+
+        } else if (code == N(eosio.amend) && action == N(processvotes)) {
+            //TODO: implement
         }
     } //end apply
 };

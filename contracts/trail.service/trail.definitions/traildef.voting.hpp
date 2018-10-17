@@ -16,66 +16,8 @@
 using namespace std;
 using namespace eosio;
 
-/**
- * Generic struct used to log a vote.
- * @field vote_code - code of contract where vote was cast
- * @field vote_scope - scope of table where vote was cast
- * @field vote_key - primary key of object that was voted on
- * @field vote_token - symbol_name of token used to vote
- * @field direction - direction of vote, where 0 = NO, 1 = YES, and 2 = ABSTAIN
- * @field weight - weight of vote, measured in token quantity
- * @field expiration - time_point of vote's expiration. Vote can be erased after expiring.
- * 
- * TODO: Could this be EOSLIB_SERIALIZED? stored in vector, not directly in table
- * TODO: reformat for removal of voterID struct, instead votereceipts are stored directly and indexed by 64 bit hash of code + scope + key
- */
-struct votereceipt { //TODO: deprecate
-    uint64_t vote_code;
-    uint64_t vote_scope;
-    uint64_t vote_key;
-    symbol_name vote_token;
-    uint16_t direction;
-    int64_t weight;
-    uint32_t expiration;
-};
+#pragma region Structs
 
-/**
- * A VoterID card, used to track and store voter information and activity.
- * @field voter - account name of voter who owns the ID card
- * @field receipt_list - vector of all votereceipts
- */
-/// @abi table voters i64
-struct voterid {
-    account_name voter;
-    vector<votereceipt> receipt_list;
-
-    uint64_t primary_key() const { return voter; }
-    EOSLIB_SERIALIZE(voterid, (voter)(receipt_list))
-};
-
-/// @abi table votereceipts i64
-struct vote_delta {
-    uint64_t receipt_id;
-    account_name voter;
-    uint64_t vote_code;
-    uint64_t vote_scope;
-    uint64_t prop_id; //rename?
-    uint16_t direction;
-    asset weight;
-    uint32_t expiration;
-
-    uint64_t primary_key() const { return receipt_id; }
-    uint64_t by_voter() const { return voter; }
-    uint64_t by_code() const { return vote_code; }
-    EOSLIB_SERIALIZE(vote_delta, (receipt_id)(voter)(vote_code)(vote_scope)(prop_id)(direction)(weight)(expiration))
-};
-
-/**
- * Environment struct tracking global eosio.trail information.
- * @field publisher - account that published the contract.
- * @field total_tokens - total active number of unique tokens registered through the regtoken() action.
- * @field total_voters - total active number of unique voterid's registered through the regvoter() action.
- */
 /// @abi table environment i64
 struct environment {
     account_name publisher;
@@ -87,6 +29,32 @@ struct environment {
     EOSLIB_SERIALIZE(environment, (publisher)(total_tokens)(total_voters)(total_ballots))
 };
 
+///@abi table votereceipts i64
+struct vote_receipt {
+    uint64_t receipt_id;
+    account_name voter;
+    uint64_t vote_code;
+    uint64_t vote_scope;
+    uint64_t prop_id; //TODO: rename?
+    uint16_t direction;
+    asset weight;
+    uint32_t expiration;
+
+    uint64_t primary_key() const { return receipt_id; }
+    uint64_t by_voter() const { return voter; }
+    uint64_t by_code() const { return vote_code; }
+    EOSLIB_SERIALIZE(vote_receipt, (receipt_id)(voter)(vote_code)(vote_scope)(prop_id)(direction)(weight)(expiration))
+};
+
+/// @abi table voters i64
+struct voter_id {
+    account_name voter;
+    //vector<vote_receipt> receipt_list;
+
+    uint64_t primary_key() const { return voter; }
+    EOSLIB_SERIALIZE(voter_id, (voter))
+};
+
 /// @abi table ballots
 struct ballot {
     account_name publisher;
@@ -95,18 +63,34 @@ struct ballot {
     EOSLIB_SERIALIZE(ballot, (publisher))
 };
 
-typedef multi_index<N(voters), voterid> voters_table;
+struct vote_args {
+    uint64_t vote_code;
+    uint64_t vote_scope;
+    uint64_t proposal_id;
+    uint16_t direction;
+    account_name voter;
+};
 
-typedef multi_index<N(ballots), ballot> ballots_table;
+#pragma endregion Structs
 
-typedef multi_index<N(votedeltas), vote_delta,
-    indexed_by<N(bycode), const_mem_fun<vote_delta, uint64_t, &vote_delta::by_code>>,
-    indexed_by<N(byvoter), const_mem_fun<vote_delta, uint64_t, &vote_delta::by_voter>>> deltas_table;
+#pragma region Tables
 
 typedef singleton<N(environment), environment> environment_singleton;
 
+typedef multi_index<N(voters), voter_id> voters_table;
+
+typedef multi_index<N(ballots), ballot> ballots_table;
+
+typedef multi_index<N(votereceipts), vote_receipt,
+    indexed_by<N(bycode), const_mem_fun<vote_receipt, uint64_t, &vote_receipt::by_code>>,
+    indexed_by<N(byvoter), const_mem_fun<vote_receipt, uint64_t, &vote_receipt::by_voter>>> receipts_table;
+
+#pragma endregion Tables
+
+#pragma region Helper_Functions
+
 bool is_voter(account_name voter) {
-    voters_table voters(N(eosio.trail), voter); //TODO: change to _self, not good to hardcode account_name
+    voters_table voters(N(eosio.trail), voter);
     auto v = voters.find(voter);
 
     if (v != voters.end()) {
@@ -116,32 +100,28 @@ bool is_voter(account_name voter) {
     return false;
 }
 
-bool has_receipt(account_name voter, uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key) {
-    voters_table voters(N(eosio.trail), voter); //TODO: change to _self, not good to hardcode account_name
-    auto vid = voters.get(voter);
+bool is_ballot(account_name publisher) {
+    ballots_table ballots(N(eosio.trail), publisher);
+    auto b = ballots.find(publisher);
 
-    for (votereceipt vr : vid.receipt_list) {
-        if (vr.vote_code == vote_code && vr.vote_scope == vote_scope && vr.vote_key == vote_key) {
-
-            return true;
-        }
+    if (b != ballots.end()) {
+        return true;
     }
 
     return false;
 }
 
-voters_table::const_iterator find_receipt(account_name voter, uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key) {
-    voters_table voters(N(eosio.trail), voter); //TODO: change to _self, don't hardcode account_name
-    auto vid = voters.get(voter);
+// receipts_table::const_iterator find_receipt(uint64_t r_code, uint64_t r_scope, uint64_t prop_id, symbol_name r_token, account_name voter) {
+//     receipts_table votereceipts(N(eosio.trail), N(eosio.trail));
+//     auto by_voter = votereceipts.get_index<N(byvoter)>();
+//     auto itr = by_voter.lower_bound(voter);
+//     while(itr->voter == voter) {
+//         if (now() <= itr->expiration) {
+//             return itr;
+//         }
+//         itr++;
+//     }
+//     return by_voter.end(); //returns the right itr? should be votereceipts.end()?
+// }
 
-    auto itr = voters.begin();
-    for (votereceipt vr : vid.receipt_list) {
-        if (vr.vote_code == vote_code && vr.vote_scope == vote_scope && vr.vote_key == vote_key) {
-
-            return itr;
-        }
-        itr++;
-    }
-
-    return voters.end();
-}
+#pragma endregion Helper_Functions
