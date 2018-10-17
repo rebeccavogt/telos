@@ -182,7 +182,7 @@ extern "C" {
             auto itr = by_voter.lower_bound(args.voter);
             asset new_weight = get_staked_tlos(args.voter);
 
-            if (itr == by_voter.cend()) {
+            if (itr == by_voter.end()) {
                 print("\nvoter doesnt have receipt yet");
 
                 votereceipts.emplace(args.voter, [&]( auto& a ){
@@ -217,6 +217,8 @@ extern "C" {
 
                 print("\n\nvotereceipt check complete");
             }
+
+            print("\ndebugging print");
 
         } else if (code == N(eosio.amend) && action == N(processvotes)) {
             auto args = unpack_action_data<processvotes_args>();
