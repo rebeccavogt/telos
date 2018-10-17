@@ -70,7 +70,7 @@ class ratifyamend : public contract {
             uint64_t status; // 0 = OPEN, 1 = PASSED, 2 = FAILED
 
             uint64_t primary_key() const { return id; }
-            EOSLIB_SERIALIZE(proposal, (id)(document_id)(title)(new_clause_ids)(new_ipfs_urls)(yes_count)(no_count)(abstain_count)(proposer)(expiration)(status))
+            EOSLIB_SERIALIZE(proposal, (id)(document_id)(title)(new_clause_ids)(new_ipfs_urls)(yes_count)(no_count)(abstain_count)(proposer)(vote_code)(vote_scope)(expiration)(status))
         };
 
         /// @abi table threshold
