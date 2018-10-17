@@ -35,7 +35,7 @@ struct vote_receipt {
     account_name voter;
     uint64_t vote_code;
     uint64_t vote_scope;
-    uint64_t prop_id; //TODO: rename?
+    uint64_t proposal_id;
     uint16_t direction;
     asset weight;
     uint32_t expiration;
@@ -69,6 +69,13 @@ struct vote_args {
     uint64_t proposal_id;
     uint16_t direction;
     account_name voter;
+};
+
+struct processvotes_args {
+    uint64_t vote_code;
+    uint64_t vote_scope;
+    uint64_t proposal_id;
+
 };
 
 #pragma endregion Structs

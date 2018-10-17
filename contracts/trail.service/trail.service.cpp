@@ -198,6 +198,7 @@ extern "C" {
             }
 
         } else if (code == N(eosio.amend) && action == N(processvotes)) {
+            auto args = unpack_action_data<processvotes_args>();
             //TODO: implement
         }
     } //end apply
