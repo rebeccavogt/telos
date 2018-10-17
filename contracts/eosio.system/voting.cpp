@@ -52,9 +52,7 @@ namespace eosiosystem {
         _producers.modify(prod, producer, [&](producer_info &info) {
           auto now = block_timestamp(eosio::time_point(eosio::microseconds(int64_t(current_time()))));
 
-          uint32_t hours_out = info.kick_penalty_hours * 3600; //hours in seconds
-          // uint32_t hours_out = info.kick_penalty_hours * 60; // debug version is calculated in minutes
-          block_timestamp penalty_expiration_time = block_timestamp(info.last_time_kicked.to_time_point() + time_point(microseconds(hours_out * 1000000)));
+          block_timestamp penalty_expiration_time = block_timestamp(info.last_time_kicked.to_time_point() + time_point(hours(int64_t(info.kick_penalty_hours))));
           
           eosio_assert(now.slot > penalty_expiration_time.slot,
             std::string("Producer is not allowed to register at this time. Please fix your node and try again later in: " 
