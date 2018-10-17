@@ -43,6 +43,13 @@
         {"name":"offline_bps",                "type":"offline_producer[]"}
       ]
     },{
+      "name": "payment",
+      "base": "",
+      "fields": [
+        {"name": "bp", "type": "account_name"},
+        {"name": "pay", "type": "asset"}
+      ]
+    },{
       "name": "permission_level",
       "base": "",
       "fields": [
@@ -82,6 +89,13 @@
       "base": "",
       "fields": [
         {"name":"state", "type":"bool"}
+      ]
+    },{
+      "name": "votebpout",
+      "base": "",
+      "fields": [
+        {"name":"bp", "type":"account_name"},
+        {"name":"penalty_hours", "type":"uint32"}
       ]
     },{
       "name": "wait_weight",
@@ -295,22 +309,28 @@
          {"name":"thresh_activated_stake_time",   "type":"uint64"},
          {"name":"last_producer_schedule_size",   "type":"uint16"},
          {"name":"total_producer_vote_weight",    "type":"float64"},
-         {"name":"last_name_close",               "type":"block_timestamp_type"}
+         {"name":"last_name_close",               "type":"block_timestamp_type"},
+         {"name":"block_num",                     "type":"uint32"}
       ]
     },{
       "name": "producer_info",
       "base": "",
       "fields": [
-         {"name":"owner",           "type":"account_name"},
-         {"name":"total_votes",     "type":"float64"},
-         {"name":"producer_key",    "type":"public_key"},
-         {"name":"is_active",       "type":"bool"},
-         {"name":"url",             "type":"string"},
-         {"name":"unpaid_blocks",   "type":"uint32"},
-         {"name":"missed_blocks",   "type":"uint32"},
-         {"name":"blocks_per_cycle",   "type":"uint32"},
-         {"name":"last_claim_time", "type":"uint64"},
-         {"name":"location",        "type":"uint16"}
+         {"name":"owner",                       "type":"account_name"},
+         {"name":"total_votes",                 "type":"float64"},
+         {"name":"producer_key",                "type":"public_key"},
+         {"name":"is_active",                   "type":"bool"},
+         {"name":"url",                         "type":"string"},
+         {"name":"unpaid_blocks",               "type":"uint32"},
+         {"name":"missed_blocks",               "type":"uint32"},
+         {"name":"blocks_per_cycle",            "type":"uint32"},
+         {"name":"last_claim_time",             "type":"uint64"},
+         {"name":"location",                    "type":"uint16"},
+         {"name":"kick_reason_id",              "type":"uint32"},
+         {"name":"kick_reason",                 "type":"string"},
+         {"name":"times_kicked",                "type":"uint32"},
+         {"name":"kick_penalty_hours",          "type":"uint32"},
+         {"name":"last_time_kicked",            "type":"block_timestamp_type"}
       ]
     },{
       "name": "regproducer",
@@ -487,6 +507,10 @@
      "type": "setrotate",
      "ricardian_contract": ""
    },{
+     "name": "votebpout",
+     "type": "votebpout",
+     "ricardian_contract": ""
+   },{
      "name": "onerror",
      "type": "onerror",
      "ricardian_contract": ""
@@ -577,6 +601,12 @@
       "index_type": "i64",
       "key_names" : ["bp_currently_out"],
       "key_types" : ["uint64"]
+    },{
+      "name": "payments",
+      "type": "payment",
+      "index_type": "i64",
+      "key_names": ["bp"],
+      "key_types": ["account_name"]
     },{
       "name": "producers",
       "type": "producer_info",

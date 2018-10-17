@@ -1,6 +1,13 @@
+/**
+ * 
+ * 
+ */
+
 #pragma once
 
-#include <trail.connections/trailconn.voting.hpp> //Import trailservice voting data definitions
+#include <trail.connections/trailconn.voting.hpp>
+#include <trail.connections/trailconn.system.hpp>
+#include <trail.connections/trailconn.tokens.hpp>
 
 #include <eosiolib/asset.hpp>
 #include <eosiolib/eosio.hpp>
@@ -10,8 +17,8 @@
 using namespace eosio;
 
 class trail : public contract {
+    
     public:
-
         /**
          * Constructor sets environment singleton upon contract deployment, and gets environment for every action call.
         */
@@ -55,9 +62,12 @@ class trail : public contract {
          * @param vote_key - 
          * @param direction - 
          * @param weight - 
+         * @param expiration - 
          * @param voter - 
         */
-        void addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, uint16_t direction, account_name voter);
+        void addreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, uint16_t direction, uint32_t expiration, account_name voter);
+
+        void rmvexpvotes(account_name voter);
 
         /**
          * Removes a receipt from the receipt list on a VoterID.
@@ -66,20 +76,13 @@ class trail : public contract {
          * @param vote_key - 
          * @param voter - 
         */
-        void rmvreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, account_name voter);
+        //void rmvreceipt(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, account_name voter);
+
+        void regballot(account_name publisher);
+
+        void unregballot(account_name publisher);
 
     protected:
-
-        /// @abi table registries i64
-        struct registration {
-            asset native;
-            account_name publisher;
-
-            uint64_t primary_key() const { return native.symbol.name(); }
-            uint64_t by_publisher() const { return publisher; }
-        };
-
-        typedef multi_index<N(registries), registration> registries_table;
 
         environment_singleton env_singleton;
         environment env_struct;

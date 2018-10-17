@@ -10,7 +10,7 @@
 #include <eosiolib/privileged.hpp>
 #include <eosiolib/singleton.hpp>
 #include <eosio.system/exchange_state.hpp>
-
+#include <cmath>  
 #include <string>
 
 namespace eosiosystem {
@@ -19,7 +19,9 @@ namespace eosiosystem {
    using eosio::indexed_by;
    using eosio::const_mem_fun;
    using eosio::block_timestamp;
-
+   const uint32_t block_num_network_activation = 3600; // debug version 3600 blocks = 30 min
+  //  const uint32_t block_num_network_activation = 1000000; 
+   
    struct name_bid {
      account_name            newname;
      account_name            high_bidder;
@@ -52,6 +54,7 @@ namespace eosiosystem {
       uint16_t             last_producer_schedule_size = 0;
       double               total_producer_vote_weight = 0; /// the sum of all producer votes
       block_timestamp      last_name_close;
+      uint32_t             block_num = 12;
       uint32_t             last_claimrewards = 0;
       uint32_t             next_payment = 0;
 
@@ -60,9 +63,14 @@ namespace eosiosystem {
                                 (max_ram_size)(total_ram_bytes_reserved)(total_ram_stake)
                                 (last_producer_schedule_update)(last_pervote_bucket_fill)
                                 (pervote_bucket)(perblock_bucket)(total_unpaid_blocks)(total_activated_stake)(thresh_activated_stake_time)
-                                (last_producer_schedule_size)(total_producer_vote_weight)(last_name_close)(last_claimrewards)(next_payment) )
+                                (last_producer_schedule_size)(total_producer_vote_weight)(last_name_close)(block_num)(last_claimrewards)(next_payment) )
    };
 
+   enum class kick_type {
+     REACHED_TRESHOLD = 1,
+     PREVENT_LIB_STOP_MOVING = 2,
+     BPS_VOTING = 3
+   };
    /**
     * TELOS CHANGES:
     * 
@@ -79,15 +87,47 @@ namespace eosiosystem {
       uint32_t              blocks_per_cycle = 0;
       uint64_t              last_claim_time = 0;
       uint16_t              location = 0;
+      
+      uint32_t              kick_reason_id = 0;
+      std::string           kick_reason;
+      uint32_t              times_kicked = 0;
+      uint32_t              kick_penalty_hours = 0; 
+      block_timestamp       last_time_kicked;
 
       uint64_t primary_key()const { return owner;                                   }
       double   by_votes()const    { return is_active ? -total_votes : total_votes;  }
       bool     active()const      { return is_active;                               }
       void     deactivate()       { producer_key = public_key(); is_active = false; }
+      
+      void kick(kick_type kt, uint32_t penalty = 0) {
+        times_kicked++;
+        last_time_kicked = block_timestamp(eosio::time_point(eosio::microseconds(int64_t(current_time()))));
+        
+        if(penalty == 0) kick_penalty_hours  = uint32_t(std::pow(2, times_kicked));
+        
+        switch(kt) {
+          case kick_type::REACHED_TRESHOLD:
+            kick_reason_id = uint32_t(kick_type::REACHED_TRESHOLD);
+            kick_reason = "Producer account was deactivated because it reached the maximum missed blocks in this rotation timeframe.";
+          break;
+          case kick_type::PREVENT_LIB_STOP_MOVING:
+            kick_reason_id = uint32_t(kick_type::PREVENT_LIB_STOP_MOVING);
+            kick_reason = "Producer account was deactivated to prevent the LIB from halting.";
+          break;
+          case kick_type::BPS_VOTING:
+            kick_reason_id = uint32_t(kick_type::BPS_VOTING);
+            kick_reason = "Producer account was deactivated by vote.";
+            kick_penalty_hours = penalty;
+          break;
+        }
+        
+        deactivate();
+      } 
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
       EOSLIB_SERIALIZE( producer_info, (owner)(total_votes)(producer_key)(is_active)(url)
-                        (unpaid_blocks)(missed_blocks)(blocks_per_cycle)(last_claim_time)(location) )
+                        (unpaid_blocks)(missed_blocks)(blocks_per_cycle)(last_claim_time)
+                        (location)(kick_reason_id)(kick_reason)(times_kicked)(kick_penalty_hours)(last_time_kicked) )
    };
 
    struct rotation_info {
@@ -142,6 +182,17 @@ namespace eosiosystem {
       EOSLIB_SERIALIZE( voter_info, (owner)(proxy)(producers)(staked)(last_stake)(last_vote_weight)(proxied_vote_weight)(is_proxy)(reserved1)(reserved2)(reserved3) )
    };
 
+   //tracks automated claimreward payments
+   struct payment {
+     account_name bp;
+     asset pay;
+
+     uint64_t primary_key() const { return bp; }
+     EOSLIB_SERIALIZE(payment, (bp)(pay))
+   };
+
+   typedef eosio::multi_index<N(payments), payment> payments_table;
+
    typedef eosio::multi_index< N(voters), voter_info>  voters_table;
 
    typedef eosio::singleton<N(rotations), rotation_info> rotation_info_singleton;
@@ -166,6 +217,7 @@ namespace eosiosystem {
          eosio_global_state     _gstate;
          rotation_info          _grotations;
          rammarket              _rammarket;
+         payments_table         payments;
 
       public:
          system_contract( account_name s );
@@ -243,6 +295,8 @@ namespace eosiosystem {
          // functions defined in producer_pay.cpp
          void claimrewards( const account_name& owner );
 
+         void claimrewards_snapshot();
+
          void setpriv( account_name account, uint8_t ispriv );
 
          void rmvproducer( account_name producer );
@@ -253,6 +307,7 @@ namespace eosiosystem {
 
          void bidname( account_name bidder, account_name newname, asset bid );
         
+         void votebpout(account_name bp, uint32_t penalty_hours);
       private:
          
          void recalculate_votes();
@@ -280,9 +335,6 @@ namespace eosiosystem {
          //calculate the inverse vote weight
          double inverseVoteWeight(double staked, double amountVotedProducers);
 
-         //verify if the network is activated
-         void checkNetworkActivation();
-
          bool is_in_range(int32_t index, int32_t low_bound, int32_t up_bound);
 
          void check_missed_blocks(block_timestamp timestamp, account_name producer);
@@ -297,7 +349,7 @@ namespace eosiosystem {
          
          void add_producer_to_kick_list(offline_producer producer);
 
-         void remove_producer_to_kick_list(offline_producer producer);
+         void remove_producer_from_kick_list(offline_producer producer);
 
          bool reach_consensus();
 
