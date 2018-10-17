@@ -185,7 +185,7 @@ extern "C" {
             if (itr == by_voter.end()) {
                 print("\nvoter doesnt have receipt yet");
 
-                votereceipts.emplace(args.voter, [&]( auto& a ){
+                votereceipts.emplace(self, [&]( auto& a ){
                     a.receipt_id = votereceipts.available_primary_key();
                     a.voter = args.voter;
                     a.vote_code = args.vote_code;
