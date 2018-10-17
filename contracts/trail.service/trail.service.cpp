@@ -185,7 +185,7 @@ extern "C" {
                 if (now() <= itr->expiration && 
                     itr->vote_code == args.vote_code && 
                     itr->vote_scope == args.vote_scope && 
-                    itr->proposal_id == args.proposal_id) {
+                    itr->prop_id == args.proposal_id) {
 
                     by_voter.modify(itr, 0, [&]( auto& a ) {
                         a.direction = args.direction;

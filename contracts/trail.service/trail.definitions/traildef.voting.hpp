@@ -35,7 +35,7 @@ struct vote_receipt {
     account_name voter;
     uint64_t vote_code;
     uint64_t vote_scope;
-    uint64_t proposal_id;
+    uint64_t prop_id;
     uint16_t direction;
     asset weight;
     uint32_t expiration;
