@@ -174,7 +174,7 @@ extern "C" {
         } else if (code == N(eosio) && action == N(undelegatebw)) {
             //TODO: implement
         } else if (code == N(eosio.amend) && action == N(vote)) { //TODO: change code to be any registered ballot
-            print("\nvote action receiped by trail");
+            print("\nvote action received by trail");
             auto args = unpack_action_data<vote_args>();
 
             receipts_table votereceipts(self, self);
@@ -196,9 +196,9 @@ extern "C" {
                     a.expiration = args.expiration;
                 });
 
-                print("\nvotereceipt emplaced by trail");
+                print("\nvotereceipt emplacement complete");
             } else {
-                print("\nvotereceipt exits");
+                print("\nvotereceipt exists");
 
                 while(itr->voter == args.voter) {
                     if (now() <= itr->expiration && 
@@ -210,19 +210,26 @@ extern "C" {
                             a.direction = args.direction;
                             a.weight = new_weight;
                         });
+
+                        break;
+
                         print("\nVR found and updated");
                     }
                     itr++;
                 }
 
-                print("\n\nvotereceipt check complete");
+                print("\n\nvotereceipt update complete");
             }
-
-            print("\ndebugging print");
 
         } else if (code == N(eosio.amend) && action == N(processvotes)) {
             auto args = unpack_action_data<processvotes_args>();
-            //TODO: implement
+
+            receipts_table votereceipts(self, self);
+            auto by_code = votereceipts.get_index<N(bycode)>();
+            auto itr = by_code.lower_bound(args.vote_code);
+
+
+            //TODO: finish implementing
         }
     } //end apply
 };
