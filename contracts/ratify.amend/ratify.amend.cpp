@@ -102,6 +102,8 @@ void ratifyamend::vote(uint64_t vote_code, uint64_t vote_scope, uint64_t proposa
     require_auth(voter);
     eosio_assert(direction >= 0 && direction <= 2, "Invalid Vote. [0 = NO, 1 = YES, 2 = ABSTAIN]");
 
+    //TODO: check that voter is registered
+
     proposals_table proposals(_self, _self); //TODO: change _self to vote_code and vote_scope?
     auto p = proposals.find(proposal_id);
     eosio_assert(p != proposals.end(), "Proposal Not Found");
@@ -125,6 +127,8 @@ void ratifyamend::processvotes(uint64_t vote_code, uint64_t vote_scope, uint64_t
     auto by_code = votereceipts.get_index<N(bycode)>();
     auto itr = by_code.lower_bound(vote_code);
 
+    print("\neosio.amend processing votes...");
+
     if (itr == by_code.end()) {
         print("\nno votes to process");
     } else {
@@ -138,6 +142,8 @@ void ratifyamend::processvotes(uint64_t vote_code, uint64_t vote_scope, uint64_t
             if (itr->vote_scope == vote_scope &&
                 itr->prop_id == proposal_id &&
                 now() > itr->expiration) {
+
+                print("\nvr found...counting...");
                 
                 switch (itr->direction) {
                     case 0 : new_no_votes += itr->weight.amount; break;
