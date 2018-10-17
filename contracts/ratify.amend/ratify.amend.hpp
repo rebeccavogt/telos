@@ -81,7 +81,7 @@ class ratifyamend : public contract {
             uint32_t expiration_length;
 
             uint64_t primary_key() const { return publisher; }
-            EOSLIB_SERIALIZE(threshold, (publisher)(quorum_threshold)(expiration_length))
+            EOSLIB_SERIALIZE(threshold, (publisher)(total_voters)(quorum_threshold)(expiration_length))
         };
 
     #pragma region Tables
