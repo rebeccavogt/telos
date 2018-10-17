@@ -208,8 +208,9 @@ void ratifyamend::update_doc(uint64_t document_id, vector<uint16_t> new_clause_i
     });
 }
 
-//EOSIO_ABI(ratifyamend, (insertdoc)(propose)(vote)(close))
+EOSIO_ABI(ratifyamend, (insertdoc)(propose)(vote)(processvotes)(close))
 
+/*
 extern "C" {
     void apply(uint64_t self, uint64_t code, uint64_t action) {
         ratifyamend _ratifyamend(self);
@@ -224,3 +225,4 @@ extern "C" {
         }
     }
 };
+*/
