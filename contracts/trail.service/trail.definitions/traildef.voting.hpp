@@ -76,7 +76,6 @@ struct processvotes_args {
     uint64_t vote_code;
     uint64_t vote_scope;
     uint64_t proposal_id;
-    account_name voter;
 };
 
 #pragma endregion Structs

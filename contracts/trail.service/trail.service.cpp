@@ -197,7 +197,7 @@ extern "C" {
 
                 print("\nfirst votereceipt emplacement complete");
             } else {
-                
+
                 bool found = false;
                 while(itr->voter == args.voter) {
                     print("\nchecking vr...");
@@ -212,9 +212,8 @@ extern "C" {
                         });
 
                         found = true;
-                        break;
-
                         print("\nVR found and updated");
+                        break;
                     }
                     itr++;
                 }
@@ -239,13 +238,42 @@ extern "C" {
 
         } else if (code == N(eosio.amend) && action == N(processvotes)) {
             auto args = unpack_action_data<processvotes_args>();
-
             receipts_table votereceipts(self, self);
             auto by_code = votereceipts.get_index<N(bycode)>();
             auto itr = by_code.lower_bound(args.vote_code);
 
+            if (itr == by_code.end()) {
+                print("\nno votes to process");
+            } else {
+                uint64_t loops = 0;
+                uint64_t new_no_votes = 0;
+                uint64_t new_yes_votes = 0;
+                uint64_t new_abs_votes = 0;
 
-            //TODO: finish implementing
+                while(itr->vote_code == args.vote_code && loops < 10) { //loops variable to limit cpu/net expense per call
+                    
+                    if (itr->vote_scope == args.vote_scope &&
+                        itr->prop_id == args.proposal_id &&
+                        now() > itr->expiration) {
+                        by_code.erase(itr);
+
+                        switch (itr->direction) {
+                            case 0 : new_no_votes += itr->weight; break;
+                            case 1 : new_yes_votes += itr->weight; break;
+                            case 2 : new_abs_votes += itr->weight; break;
+                        }
+
+                        loops++;
+                    }
+                    itr++;
+                }
+
+                print("\nloops processed: ", loops);
+                print("\nnew no votes: ", new_no_votes);
+                print("\nnew yes votes: ", new_yes_votes);
+                print("\nnew abstain votes: ", new_abs_votes);
+            }
+
         }
     } //end apply
 };

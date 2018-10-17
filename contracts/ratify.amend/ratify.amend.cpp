@@ -106,12 +106,64 @@ void ratifyamend::vote(uint64_t vote_code, uint64_t vote_scope, uint64_t proposa
     auto p = proposals.find(proposal_id);
     eosio_assert(p != proposals.end(), "Proposal Not Found");
     auto prop = *p;
-    eosio_assert(prop.expiration > now(), "Proposal Has Expired");
+    eosio_assert(prop.expiration >= now(), "Proposal Has Expired");
 
     //TODO: more checks before sending to trail eg. check matching expire
 
     require_recipient(N(eosio.trail));
     print("\nVote sent to Trail");
+}
+
+void ratifyamend::processvotes(uint64_t vote_code, uint64_t vote_scope, uint64_t proposal_id) {
+    proposals_table proposals(_self, _self); //TODO: change _self to vote_code and vote_scope?
+    auto p = proposals.find(proposal_id);
+    eosio_assert(p != proposals.end(), "Proposal Not Found");
+    auto prop = *p;
+    eosio_assert(prop.expiration < now(), "Proposal is still open");
+    
+    receipts_table votereceipts(N(eosio.trail), N(eosio.trail));
+    auto by_code = votereceipts.get_index<N(bycode)>();
+    auto itr = by_code.lower_bound(vote_code);
+
+    if (itr == by_code.end()) {
+        print("\nno votes to process");
+    } else {
+        uint64_t loops = 0;
+        uint64_t new_no_votes = 0;
+        uint64_t new_yes_votes = 0;
+        uint64_t new_abs_votes = 0;
+
+        while(itr->vote_code == vote_code && loops < 10) { //loops variable to limit cpu/net expense per call
+            
+            if (itr->vote_scope == vote_scope &&
+                itr->prop_id == proposal_id &&
+                now() > itr->expiration) {
+                
+                switch (itr->direction) {
+                    case 0 : new_no_votes += itr->weight; break;
+                    case 1 : new_yes_votes += itr->weight; break;
+                    case 2 : new_abs_votes += itr->weight; break;
+                }
+
+                loops++;
+            }
+            itr++;
+
+        }
+
+        proposals.modify(p, 0, [&]( auto& a ) {
+            a.no_count += new_no_votes;
+            a.yes_count += new_yes_votes;
+            a.abstain_count += new_abs_votes;
+        });
+
+        print("\nloops processed: ", loops);
+        print("\nnew no votes: ", new_no_votes);
+        print("\nnew yes votes: ", new_yes_votes);
+        print("\nnew abstain votes: ", new_abs_votes);
+
+        require_recipient(N(eosio.trail));
+    }
 }
 
 void ratifyamend::close(uint64_t proposal_id) {
@@ -232,10 +284,6 @@ extern "C" {
             execute_action(&_ratifyamend, &ratifyamend::vote);
         } else if (code == self && action == N(close)) {
             execute_action(&_ratifyamend, &ratifyamend::close);
-        } else if (code == N(eosio) && (action == N(delegatebw) || action == N(undelegatebw))) {
-            print("\nratifyamend received delegatebw/undelegate action from eosio");
-            auto args = unpack_action_data<delegatebw_args>();
-
         }
     }
 };
