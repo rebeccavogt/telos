@@ -63,9 +63,9 @@ class ratifyamend : public contract {
             string title;
             vector<uint16_t> new_clause_ids;
             vector<string> new_ipfs_urls;
-            uint64_t yes_count;
-            uint64_t no_count;
-            uint64_t abstain_count;
+            asset yes_count;
+            asset no_count;
+            asset abstain_count;
             account_name proposer;
             uint64_t vote_code;
             uint64_t vote_scope;

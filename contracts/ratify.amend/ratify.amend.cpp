@@ -129,9 +129,9 @@ void ratifyamend::processvotes(uint64_t vote_code, uint64_t vote_scope, uint64_t
         print("\nno votes to process");
     } else {
         uint64_t loops = 0;
-        uint64_t new_no_votes = 0;
-        uint64_t new_yes_votes = 0;
-        uint64_t new_abs_votes = 0;
+        int64_t new_no_votes = 0;
+        int64_t new_yes_votes = 0;
+        int64_t new_abs_votes = 0;
 
         while(itr->vote_code == vote_code && loops < 10) { //loops variable to limit cpu/net expense per call
             
@@ -140,9 +140,9 @@ void ratifyamend::processvotes(uint64_t vote_code, uint64_t vote_scope, uint64_t
                 now() > itr->expiration) {
                 
                 switch (itr->direction) {
-                    case 0 : new_no_votes += itr->weight; break;
-                    case 1 : new_yes_votes += itr->weight; break;
-                    case 2 : new_abs_votes += itr->weight; break;
+                    case 0 : new_no_votes += itr->weight.amount; break;
+                    case 1 : new_yes_votes += itr->weight.amount; break;
+                    case 2 : new_abs_votes += itr->weight.amount; break;
                 }
 
                 loops++;
@@ -158,15 +158,19 @@ void ratifyamend::processvotes(uint64_t vote_code, uint64_t vote_scope, uint64_t
         });
 
         print("\nloops processed: ", loops);
-        print("\nnew no votes: ", new_no_votes);
-        print("\nnew yes votes: ", new_yes_votes);
-        print("\nnew abstain votes: ", new_abs_votes);
+        print("\nnew no votes: ", asset(new_no_votes));
+        print("\nnew yes votes: ", asset(new_yes_votes));
+        print("\nnew abstain votes: ", asset(new_abs_votes));
 
         require_recipient(N(eosio.trail));
     }
 }
 
 void ratifyamend::close(uint64_t proposal_id) {
+
+
+
+    /*
     proposals_table proposals(_self, _self);
     auto p = proposals.find(proposal_id);
 
@@ -176,8 +180,8 @@ void ratifyamend::close(uint64_t proposal_id) {
     eosio_assert(po.expiration <= now(), "Voting Window Still Open");
     eosio_assert(po.status == 0, "Proposal Already Closed");
 
-    uint64_t total_votes = (po.yes_count + po.no_count + po.abstain_count); //total votes cast on proposal
-    uint64_t pass_thresh = ((po.yes_count + po.no_count) / 3) * 2; // 66.67% of total votes
+    asset total_votes = (po.yes_count + po.no_count + po.abstain_count); //total votes cast on proposal
+    asset pass_thresh = ((po.yes_count + po.no_count) / 3) * 2; // 66.67% of total votes
 
     //refund thresholds
     uint64_t q_refund_thresh = thresh_struct.total_voters / 25; //4% of all registered voters
@@ -236,6 +240,7 @@ void ratifyamend::close(uint64_t proposal_id) {
 
         print("\nProposal Passed.");
     }
+    */
     
 }
 

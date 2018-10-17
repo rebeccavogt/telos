@@ -246,22 +246,26 @@ extern "C" {
                 print("\nno votes to process");
             } else {
                 uint64_t loops = 0;
-                uint64_t new_no_votes = 0;
-                uint64_t new_yes_votes = 0;
-                uint64_t new_abs_votes = 0;
+                int64_t new_no_votes = 0;
+                int64_t new_yes_votes = 0;
+                int64_t new_abs_votes = 0;
+                symbol_name sym;
 
                 while(itr->vote_code == args.vote_code && loops < 10) { //loops variable to limit cpu/net expense per call
                     
                     if (itr->vote_scope == args.vote_scope &&
                         itr->prop_id == args.proposal_id &&
                         now() > itr->expiration) {
-                        by_code.erase(itr);
 
-                        switch (itr->direction) {
-                            case 0 : new_no_votes += itr->weight; break;
-                            case 1 : new_yes_votes += itr->weight; break;
-                            case 2 : new_abs_votes += itr->weight; break;
+                        switch (itr->direction) { //NOTE: cast as voted asset
+                            case 0 : new_no_votes += itr->weight.amount; break;
+                            case 1 : new_yes_votes += itr->weight.amount; break;
+                            case 2 : new_abs_votes += itr->weight.amount; break;
                         }
+
+                        sym = itr->weight.symbol.name();
+
+                        by_code.erase(itr);
 
                         loops++;
                     }
@@ -269,9 +273,9 @@ extern "C" {
                 }
 
                 print("\nloops processed: ", loops);
-                print("\nnew no votes: ", new_no_votes);
-                print("\nnew yes votes: ", new_yes_votes);
-                print("\nnew abstain votes: ", new_abs_votes);
+                print("\nnew no votes: ", asset(new_no_votes, sym));
+                print("\nnew yes votes: ", asset(new_yes_votes, sym));
+                print("\nnew abstain votes: ", asset(new_abs_votes, sym));
             }
 
         }
