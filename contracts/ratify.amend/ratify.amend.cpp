@@ -87,9 +87,9 @@ void ratifyamend::propose(string title, uint64_t document_id, vector<uint16_t> n
         a.title = title;
         a.new_clause_ids = new_clause_ids;
         a.new_ipfs_urls = new_ipfs_urls;
-        a.yes_count = 0;
-        a.no_count = 0;
-        a.abstain_count = 0;
+        a.yes_count = asset(0);
+        a.no_count = asset(0);
+        a.abstain_count = asset(0);
         a.proposer = proposer;
         a.vote_code = _self;
         a.vote_scope = _self;
@@ -152,9 +152,9 @@ void ratifyamend::processvotes(uint64_t vote_code, uint64_t vote_scope, uint64_t
         }
 
         proposals.modify(p, 0, [&]( auto& a ) {
-            a.no_count += new_no_votes;
-            a.yes_count += new_yes_votes;
-            a.abstain_count += new_abs_votes;
+            a.no_count += asset(new_no_votes);
+            a.yes_count += asset(new_yes_votes);
+            a.abstain_count += asset(new_abs_votes);
         });
 
         print("\nloops processed: ", loops);
@@ -167,81 +167,7 @@ void ratifyamend::processvotes(uint64_t vote_code, uint64_t vote_scope, uint64_t
 }
 
 void ratifyamend::close(uint64_t proposal_id) {
-
-
-
-    /*
-    proposals_table proposals(_self, _self);
-    auto p = proposals.find(proposal_id);
-
-    eosio_assert(p != proposals.end(), "Proposal Not Found");
-    auto po = *p;
-
-    eosio_assert(po.expiration <= now(), "Voting Window Still Open");
-    eosio_assert(po.status == 0, "Proposal Already Closed");
-
-    asset total_votes = (po.yes_count + po.no_count + po.abstain_count); //total votes cast on proposal
-    asset pass_thresh = ((po.yes_count + po.no_count) / 3) * 2; // 66.67% of total votes
-
-    //refund thresholds
-    uint64_t q_refund_thresh = thresh_struct.total_voters / 25; //4% of all registered voters
-    uint64_t p_refund_thresh = total_votes / 4; //25% of votes cast
-
-    //check for zero votes
-    if (total_votes == uint64_t(0)) {
-
-        proposals.modify(p, 0, [&]( auto& a ) {
-            a.status = 2;
-        });
-
-        print("\nProposal Failed With 0 Votes.");
-
-        return;
-    }
-
-    //determine pass/fail and refund eligibility
-    if (total_votes >= thresh_struct.quorum_threshold && po.yes_count >= pass_thresh) { //PASS
-
-        proposals.modify(p, 0, [&]( auto& a ) {
-            a.status = 1;
-        });
-
-        action(permission_level{ _self, N(active) }, N(eosio.token), N(transfer), make_tuple( //NOTE: susceptible to ram-drain bug
-    	    _self,
-            po.proposer,
-            asset(int64_t(1000000), S(4, TLOS)),
-            std::string("Ratify/Amend Proposal Fee Refund")
-	    )).send();
-
-        update_doc(po.document_id, po.new_clause_ids, po.new_ipfs_urls);
-
-        print("\nProposal Passed...Refund Sent...Documents Updated.");
-
-    } else if (po.yes_count >= p_refund_thresh && total_votes >= q_refund_thresh) { //FAILED, REFUND CHECK
-        
-        proposals.modify(p, 0, [&]( auto& a ) {
-            a.status = 2;
-        });
-
-        action(permission_level{ _self, N(active) }, N(eosio.token), N(transfer), make_tuple( //NOTE: susceptible to ram-drain bug
-    	    _self,
-            po.proposer,
-            asset(int64_t(1000000), S(4, TLOS)),
-            std::string("Ratify/Amend Proposal Fee Refund")
-	    )).send();
-
-        print("\nProposal Failed...Refund Sent.");
-        
-    } else { //FAILED, NO REFUND CHECK
-
-        proposals.modify(p, 0, [&]( auto& a ) {
-            a.status = 2;
-        });
-
-        print("\nProposal Passed.");
-    }
-    */
-    
+    //TODO: implement
 }
 
 void ratifyamend::update_thresh() {
