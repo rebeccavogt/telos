@@ -64,9 +64,9 @@ namespace eosiosystem {
           info.location = location;
           info.missed_blocks = 0;
           info.is_active = true;
-          info.kick_reason = "";
-          info.kick_reason_id = 0;
-          info.last_time_kicked = block_timestamp();
+          // info.kick_reason = "";
+          // info.kick_reason_id = 0;
+          // info.last_time_kicked = block_timestamp();
         });
       } else {
         _producers.emplace(producer, [&](producer_info &info) {

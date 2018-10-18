@@ -62,7 +62,7 @@ void system_contract::add_producer_to_kick_list(offline_producer producer) {
        }    
     }
      
-    if(active_schedule_size > 1 && !reach_consensus()) kick_producer();
+    // if(active_schedule_size > 1 && !reach_consensus()) kick_producer();
 }
 
 void system_contract::remove_producer_from_kick_list(offline_producer producer) {
@@ -86,13 +86,13 @@ void system_contract::kick_producer() {
         auto obp = o_bps[i];
         auto bp = _producers.find(obp.name);
 
-        _producers.modify(bp, 0, [&](auto &p) {
+        // _producers.modify(bp, 0, [&](auto &p) {
             // p.deactivate();
-            p.kick(kick_type::PREVENT_LIB_STOP_MOVING);
-            remove_producer_from_kick_list(obp);
-        });
+            // p.kick(kick_type::PREVENT_LIB_STOP_MOVING);
+            // remove_producer_from_kick_list(obp);
+        // });
 
-        if(reach_consensus()) break;
+        // if(reach_consensus()) break;
     }
 }
 
