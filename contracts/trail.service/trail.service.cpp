@@ -265,11 +265,12 @@ extern "C" {
 
                         sym = itr->weight.symbol.name();
 
-                        by_code.erase(itr);
+                        itr = by_code.erase(itr);
 
                         loops++;
+                    } else {
+                        itr++;
                     }
-                    itr++;
                 }
 
                 print("\nloops processed: ", loops);
