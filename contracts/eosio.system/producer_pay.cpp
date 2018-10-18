@@ -296,12 +296,15 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer) 
     }
 
     //called once per day to set payments snapshot
-    if (_gstate.last_claimrewards + uint32_t(3600) <= timestamp.slot) { //172800 blocks in a day
+    if (_gstate.last_claimrewards + uint32_t(300) <= timestamp.slot) { //172800 blocks in a day
         print("\nNew ClaimRewards Snapshot");
-		auto start_time = current_time();
+        auto start_time = current_time();
+        print("\nstart_time ", start_time);
         claimrewards_snapshot();
-		print("\nElapsed Execution (in microseconds): ", (current_time() - start_time));
-        _gstate.last_claimrewards = timestamp.slot;
+        auto end_time = current_time();
+        print("\nend_time ", end_time);
+        print("\nElapsed Execution (in microseconds): ", (end_time - start_time));
+		_gstate.last_claimrewards = timestamp.slot;
     }
 }
 
@@ -356,6 +359,7 @@ void system_contract::claimrewards_snapshot(){
     eosio_assert(_gstate.thresh_activated_stake_time > 0, "cannot take snapshot until chain is activated");
 
     if (_gstate.total_unpaid_blocks <= 0) { //skips action, since there are no rewards to claim
+		print("\ntotal_unpaid_blocks is 0 or lower, returning...");
         return;
     }
 
@@ -366,6 +370,7 @@ void system_contract::claimrewards_snapshot(){
 
     if (usecs_since_last_fill > 0 && _gstate.last_pervote_bucket_fill > 0)
     {
+		print("\ncalculating inflation, (last_pervote_bucket > 0)");
         auto new_tokens = static_cast<int64_t>((continuous_rate * double(token_supply.amount) * double(usecs_since_last_fill)) / double(useconds_per_year));
 
         auto to_producers = (new_tokens / 5) * 2; //40% to producers
@@ -418,8 +423,11 @@ void system_contract::claimrewards_snapshot(){
             pay_amount = (shareValue * int64_t(2));
         } else if (index >= 22 && index <= 51) {
             pay_amount = shareValue;
-        } else 
+        } else  {
+			print("\nexceeded 51 producers");
 			break;
+		}
+			
 		
         _gstate.perblock_bucket -= pay_amount;
         _gstate.total_unpaid_blocks -= prod.unpaid_blocks;
