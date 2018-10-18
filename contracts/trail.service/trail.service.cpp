@@ -268,7 +268,7 @@ extern "C" {
                         vrs.emplace_back(itr->receipt_id);
                         loops++;
                     }
-                    itr++;
+                    itr = by_code.lower_bound(args.vote_code);
                 }
 
                 print("\nerasing vrs...");
