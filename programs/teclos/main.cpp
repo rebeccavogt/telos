@@ -723,7 +723,6 @@ struct set_account_permission_subcommand {
                } else {
                   // if this is a new permission and there is no parent we default to "active"
                   parent = name(config::active_name);
-
                }
             } else {
                parent = name(parentStr);
