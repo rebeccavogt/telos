@@ -250,6 +250,7 @@ extern "C" {
                 int64_t new_yes_votes = 0;
                 int64_t new_abs_votes = 0;
                 symbol_name sym;
+                vector<uint64_t> vrs;
 
                 while(itr->vote_code == args.vote_code && loops < 10) { //loops variable to limit cpu/net expense per call
                     
@@ -264,13 +265,15 @@ extern "C" {
                         }
 
                         sym = itr->weight.symbol.name();
-
-                        itr = by_code.erase(itr);
-
+                        vrs.emplace_back(itr->receipt_id);
                         loops++;
-                    } else {
-                        itr++;
                     }
+                    itr++;
+                }
+
+                for (uint64_t rid : vrs) {
+                    auto id = votereceipts.find(rid); //NOTE: finding by primary key
+                    votereceipts.erase(id);
                 }
 
                 print("\nloops processed: ", loops);
