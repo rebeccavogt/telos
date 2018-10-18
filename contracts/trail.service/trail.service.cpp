@@ -268,12 +268,12 @@ extern "C" {
                         vrs.emplace_back(itr->receipt_id);
                         loops++;
                     }
-                    itr = by_code.lower_bound(args.vote_code);
+                    itr++;
                 }
 
                 print("\nerasing vrs...");
                 for (uint64_t rid : vrs) {
-                    auto id = votereceipts.find(rid); //NOTE: finding by primary key
+                    //auto id = votereceipts.find(rid); //NOTE: finding by primary key
                     //votereceipts.erase(id);
                     print("\nerased vr_id: ", rid);
                 }
