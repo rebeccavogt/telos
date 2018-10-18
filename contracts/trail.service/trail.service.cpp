@@ -242,6 +242,8 @@ extern "C" {
             auto by_code = votereceipts.get_index<N(bycode)>();
             auto itr = by_code.lower_bound(args.vote_code);
 
+            print("\nTrail beginning vr search...");
+
             if (itr == by_code.end()) {
                 print("\nno votes to process");
             } else {
@@ -249,7 +251,7 @@ extern "C" {
                 int64_t new_no_votes = 0;
                 int64_t new_yes_votes = 0;
                 int64_t new_abs_votes = 0;
-                symbol_name sym;
+                //symbol_name sym;
                 vector<uint64_t> vrs;
 
                 print("\nlower bound id: ", itr->receipt_id);
@@ -266,7 +268,6 @@ extern "C" {
                             case 2 : new_abs_votes += itr->weight.amount; break;
                         }
 
-                        sym = itr->weight.symbol.name();
                         vrs.emplace_back(itr->receipt_id);
                         loops++;
                     }
@@ -281,9 +282,9 @@ extern "C" {
                 }
 
                 print("\nloops processed: ", loops);
-                print("\nnew no votes: ", asset(new_no_votes, sym));
-                print("\nnew yes votes: ", asset(new_yes_votes, sym));
-                print("\nnew abstain votes: ", asset(new_abs_votes, sym));
+                print("\nnew no votes: ", asset(new_no_votes));
+                print("\nnew yes votes: ", asset(new_yes_votes));
+                print("\nnew abstain votes: ", asset(new_abs_votes));
             }
 
         }
