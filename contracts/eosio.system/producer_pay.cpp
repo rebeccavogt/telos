@@ -300,7 +300,7 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer) 
         print("\nNew ClaimRewards Snapshot");
 		auto start_time = current_time();
         claimrewards_snapshot();
-		print("Elapsed Execution (in microseconds): ", (current_time() - start_time));
+		print("\nElapsed Execution (in microseconds): ", (current_time() - start_time));
         _gstate.last_claimrewards = timestamp.slot;
     }
 }
@@ -352,7 +352,7 @@ void system_contract::recalculate_votes(){
 
 void system_contract::claimrewards_snapshot(){
     require_auth(N(eosio)); //can only come from bp's onblock call
-
+	print("\nclaim_rewards_snapshot");
     eosio_assert(_gstate.thresh_activated_stake_time > 0, "cannot take snapshot until chain is activated");
 
     if (_gstate.total_unpaid_blocks <= 0) { //skips action, since there are no rewards to claim
