@@ -252,6 +252,8 @@ extern "C" {
                 symbol_name sym;
                 vector<uint64_t> vrs;
 
+                print("\nlower bound id: ", itr->receipt_id);
+
                 while(itr->vote_code == args.vote_code && loops < 10) { //loops variable to limit cpu/net expense per call
                     
                     if (itr->vote_scope == args.vote_scope &&
