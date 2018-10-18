@@ -268,18 +268,23 @@ extern "C" {
                             case 2 : new_abs_votes += itr->weight.amount; break;
                         }
 
-                        vrs.emplace_back(itr->receipt_id);
+                        //vrs.emplace_back(itr->receipt_id);
+                        itr = by_code.erase(itr);
                         loops++;
+
+                    } else {
+                        itr++;
                     }
-                    itr++;
                 }
 
+                /*
                 print("\nerasing vrs...");
                 for (uint64_t rid : vrs) {
-                    //auto id = votereceipts.find(rid); //NOTE: finding by primary key
-                    //votereceipts.erase(id);
+                    auto id = votereceipts.find(rid); //NOTE: finding by primary key
+                    votereceipts.erase(id);
                     print("\nerased vr_id: ", rid);
                 }
+                */
 
                 print("\nloops processed: ", loops);
                 print("\nnew no votes: ", asset(new_no_votes));
