@@ -274,7 +274,7 @@ extern "C" {
                 print("\nerasing vrs...");
                 for (uint64_t rid : vrs) {
                     auto id = votereceipts.find(rid); //NOTE: finding by primary key
-                    votereceipts.erase(id);
+                    //votereceipts.erase(id);
                     print("\nerased vr_id: ", rid);
                 }
 
