@@ -141,13 +141,12 @@ namespace eosiosystem {
 
       //NOTE: This might not be the best place for this information
 
-      bool                            is_kick_active = true;
-      account_name                    last_onblock_caller; //TODO: This name is ambiguous maybe
-      block_timestamp                 last_time_block_produced;
-      std::vector<offline_producer>   offline_bps;
-
+      // bool                            is_kick_active = true;
+      // account_name                    last_onblock_caller;
+      // block_timestamp                 last_time_block_produced;
+      
       EOSLIB_SERIALIZE( rotation_info, (is_rotation_active)(bp_currently_out)(sbp_currently_in)(bp_out_index)(sbp_in_index)(next_rotation_time)
-                        (last_rotation_time)(is_kick_active)(last_onblock_caller)(last_time_block_produced)(offline_bps) )
+                        (last_rotation_time)/*(is_kick_active)(last_onblock_caller)(last_time_block_produced)*/ )
    };
 
    struct voter_info {
@@ -195,6 +194,8 @@ namespace eosiosystem {
 
    typedef eosio::multi_index< N(voters), voter_info>  voters_table;
 
+   typedef eosio::singleton<N(schedulemetrics), schedule_metrics> schedule_metrics_singleton;
+   
    typedef eosio::singleton<N(rotations), rotation_info> rotation_info_singleton;
 
    typedef eosio::multi_index< N(producers), producer_info,
@@ -209,15 +210,15 @@ namespace eosiosystem {
 
    class system_contract : public native {
       private:
-         voters_table           _voters;
-         producers_table        _producers;
-         global_state_singleton _global;
-         rotation_info_singleton _rotations;
-
-         eosio_global_state     _gstate;
-         rotation_info          _grotations;
-         rammarket              _rammarket;
-         payments_table         payments;
+         voters_table                 _voters;
+         producers_table              _producers;
+         global_state_singleton       _global;
+         rotation_info_singleton      _rotations;
+         schedule_metrics_singleton   _schedule_metrics; 
+         eosio_global_state           _gstate;
+         rotation_info                _grotations;
+         rammarket                    _rammarket;
+         payments_table               payments;
 
       public:
          system_contract( account_name s );

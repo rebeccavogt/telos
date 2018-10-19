@@ -124,24 +124,24 @@ namespace eosiosystem {
 
       if (_grotations.next_rotation_time <= block_time) {
         // restart all missed blocks to bps and sbps
-        for (size_t i = 0; i < prods.size(); i++) {
-          auto bp_name = prods[i].producer_name;
+        // for (size_t i = 0; i < prods.size(); i++) {
+        //   auto bp_name = prods[i].producer_name;
           
-          //check if producer is online.
-           auto bp = std::find_if(_grotations.offline_bps.begin(), _grotations.offline_bps.end(), [&bp_name](const offline_producer &op) {
-              return op.name == bp_name;
-          });
+        //   //check if producer is online.
+        //    auto bp = std::find_if(_grotations.offline_bps.begin(), _grotations.offline_bps.end(), [&bp_name](const offline_producer &op) {
+        //       return op.name == bp_name;
+        //   });
           
-          if(bp != _grotations.offline_bps.end()) continue;
+        //   if(bp != _grotations.offline_bps.end()) continue;
 
-          auto pitr = _producers.find(bp_name);
-          if (pitr != _producers.end() && pitr->active()) {
-            _producers.modify(pitr, 0, [&](auto &p) {
-              p.missed_blocks = 0;
-              if (p.kick_penalty_hours > 0) p.kick_penalty_hours--;
-            });
-          }
-        }
+        //   auto pitr = _producers.find(bp_name);
+        //   if (pitr != _producers.end() && pitr->active()) {
+        //     _producers.modify(pitr, 0, [&](auto &p) {
+        //       p.missed_blocks = 0;
+        //       if (p.kick_penalty_hours > 0) p.kick_penalty_hours--;
+        //     });
+        //   }
+        // }
 
         if (totalActiveVotedProds > TOP_PRODUCERS) {
           _grotations.bp_out_index = _grotations.bp_out_index >= TOP_PRODUCERS - 1 ? 0 : _grotations.bp_out_index + 1;
@@ -219,9 +219,10 @@ namespace eosiosystem {
       std::sort( top_producers.begin(), top_producers.end() );
       bytes packed_schedule = pack(top_producers);
 
+      //set_proposed_producers returns proposed schedule version
       if( set_proposed_producers( packed_schedule.data(),  packed_schedule.size() ) >= 0 ) {
         print("\n**new schedule was proposed**");
-         _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>( top_producers.size() );
+        _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>( top_producers.size() );
       }
    }
    

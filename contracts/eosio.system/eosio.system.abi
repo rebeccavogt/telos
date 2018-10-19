@@ -19,12 +19,20 @@
    }],
    "____comment": "eosio.bios structs: set_account_limits, setpriv, set_global_limits, producer_key, set_producers, require_auth are provided so abi available for deserialization in future.",
    "structs": [{
-     "name": "offline_producer",
+     "name": "schedule_metrics",
       "base": "",
       "fields": [
-        {"name":"name",          "type":"account_name"},
-        {"name":"total_votes",   "type":"float64"},
-        {"name":"missed_blocks", "type":"uint32"}
+        {"name":"version",               "type":"uint32"},
+        {"name":"cycle_counter",         "type":"uint32"},
+        {"name":"producers_metric",     "type":"producer_metric[]"}
+      ]
+   },{
+     "name": "producer_metric",
+      "base": "",
+      "fields": [
+        {"name":"name",                    "type":"account_name"},
+        {"name":"missed_blocks_per_cycle", "type":"uint32"},
+        {"name":"total_missed_blocks",     "type":"uint32"}
       ]
    },{
       "name": "rotation_info",
@@ -36,11 +44,7 @@
         {"name":"bp_out_index",               "type":"uint32"},
         {"name":"sbp_in_index",               "type":"uint32"},
         {"name":"next_rotation_time",         "type":"block_timestamp_type"},
-        {"name":"last_rotation_time",         "type":"block_timestamp_type"},
-        {"name":"is_kick_active",             "type":"bool"},
-        {"name":"last_onblock_caller",        "type":"account_name"},
-        {"name":"last_time_block_produced",   "type":"block_timestamp_type"},
-        {"name":"offline_bps",                "type":"offline_producer[]"}
+        {"name":"last_rotation_time",         "type":"block_timestamp_type"}
       ]
     },{
       "name": "payment",
