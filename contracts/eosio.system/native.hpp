@@ -19,23 +19,23 @@ namespace eosiosystem {
 
    typedef std::vector<char> bytes;
 
-   struct schedule_metrics {
-     uint32_t                         version;
-     uint32_t                         cycle_counter;  
-     std::vector<producer_metric>     producers_metric;
-
-     // explicit serialization macro is not necessary, used here only to improve compilation time
-     EOSLIB_SERIALIZE(schedule_metrics, (version)(cycle_counter)(offline_producers))
-   };
-
    struct producer_metric {
      account_name   name;
      uint32_t       missed_blocks_per_cycle = 0;
      uint32_t       total_missed_blocks     = 0;
      
      // explicit serialization macro is not necessary, used here only to improve compilation time
-     EOSLIB_SERIALIZE(offline_producer, (name)(missed_blocks)(total_missed_blocks))
+     EOSLIB_SERIALIZE(producer_metric, (name)(missed_blocks_per_cycle)(total_missed_blocks))
    };   
+
+   struct schedule_metrics {
+     uint32_t                         version;
+     uint32_t                         cycle_counter;  
+     std::vector<producer_metric>     producers_metric;
+
+     // explicit serialization macro is not necessary, used here only to improve compilation time
+     EOSLIB_SERIALIZE(schedule_metrics, (version)(cycle_counter)(producers_metric))
+   };
    
    struct permission_level_weight {
       permission_level  permission;

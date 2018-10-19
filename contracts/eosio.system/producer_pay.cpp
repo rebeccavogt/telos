@@ -142,7 +142,8 @@ void system_contract::set_producer_block_missed(account_name producer, uint32_t 
             // p.deactivate();
             p.kick(kick_type::REACHED_TRESHOLD);
             // remove_producer_from_kick_list(op);
-        } else if(op.missed_blocks > 0) add_producer_to_kick_list(op);
+        }
+        // else if(op.missed_blocks > 0) add_producer_to_kick_list(op);
     });
   }
 }

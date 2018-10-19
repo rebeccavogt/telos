@@ -194,7 +194,7 @@ namespace eosiosystem {
 
    typedef eosio::multi_index< N(voters), voter_info>  voters_table;
 
-   typedef eosio::singleton<N(schedulemetrics), schedule_metrics> schedule_metrics_singleton;
+   typedef eosio::singleton<N(schedulemetr), schedule_metrics> schedule_metrics_singleton;
    
    typedef eosio::singleton<N(rotations), rotation_info> rotation_info_singleton;
 
@@ -215,10 +215,12 @@ namespace eosiosystem {
          global_state_singleton       _global;
          rotation_info_singleton      _rotations;
          schedule_metrics_singleton   _schedule_metrics; 
+
          eosio_global_state           _gstate;
          rotation_info                _grotations;
          rammarket                    _rammarket;
          payments_table               payments;
+         schedule_metrics             _gschedule_metrics;
 
       public:
          system_contract( account_name s );
