@@ -432,6 +432,7 @@ void system_contract::claimrewards_snapshot(){
         _gstate.perblock_bucket -= pay_amount;
         _gstate.total_unpaid_blocks -= prod.unpaid_blocks;
 
+		print("\nAttempting to modify producer struct");
         _producers.modify(prod, 0, [&](auto &p) {
             p.last_claim_time = ct;
             p.unpaid_blocks = 0;
@@ -440,14 +441,17 @@ void system_contract::claimrewards_snapshot(){
         auto itr = _payments.find(prod.owner);
         
         if (itr == _payments.end()) {
+			print("\nproducer not found in payments table: emplacing new entry.");
             _payments.emplace(prod.owner, [&]( auto& a ) { //have eosio pay? no issues so far...
                 a.bp = prod.owner;
                 a.pay = asset(pay_amount);
             });
-        } else //adds new payment to existing payment
-            _payments.modify(itr, 0, [&]( auto& a ) {
+        } else {
+			print("\nproducer found, modifying existing payment entry");
+			_payments.modify(itr, 0, [&]( auto& a ) {
                 a.pay += asset(pay_amount);
             });
+		}
     }
 }
 
