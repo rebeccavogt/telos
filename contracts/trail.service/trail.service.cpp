@@ -252,7 +252,7 @@ extern "C" {
                 int64_t new_yes_votes = 0;
                 int64_t new_abs_votes = 0;
                 //symbol_name sym;
-                vector<uint64_t> vrs;
+                //vector<uint64_t> vrs;
 
                 print("\nlower bound id: ", itr->receipt_id);
 

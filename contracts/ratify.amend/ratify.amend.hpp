@@ -56,6 +56,7 @@ class ratifyamend : public contract {
             EOSLIB_SERIALIZE(document, (id)(title)(clauses))
         };
 
+        //TODO: make secondary index of status
         /// @abi table proposals i64
         struct proposal {
             uint64_t id;
@@ -66,6 +67,7 @@ class ratifyamend : public contract {
             asset yes_count;
             asset no_count;
             asset abstain_count;
+            uint64_t total_voters;
             account_name proposer;
             uint64_t vote_code;
             uint64_t vote_scope;
@@ -73,7 +75,7 @@ class ratifyamend : public contract {
             uint64_t status; // 0 = OPEN, 1 = PASSED, 2 = FAILED
 
             uint64_t primary_key() const { return id; }
-            EOSLIB_SERIALIZE(proposal, (id)(document_id)(title)(new_clause_ids)(new_ipfs_urls)(yes_count)(no_count)(abstain_count)(proposer)(vote_code)(vote_scope)(expiration)(status))
+            EOSLIB_SERIALIZE(proposal, (id)(document_id)(title)(new_clause_ids)(new_ipfs_urls)(yes_count)(no_count)(abstain_count)(total_voters)(proposer)(vote_code)(vote_scope)(expiration)(status))
         };
 
         /// @abi table threshold

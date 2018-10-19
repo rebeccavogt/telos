@@ -15,10 +15,9 @@ ratifyamend::ratifyamend(account_name self) : contract(self), thresh_singleton(s
         update_thresh();
         thresh_singleton.set(thresh_struct, _self);
     } else {
-
         thresh_struct = thresh_singleton.get();     
         update_thresh();
-        thresh_singleton.set(thresh_struct, _self);
+        //thresh_singleton.set(thresh_struct, _self);
     }
 }
 
@@ -50,7 +49,6 @@ void ratifyamend::propose(string title, uint64_t document_id, vector<uint16_t> n
 
     documents_table documents(_self, _self);
     auto d = documents.find(document_id);
-
     eosio_assert(d != documents.end(), "Document Not Found");
     auto doc_struct = *d;
 
@@ -71,8 +69,8 @@ void ratifyamend::propose(string title, uint64_t document_id, vector<uint16_t> n
         }
     }
 
-    //NOTE: 100.0000 TLOS fee, refunded if proposal passes
-    action(permission_level{ proposer, N(active) }, N(eosio.token), N(transfer), make_tuple( //NOTE: susceptible to ram-drain bug
+    //NOTE: 100.0000 TLOS fee, refunded if proposal passes or meets specified lowered thresholds
+    action(permission_level{ proposer, N(active) }, N(eosio.token), N(transfer), make_tuple(
     	proposer,
         _self,
         asset(int64_t(1000000), S(4, TLOS)),
@@ -90,6 +88,7 @@ void ratifyamend::propose(string title, uint64_t document_id, vector<uint16_t> n
         a.yes_count = asset(0);
         a.no_count = asset(0);
         a.abstain_count = asset(0);
+        a.total_voters = 0;
         a.proposer = proposer;
         a.vote_code = _self;
         a.vote_scope = _self;
@@ -127,54 +126,121 @@ void ratifyamend::processvotes(uint64_t vote_code, uint64_t vote_scope, uint64_t
     auto by_code = votereceipts.get_index<N(bycode)>();
     auto itr = by_code.lower_bound(vote_code);
 
+    eosio_assert(itr != by_code.end(), "no votes to process");
     print("\neosio.amend processing votes...");
 
-    if (itr == by_code.end()) {
-        print("\nno votes to process");
-    } else {
-        uint64_t loops = 0;
-        int64_t new_no_votes = 0;
-        int64_t new_yes_votes = 0;
-        int64_t new_abs_votes = 0;
+    uint64_t loops = 0;
+    int64_t new_no_votes = 0;
+    int64_t new_yes_votes = 0;
+    int64_t new_abs_votes = 0;
 
-        while(itr->vote_code == vote_code && loops < 10) { //loops variable to limit cpu/net expense per call
+    while(itr->vote_code == vote_code && loops < 10) { //loops variable to limit cpu/net expense per call
+        
+        if (itr->vote_scope == vote_scope &&
+            itr->prop_id == proposal_id &&
+            now() > itr->expiration) {
+
+            print("\nvr found...counting...");
             
-            if (itr->vote_scope == vote_scope &&
-                itr->prop_id == proposal_id &&
-                now() > itr->expiration) {
-
-                print("\nvr found...counting...");
-                
-                switch (itr->direction) {
-                    case 0 : new_no_votes += itr->weight.amount; break;
-                    case 1 : new_yes_votes += itr->weight.amount; break;
-                    case 2 : new_abs_votes += itr->weight.amount; break;
-                }
-
-                loops++;
+            switch (itr->direction) {
+                case 0 : new_no_votes += itr->weight.amount; break;
+                case 1 : new_yes_votes += itr->weight.amount; break;
+                case 2 : new_abs_votes += itr->weight.amount; break;
             }
-            itr++;
 
+            loops++;
         }
-
-        proposals.modify(p, 0, [&]( auto& a ) {
-            a.no_count += asset(new_no_votes);
-            a.yes_count += asset(new_yes_votes);
-            a.abstain_count += asset(new_abs_votes);
-        });
-
-        print("\nloops processed: ", loops);
-        print("\nnew no votes: ", asset(new_no_votes));
-        print("\nnew yes votes: ", asset(new_yes_votes));
-        print("\nnew abstain votes: ", asset(new_abs_votes));
-
-        require_recipient(N(eosio.trail));
+        itr++;
     }
+
+    proposals.modify(p, 0, [&]( auto& a ) {
+        a.no_count += asset(new_no_votes);
+        a.yes_count += asset(new_yes_votes);
+        a.abstain_count += asset(new_abs_votes);
+    });
+
+    print("\nloops processed: ", loops);
+    print("\nnew no votes: ", asset(new_no_votes));
+    print("\nnew yes votes: ", asset(new_yes_votes));
+    print("\nnew abstain votes: ", asset(new_abs_votes));
+
+    require_recipient(N(eosio.trail));
 }
 
 void ratifyamend::close(uint64_t proposal_id) {
-    //TODO: implement
+    proposals_table proposals(_self, _self);
+    auto p = proposals.find(proposal_id);
+    eosio_assert(p != proposals.end(), "Proposal Not Found");
+    auto prop = *p;
+    eosio_assert(prop.expiration < now(), "Proposal is still open");
+    eosio_assert(prop.status == 0, "Proposal is already closed");
+
+    receipts_table votereceipts(N(eosio.trail), N(eosio.trail));
+    auto by_code = votereceipts.get_index<N(bycode)>();
+    auto itr = by_code.lower_bound(_self);
+
+    if (itr == by_code.end()) {
+        print("\nno votes to process...closing proposal and rendering verdict");
+
+        asset total_votes = (prop.yes_count + prop.no_count + prop.abstain_count); //total votes cast on proposal
+
+        //pass thresholds
+        uint64_t quorum_thresh = (thresh_struct.total_voters / 20); // 5% of all registered voters //TODO: update percentage with real value
+        asset pass_thresh = ((prop.yes_count + prop.no_count) / 3) * 2; // 66.67% yes votes of total_votes
+
+        //refund thresholds - both must be met for a refund - proposal pass triggers automatic refund
+        uint64_t q_refund_thresh = (thresh_struct.total_voters / 25); //4% of all registered voters
+        asset p_refund_thresh = total_votes / 4; //25% yes votes of total_votes
+
+        if (prop.total_voters >= quorum_thresh && total_votes >= pass_thresh) {
+            
+            //TODO: update document
+
+            //proposal passed
+            proposals.modify(p, 0, [&]( auto& a ) {
+                a.status = 1;
+            });
+
+            //refund
+            action(permission_level{ _self, N(active) }, N(eosio.token), N(transfer), make_tuple(
+    	        _self,
+                prop.proposer,
+                asset(int64_t(1000000), S(4, TLOS)),
+                std::string("Ratify/Amend Proposal Fee Refund")
+	        )).send();
+
+        } else if (prop.total_voters >= q_refund_thresh && total_votes >= p_refund_thresh) {
+            
+            //proposal failed
+            proposals.modify(p, 0, [&]( auto& a ) {
+                a.status = 2;
+            });
+
+            //refund
+            action(permission_level{ _self, N(active) }, N(eosio.token), N(transfer), make_tuple(
+    	        _self,
+                prop.proposer,
+                asset(int64_t(1000000), S(4, TLOS)),
+                std::string("Ratify/Amend Proposal Fee Refund")
+	        )).send();
+            
+        } else {
+
+            //proposal failed
+            proposals.modify(p, 0, [&]( auto& a ) {
+                a.status = 2;
+            });
+
+            print("\nproposal refund witheld");
+        }
+
+    } else {
+        print("\nproposal still has open vote receipts to process");
+        return;
+    }
 }
+
+#pragma region Helper_Functions
 
 void ratifyamend::update_thresh() {
 
@@ -208,21 +274,6 @@ void ratifyamend::update_doc(uint64_t document_id, vector<uint16_t> new_clause_i
     });
 }
 
-EOSIO_ABI(ratifyamend, (insertdoc)(propose)(vote)(processvotes)(close))
+#pragma endregion Helper_Functions
 
-/*
-extern "C" {
-    void apply(uint64_t self, uint64_t code, uint64_t action) {
-        ratifyamend _ratifyamend(self);
-        if(code == self && action == N(insertdoc)) {
-            execute_action(&_ratifyamend, &ratifyamend::insertdoc);
-        } else if (code == self && action == N(propose)) {
-            execute_action(&_ratifyamend, &ratifyamend::propose);
-        } else if (code==self && action==N(vote)) {
-            execute_action(&_ratifyamend, &ratifyamend::vote);
-        } else if (code == self && action == N(close)) {
-            execute_action(&_ratifyamend, &ratifyamend::close);
-        }
-    }
-};
-*/
+EOSIO_ABI(ratifyamend, (insertdoc)(propose)(vote)(processvotes)(close))
