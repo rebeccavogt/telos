@@ -348,9 +348,9 @@ namespace eosiosystem {
 
          bool crossed_missed_blocks_threshold(uint32_t amountBlocksMissed);
          
-         void add_producer_to_kick_list(offline_producer producer);
+         void add_producer_to_kick_list(producer_metric producer);
 
-         void remove_producer_from_kick_list(offline_producer producer);
+         void remove_producer_from_kick_list(producer_metric producer);
 
          bool reach_consensus();
 
