@@ -191,7 +191,7 @@ namespace eosiosystem {
      EOSLIB_SERIALIZE(payment, (bp)(pay))
    };
 
-   typedef eosio::multi_index<N(_payments), payment> payments_table;
+   typedef eosio::multi_index<N(payments), payment> payments_table;
 
    typedef eosio::multi_index< N(voters), voter_info>  voters_table;
 
