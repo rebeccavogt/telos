@@ -67,7 +67,7 @@ void system_contract::add_producer_to_kick_list(producer_metric producer) {
 }
 
 void system_contract::remove_producer_from_kick_list(producer_metric producer) {
-  // verify if bp was missing blocks
+// verify if bp was missing blocks
 //     account_name bp_name = producer.name;
 //     auto bp = std::find_if(_grotations.offline_bps.begin(), _grotations.offline_bps.end(), [&bp_name](const offline_producer &op) {
 //         return op.name == bp_name; 
@@ -166,8 +166,38 @@ void system_contract::update_producer_blocks(account_name producer, uint32_t amo
   }
 }
 
+void system_contract::update_producer_missed_blocks(account_name producer) {
+  for (auto &pm : _gschedule_metrics.producers_metric) {
+    if (pm.name == producer) {
+      pm.missed_blocks_per_cycle--;
+      break;
+    }
+  }
+}
+
 void system_contract::check_missed_blocks(block_timestamp timestamp, account_name producer) { 
-        
+   if(producer == N(eosio)) return;
+
+   if (_gschedule_metrics.last_onblock_caller == 0 || _gschedule_metrics.last_onblock_caller == producer) update_producer_missed_blocks(producer);
+   else {
+     // update last_onblock_caller
+     for (auto &pm : _gschedule_metrics.producers_metric) {
+       if (pm.name == _gschedule_metrics.last_onblock_caller) {
+         if (pm.missed_blocks_per_cycle != 0) { // blocks were missed by the last_onblock_caller.
+           auto prod = _producers.find(producer);
+           // update missed blocks per rotations
+           if (prod != _producers.end()) {
+             _producers.modify(prod, 0, [&](auto &p) {
+               p.missed_blocks_per_rotation += pm.missed_blocks_per_cycle;
+             });
+           }
+         }
+         // reset to total blocks that can be missed
+         pm.missed_blocks_per_cycle = 12;
+       } else if (pm.name == producer) update_producer_missed_blocks(producer);
+     }
+   }
+   _gschedule_metrics.last_onblock_caller = producer;
 }
 
 void system_contract::onblock(block_timestamp timestamp, account_name producer) {
@@ -185,6 +215,8 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer) 
     if (_gstate.last_pervote_bucket_fill == 0) /// start the presses
         _gstate.last_pervote_bucket_fill = current_time();
 
+
+    check_missed_blocks(timestamp, producer);
     /**
     * At startup the initial producer may not be one that is registered / elected
     * and therefore there may be no producer object for them.
@@ -198,8 +230,6 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer) 
     }
 
     recalculate_votes();
-
-    check_missed_blocks(timestamp, producer);
 
     // Only update block producers once every minute, block_timestamp is in half seconds
     if (timestamp.slot - _gstate.last_producer_schedule_update.slot > 120) {

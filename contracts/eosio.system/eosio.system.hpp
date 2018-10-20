@@ -109,10 +109,10 @@ namespace eosiosystem {
             kick_reason_id = uint32_t(kick_type::REACHED_TRESHOLD);
             kick_reason = "Producer account was deactivated because it reached the maximum missed blocks in this rotation timeframe.";
           break;
-          case kick_type::PREVENT_LIB_STOP_MOVING:
-            kick_reason_id = uint32_t(kick_type::PREVENT_LIB_STOP_MOVING);
-            kick_reason = "Producer account was deactivated to prevent the LIB from halting.";
-          break;
+          // case kick_type::PREVENT_LIB_STOP_MOVING:
+          //   kick_reason_id = uint32_t(kick_type::PREVENT_LIB_STOP_MOVING);
+          //   kick_reason = "Producer account was deactivated to prevent the LIB from halting.";
+          // break;
           case kick_type::BPS_VOTING:
             kick_reason_id = uint32_t(kick_type::BPS_VOTING);
             kick_reason = "Producer account was deactivated by vote.";
@@ -356,6 +356,8 @@ namespace eosiosystem {
          bool reach_consensus();
 
          void kick_producer();
+
+         void update_producer_missed_blocks(account_name producer);
    };
 
 } /// eosiosystem
