@@ -123,6 +123,7 @@ namespace eosiosystem {
       vector<eosio::producer_key>::iterator it_sbp = prods.end();
 
       if (_grotations.next_rotation_time <= block_time) {
+        _gschedule_metrics.producers_metric.erase(_gschedule_metrics.producers_metric.begin(), _gschedule_metrics.producers_metric.end());
         // restart all missed blocks to bps and sbps
         for (size_t i = 0; i < prods.size(); i++) {
           auto bp_name = prods[i].producer_name;
@@ -221,10 +222,22 @@ namespace eosiosystem {
       bytes packed_schedule = pack(top_producers);
 
       auto schedule_version = set_proposed_producers( packed_schedule.data(),  packed_schedule.size());
-      if(schedule_version >= 0 ) {
+      if (schedule_version >= 0) {
         print("\n**new schedule was proposed**");
-        _gschedule_metrics.version = uint64_t(schedule_version);
-        _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>( top_producers.size() );
+        auto old_spm = _gschedule_metrics.producers_metric;
+        std::vector<producer_metric> new_spm;
+        new_spm.reserve(top_producers.size());
+        std::for_each(top_producers.begin(), top_producers.end(), [&new_spm, &old_spm](auto &tp) {
+          auto bp_name = tp.producer_name;
+          if(old_spm.size() > 0) {
+            auto spm = std::find_if(old_spm.begin(), old_spm.end(), [&bp_name](auto &p) {return bp_name == p.name; });
+            if(spm == old_spm.end())  new_spm.emplace_back(producer_metric{ bp_name, 12 });
+          } else new_spm.emplace_back(producer_metric{ bp_name, 12 });
+        });
+        _gschedule_metrics.version = uint32_t(schedule_version);
+        _gschedule_metrics.producers_metric = new_spm;
+
+        _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>(top_producers.size());
       }
    }
    

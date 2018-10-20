@@ -68,8 +68,8 @@ namespace eosiosystem {
 
    enum class kick_type {
      REACHED_TRESHOLD = 1,
-     PREVENT_LIB_STOP_MOVING = 2,
-     BPS_VOTING = 3
+    //  PREVENT_LIB_STOP_MOVING = 2,
+     BPS_VOTING = 2
    };
    /**
     * TELOS CHANGES:
@@ -358,6 +358,10 @@ namespace eosiosystem {
          void kick_producer();
 
          void update_producer_missed_blocks(account_name producer);
+
+         void producer_missed_full(account_name producer);
+
+         void reset_last_producer_missed_blocks();
    };
 
 } /// eosiosystem

@@ -67,14 +67,14 @@ void system_contract::add_producer_to_kick_list(producer_metric producer) {
 }
 
 void system_contract::remove_producer_from_kick_list(producer_metric producer) {
-// verify if bp was missing blocks
-//     account_name bp_name = producer.name;
-//     auto bp = std::find_if(_grotations.offline_bps.begin(), _grotations.offline_bps.end(), [&bp_name](const offline_producer &op) {
-//         return op.name == bp_name; 
-//     });   
-   
-//   // producer found
-//   if (bp != _grotations.offline_bps.end()) _grotations.offline_bps.erase(bp);
+    // verify if bp was missing blocks
+    //     account_name bp_name = producer.name;
+    //     auto bp = std::find_if(_grotations.offline_bps.begin(), _grotations.offline_bps.end(), [&bp_name](const offline_producer &op) {
+    //         return op.name == bp_name; 
+    //     });   
+    
+    //   // producer found
+    //   if (bp != _grotations.offline_bps.end()) _grotations.offline_bps.erase(bp);
 }
 
 void system_contract::kick_producer() {
@@ -166,6 +166,34 @@ void system_contract::update_producer_blocks(account_name producer, uint32_t amo
   }
 }
 
+void system_contract::producer_missed_full(account_name producer) {
+  auto prod = _producers.find(producer);
+  if (prod != _producers.end()) {
+    _producers.modify(prod, 0, [&](auto &p) {
+      p.missed_blocks_per_rotation += 12;
+    });
+  }
+}
+
+void system_contract::reset_last_producer_missed_blocks() {
+  // update last_onblock_caller
+  for (auto &pm : _gschedule_metrics.producers_metric) {
+    if (pm.name == _gschedule_metrics.last_onblock_caller && pm.missed_blocks_per_cycle > 0) {
+        // blocks were missed by the last_onblock_caller.
+        auto prod = _producers.find(_gschedule_metrics.last_onblock_caller);
+        // update missed blocks per rotations
+        if (prod != _producers.end()) {
+          _producers.modify(prod, 0, [&](auto &p) {
+            p.missed_blocks_per_rotation += pm.missed_blocks_per_cycle;
+          });
+      }
+      // reset to total blocks that can be missed
+      pm.missed_blocks_per_cycle = 12;
+      break;  
+    } 
+  }
+}
+
 void system_contract::update_producer_missed_blocks(account_name producer) {
   for (auto &pm : _gschedule_metrics.producers_metric) {
     if (pm.name == producer) {
@@ -180,22 +208,24 @@ void system_contract::check_missed_blocks(block_timestamp timestamp, account_nam
 
    if (_gschedule_metrics.last_onblock_caller == 0 || _gschedule_metrics.last_onblock_caller == producer) update_producer_missed_blocks(producer);
    else {
-     // update last_onblock_caller
-     for (auto &pm : _gschedule_metrics.producers_metric) {
-       if (pm.name == _gschedule_metrics.last_onblock_caller) {
-         if (pm.missed_blocks_per_cycle != 0) { // blocks were missed by the last_onblock_caller.
-           auto prod = _producers.find(producer);
-           // update missed blocks per rotations
-           if (prod != _producers.end()) {
-             _producers.modify(prod, 0, [&](auto &p) {
-               p.missed_blocks_per_rotation += pm.missed_blocks_per_cycle;
-             });
-           }
-         }
-         // reset to total blocks that can be missed
-         pm.missed_blocks_per_cycle = 12;
-       } else if (pm.name == producer) update_producer_missed_blocks(producer);
-     }
+      account_name producers_schedule[21];
+      uint32_t total_prods = get_active_producers(producers_schedule, sizeof(account_name) * 21) / 8; 
+      auto pIdx = std::distance(producers_schedule, std::find(producers_schedule, producers_schedule + total_prods, producer)) - 1;  
+      auto locIdx = std::distance(producers_schedule, std::find(producers_schedule, producers_schedule + total_prods, _gschedule_metrics.last_onblock_caller)) - 1;  
+      auto idxDiff = std::abs(pIdx - locIdx);  
+
+      if(pIdx > locIdx && idxDiff == 1) reset_producer_missed_blocks();
+      else if(pIdx > locIdx && idxDiff > 1) {
+        for(size_t i = locIdx + 1; i < pIdx; i++) producer_missed_full(producers_schedule[i]);  
+      } else {
+        for(size_t i = locIdx + 1; i < total_prods; i++) producer_missed_full(producers_schedule[i]);
+        
+        if(pIdx > 0) {
+          for (size_t i = 0; i < pIdx; i++) producer_missed_full(producers_schedule[i]);
+        }    
+      }
+
+    update_producer_missed_blocks(producer);
    }
    _gschedule_metrics.last_onblock_caller = producer;
 }

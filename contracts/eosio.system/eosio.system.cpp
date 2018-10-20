@@ -15,16 +15,16 @@ namespace eosiosystem {
     _producers(_self,_self),
     _global(_self,_self),
     _rotations(_self,_self),
-    _schedule_metrics(_self, _self),
     _rammarket(_self,_self),
-    payments(_self, _self)
+    payments(_self, _self),
+    _schedule_metrics(_self, _self)
    {
       //print( "construct system\n" );
       _gstate = _global.exists() ? _global.get() : get_default_parameters();
       _grotations = _rotations.get_or_create(_self, rotation_info{
         true, 0, 0, 21, 75, block_timestamp(), block_timestamp(), 
       });
-      _gschedule_metrics = _schedule_metrics.get_or_create(_self, schedule_metrics{ 0, 0, {} });
+      _gschedule_metrics = _schedule_metrics.get_or_create(_self, schedule_metrics{ 0, 0, 0, std::vector<producer_metric>() });
       auto itr = _rammarket.find(S(4,RAMCORE));
 
       if( itr == _rammarket.end() ) {

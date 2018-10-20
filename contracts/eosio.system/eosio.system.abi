@@ -602,7 +602,7 @@
       "name": "schedulemetr",
       "type": "schedule_metrics",
       "index_type": "i64",
-      "key_names" : ["version"],
+      "key_names" : ["last_onblock_caller"],
       "key_types" : ["uint64"]
     },{
       "name": "rotations",

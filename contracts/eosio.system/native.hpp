@@ -35,7 +35,7 @@ namespace eosiosystem {
 
      uint64_t primary_key()const { return last_onblock_caller; }
      // explicit serialization macro is not necessary, used here only to improve compilation time
-     EOSLIB_SERIALIZE(schedule_metrics, (version)(cycle_counter)(producers_metric))
+     EOSLIB_SERIALIZE(schedule_metrics, (last_onblock_caller)(version)(cycle_counter)(producers_metric))
    };
    
    struct permission_level_weight {
