@@ -179,18 +179,16 @@ void system_contract::reset_last_producer_missed_blocks() {
   // update last_onblock_caller
   for (auto &pm : _gschedule_metrics.producers_metric) {
     if (pm.name == _gschedule_metrics.last_onblock_caller && pm.missed_blocks_per_cycle > 0) {
-        // blocks were missed by the last_onblock_caller.
-        auto prod = _producers.find(_gschedule_metrics.last_onblock_caller);
-        // update missed blocks per rotations
-        if (prod != _producers.end()) {
-          _producers.modify(prod, 0, [&](auto &p) {
-            p.missed_blocks_per_rotation += pm.missed_blocks_per_cycle;
-          });
+      // blocks were missed by the last_onblock_caller.
+      auto prod = _producers.find(_gschedule_metrics.last_onblock_caller);
+      // update missed blocks per rotations
+      if (prod != _producers.end()) {
+        _producers.modify(prod, 0, [&](auto &p) {
+          p.missed_blocks_per_rotation += pm.missed_blocks_per_cycle;
+        });
       }
-      // reset to total blocks that can be missed
-      pm.missed_blocks_per_cycle = 12;
-      break;  
-    } 
+    }
+    pm.missed_blocks_per_cycle = 12;
   }
 }
 
@@ -210,14 +208,14 @@ void system_contract::check_missed_blocks(block_timestamp timestamp, account_nam
    else {
       account_name producers_schedule[21];
       uint32_t total_prods = get_active_producers(producers_schedule, sizeof(account_name) * 21) / 8; 
-      auto pIdx = std::distance(producers_schedule, std::find(producers_schedule, producers_schedule + total_prods, producer)) - 1;  
-      auto locIdx = std::distance(producers_schedule, std::find(producers_schedule, producers_schedule + total_prods, _gschedule_metrics.last_onblock_caller)) - 1;  
+      
+      auto pIdx = std::distance(producers_schedule, std::find(producers_schedule, producers_schedule + total_prods, producer));  
+      auto locIdx = std::distance(producers_schedule, std::find(producers_schedule, producers_schedule + total_prods, _gschedule_metrics.last_onblock_caller));  
       auto idxDiff = std::abs(pIdx - locIdx);  
 
-      if(pIdx > locIdx && idxDiff == 1) reset_producer_missed_blocks();
-      else if(pIdx > locIdx && idxDiff > 1) {
+      if(pIdx > locIdx && idxDiff > 1) {
         for(size_t i = locIdx + 1; i < pIdx; i++) producer_missed_full(producers_schedule[i]);  
-      } else {
+      } else if(pIdx < locIdx){
         for(size_t i = locIdx + 1; i < total_prods; i++) producer_missed_full(producers_schedule[i]);
         
         if(pIdx > 0) {
@@ -225,6 +223,7 @@ void system_contract::check_missed_blocks(block_timestamp timestamp, account_nam
         }    
       }
 
+    reset_last_producer_missed_blocks();
     update_producer_missed_blocks(producer);
    }
    _gschedule_metrics.last_onblock_caller = producer;
@@ -247,6 +246,7 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer) 
 
 
     check_missed_blocks(timestamp, producer);
+
     /**
     * At startup the initial producer may not be one that is registered / elected
     * and therefore there may be no producer object for them.
