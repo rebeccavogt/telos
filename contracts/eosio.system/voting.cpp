@@ -62,11 +62,11 @@ namespace eosiosystem {
           info.producer_key = producer_key;
           info.url = url;
           info.location = location;
-          info.missed_blocks = 0;
+          info.missed_blocks_per_rotation = 0;
           info.is_active = true;
-          info.kick_reason = "";
-          info.kick_reason_id = 0;
-          info.last_time_kicked = block_timestamp();
+          // info.kick_reason = "";
+          // info.kick_reason_id = 0;
+          // info.last_time_kicked = block_timestamp();
         });
       } else {
         _producers.emplace(producer, [&](producer_info &info) {
@@ -219,9 +219,10 @@ namespace eosiosystem {
       std::sort( top_producers.begin(), top_producers.end() );
       bytes packed_schedule = pack(top_producers);
 
-      //set_proposed_producers returns proposed schedule version
-      if( set_proposed_producers( packed_schedule.data(),  packed_schedule.size() ) >= 0 ) {
+      auto schedule_version = set_proposed_producers( packed_schedule.data(),  packed_schedule.size());
+      if(schedule_version >= 0 ) {
         print("\n**new schedule was proposed**");
+        _gschedule_metrics.version = uint64_t(schedule_version);
         _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>( top_producers.size() );
       }
    }

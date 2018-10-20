@@ -122,8 +122,8 @@ void system_contract::set_producer_block_produced(account_name producer, uint32_
   auto pitr = _producers.find(producer);
   if (pitr != _producers.end()) {
     _producers.modify(pitr, 0, [&](auto &p) {
-        if(amount == 0) p.blocks_per_cycle = amount;
-        else p.blocks_per_cycle += amount;
+        // if(amount == 0) p.blocks_per_cycle = amount;
+        // else p.blocks_per_cycle += amount;
         
         // offline_producer op{p.owner, p.total_votes, p.missed_blocks};
         // remove_producer_from_kick_list(op);
@@ -135,10 +135,10 @@ void system_contract::set_producer_block_missed(account_name producer, uint32_t 
   auto pitr = _producers.find(producer);
   if (pitr != _producers.end() && pitr->active()) {
     _producers.modify(pitr, 0, [&](auto &p) {
-        p.missed_blocks += amount;
+        p.missed_blocks_per_rotation += amount;
 
         // offline_producer op{p.owner, p.total_votes, p.missed_blocks};
-        if(crossed_missed_blocks_threshold(p.missed_blocks)) {
+        if(crossed_missed_blocks_threshold(p.missed_blocks_per_rotation)) {
             // p.deactivate();
             p.kick(kick_type::REACHED_TRESHOLD);
             // remove_producer_from_kick_list(op);
@@ -152,11 +152,11 @@ void system_contract::update_producer_blocks(account_name producer, uint32_t amo
   auto pitr = _producers.find(producer);
   if (pitr != _producers.end() && pitr->active()) {
       _producers.modify(pitr, 0, [&](auto &p) { 
-        p.blocks_per_cycle += amountBlocksProduced; 
-        p.missed_blocks += amountBlocksMissed;
+        // p.blocks_per_cycle += amountBlocksProduced; 
+        p.missed_blocks_per_rotation += amountBlocksMissed;
 
         // offline_producer op{p.owner, p.total_votes, p.missed_blocks};
-        if(crossed_missed_blocks_threshold(p.missed_blocks)) {
+        if(crossed_missed_blocks_threshold(p.missed_blocks_per_rotation)) {
             // p.deactivate();
             p.kick(kick_type::REACHED_TRESHOLD);
             // remove_producer_from_kick_list(op);
@@ -167,7 +167,7 @@ void system_contract::update_producer_blocks(account_name producer, uint32_t amo
 }
 
 void system_contract::check_missed_blocks(block_timestamp timestamp, account_name producer) { 
-    
+        
 }
 
 void system_contract::onblock(block_timestamp timestamp, account_name producer) {

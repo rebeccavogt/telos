@@ -21,18 +21,19 @@ namespace eosiosystem {
 
    struct producer_metric {
      account_name   name;
-     uint32_t       missed_blocks_per_cycle = 0;
-     uint32_t       total_missed_blocks     = 0;
+     uint32_t       missed_blocks_per_cycle = 12;
      
      // explicit serialization macro is not necessary, used here only to improve compilation time
-     EOSLIB_SERIALIZE(producer_metric, (name)(missed_blocks_per_cycle)(total_missed_blocks))
+     EOSLIB_SERIALIZE(producer_metric, (name)(missed_blocks_per_cycle))
    };   
 
    struct schedule_metrics {
+     account_name                     last_onblock_caller;
      uint32_t                         version;
      uint32_t                         cycle_counter;  
      std::vector<producer_metric>     producers_metric;
 
+     uint64_t primary_key()const { return last_onblock_caller; }
      // explicit serialization macro is not necessary, used here only to improve compilation time
      EOSLIB_SERIALIZE(schedule_metrics, (version)(cycle_counter)(producers_metric))
    };
