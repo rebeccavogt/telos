@@ -224,18 +224,14 @@ namespace eosiosystem {
       auto schedule_version = set_proposed_producers( packed_schedule.data(),  packed_schedule.size());
       if (schedule_version >= 0) {
         print("\n**new schedule was proposed**");
-        auto old_spm = _gschedule_metrics.producers_metric;
-        std::vector<producer_metric> new_spm;
-        new_spm.reserve(top_producers.size());
-        std::for_each(top_producers.begin(), top_producers.end(), [&new_spm, &old_spm](auto &tp) {
+        auto psm = _gschedule_metrics.producers_metric;
+        std::for_each(top_producers.begin(), top_producers.end(), [&psm](auto &tp) {
           auto bp_name = tp.producer_name;
-          if(old_spm.size() > 0) {
-            auto spm = std::find_if(old_spm.begin(), old_spm.end(), [&bp_name](auto &p) {return bp_name == p.name; });
-            if(spm == old_spm.end())  new_spm.emplace_back(producer_metric{ bp_name, 12 });
-          } else new_spm.emplace_back(producer_metric{ bp_name, 12 });
+          auto pm = std::find_if(psm.begin(), psm.end(), [&bp_name](auto &p) {return bp_name == p.name; });
+          if(pm == psm.end()) psm.emplace_back(producer_metric{ bp_name, 12 });
         });
         _gschedule_metrics.version = uint32_t(schedule_version);
-        _gschedule_metrics.producers_metric = new_spm;
+        _gschedule_metrics.producers_metric = psm;
 
         _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>(top_producers.size());
       }
