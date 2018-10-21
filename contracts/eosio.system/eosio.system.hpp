@@ -191,7 +191,9 @@ namespace eosiosystem {
 
    typedef eosio::multi_index<N(payments), payment> payments_table;
 
-   typedef eosio::multi_index< N(voters), voter_info>  voters_table;
+   typedef eosio::multi_index< N(voters), voter_info> voters_table;
+
+   typedef eosio::multi_index< N(lifetimemetr), lifetime_metrics> lifetime_metrics_table;
 
    typedef eosio::singleton<N(schedulemetr), schedule_metrics> schedule_metrics_singleton;
    
@@ -220,6 +222,7 @@ namespace eosiosystem {
          rammarket                    _rammarket;
          payments_table               payments;
          schedule_metrics             _gschedule_metrics;
+         lifetime_metrics_table       _lifetime_metrics;             
 
       public:
          system_contract( account_name s );

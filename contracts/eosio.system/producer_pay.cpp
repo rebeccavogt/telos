@@ -264,6 +264,7 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer) 
         _gschedule_metrics.cycle_counter++;
         if(_gschedule_metrics.cycle_counter == 27) {
             //check kick
+            _gschedule_metrics.cycle_counter = 0;
         }
 
         update_elected_producers(timestamp);

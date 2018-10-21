@@ -17,7 +17,8 @@ namespace eosiosystem {
     _rotations(_self,_self),
     _rammarket(_self,_self),
     payments(_self, _self),
-    _schedule_metrics(_self, _self)
+    _schedule_metrics(_self, _self),
+    _lifetime_metrics(_self, _self)
    {
       //print( "construct system\n" );
       _gstate = _global.exists() ? _global.get() : get_default_parameters();
