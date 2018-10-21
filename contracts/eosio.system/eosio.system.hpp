@@ -365,6 +365,10 @@ namespace eosiosystem {
          void producer_missed_full(account_name producer);
 
          void reset_last_producer_missed_blocks();
+
+         void update_lifetime_metrics(account_name producer_name, uint32_t missed_blocks, uint32_t unpaid_blocks);
+
+         void restart_missed_blocks_per_rotation(std::vector<eosio::producer_key> prods);
    };
 
 } /// eosiosystem
