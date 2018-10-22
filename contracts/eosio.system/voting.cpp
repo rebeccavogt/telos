@@ -118,6 +118,7 @@ namespace eosiosystem {
 
    void system_contract::restart_missed_blocks_per_rotation(std::vector<eosio::producer_key> prods) {
       _gschedule_metrics.producers_metric.erase(_gschedule_metrics.producers_metric.begin(), _gschedule_metrics.producers_metric.end());
+      _gschedule_metrics.cycle_counter = 0;
         // restart all missed blocks to bps and sbps
         for (size_t i = 0; i < prods.size(); i++) {
           auto bp_name = prods[i].producer_name;
@@ -236,13 +237,15 @@ namespace eosiosystem {
 
       auto schedule_version = set_proposed_producers( packed_schedule.data(),  packed_schedule.size());
       if (schedule_version >= 0) {
+        _gstate.last_proposed_schedule_update = block_time;
+        _gschedule_metrics.producers_metric.erase(_gschedule_metrics.producers_metric.begin(), _gschedule_metrics.producers_metric.end());
         print("\n**new schedule was proposed**");
         auto psm = _gschedule_metrics.producers_metric;
         std::for_each(top_producers.begin(), top_producers.end(), [&psm](auto &tp) {
           auto bp_name = tp.producer_name;
-          auto pm = std::find_if(psm.begin(), psm.end(), [&bp_name](auto &p) {return bp_name == p.name; });
-          if(pm == psm.end()) psm.emplace_back(producer_metric{ bp_name, 12 });
+          psm.emplace_back(producer_metric{ bp_name, 12 });
         });
+
         _gschedule_metrics.version = uint32_t(schedule_version);
         _gschedule_metrics.producers_metric = psm;
 

@@ -39,6 +39,8 @@ const uint64_t useconds_per_day = 24 * 3600 * uint64_t(1000000);
 const uint64_t useconds_per_year = seconds_per_year * 1000000ll;
 
 uint32_t active_schedule_size = 0;
+uint32_t last_schedule_version = 0;
+uint32_t cycle_counter = 0;
 
 bool system_contract::reach_consensus() {
     return 0;
@@ -171,6 +173,10 @@ void system_contract::producer_missed_full(account_name producer) {
   if (prod != _producers.end()) {
     _producers.modify(prod, 0, [&](auto &p) {
       p.missed_blocks_per_rotation += 12;
+    //   if (crossed_missed_blocks_threshold(p.missed_blocks_per_rotation)) {
+    //     update_lifetime_metrics(p.owner, p.missed_blocks_per_rotation, p.unpaid_blocks);
+    //     p.kick(kick_type::REACHED_TRESHOLD);
+    //   }
     });
   }
 }
@@ -178,13 +184,18 @@ void system_contract::producer_missed_full(account_name producer) {
 void system_contract::reset_last_producer_missed_blocks() {
   // update last_onblock_caller
   for (auto &pm : _gschedule_metrics.producers_metric) {
-    if (pm.name == _gschedule_metrics.last_onblock_caller && pm.missed_blocks_per_cycle > 0) {
+    if (pm.missed_blocks_per_cycle > 0) {
       // blocks were missed by the last_onblock_caller.
-      auto prod = _producers.find(_gschedule_metrics.last_onblock_caller);
+      auto prod = _producers.find(pm.name);
       // update missed blocks per rotations
       if (prod != _producers.end() && prod->is_active) {
         _producers.modify(prod, 0, [&](auto &p) {
           p.missed_blocks_per_rotation += pm.missed_blocks_per_cycle;
+          //kick
+          if(crossed_missed_blocks_threshold(p.missed_blocks_per_rotation)) {
+              update_lifetime_metrics(p.owner, p.missed_blocks_per_rotation, p.unpaid_blocks);
+              p.kick(kick_type::REACHED_TRESHOLD);
+          }
         });
       }
     }
@@ -201,35 +212,65 @@ void system_contract::update_producer_missed_blocks(account_name producer) {
   }
 }
 
-void system_contract::check_missed_blocks(block_timestamp timestamp, account_name producer) { 
-   if(producer == N(eosio)) return;
+bool system_contract::new_schedule_proposed(account_name active_schedule[], uint32_t size) {
+    std::vector<account_name>new_schedule; 
+    for(auto &p: _gschedule_metrics.producers_metric) new_schedule.emplace_back(p.name);
 
-   if (_gschedule_metrics.last_onblock_caller == 0 || _gschedule_metrics.last_onblock_caller == producer) update_producer_missed_blocks(producer);
-   else {
-      account_name producers_schedule[21];
-      uint32_t total_prods = get_active_producers(producers_schedule, sizeof(account_name) * 21) / 8; 
-      
-      auto pIdx = std::distance(producers_schedule, std::find(producers_schedule, producers_schedule + total_prods, producer));  
-      auto locIdx = std::distance(producers_schedule, std::find(producers_schedule, producers_schedule + total_prods, _gschedule_metrics.last_onblock_caller));  
-      auto idxDiff = std::abs(pIdx - locIdx);  
+    std::sort(new_schedule.begin(), new_schedule.end());
+    std::sort(active_schedule, active_schedule + size);
 
-      if(pIdx > locIdx && idxDiff > 1) {
-        for(size_t i = locIdx + 1; i < pIdx; i++) producer_missed_full(producers_schedule[i]);  
-      } else if(pIdx < locIdx){
-        for(size_t i = locIdx + 1; i < total_prods; i++) producer_missed_full(producers_schedule[i]);
-        
-        for (size_t i = 0; i < pIdx; i++) producer_missed_full(producers_schedule[i]);    
-      }
+    for(int i = 0; i < _gstate.last_producer_schedule_size; i++){
+        if(active_schedule[i] != new_schedule[i]) return true;
+    }
 
-    reset_last_producer_missed_blocks();
-    update_producer_missed_blocks(producer);
+    return false;
+}
+
+bool system_contract::check_missed_blocks(block_timestamp timestamp, account_name producer) { 
+   if(producer == N(eosio)) return false;
+
+   bool error = false; 
+   account_name producers_schedule[21];
+   uint32_t total_prods = get_active_producers(producers_schedule, sizeof(account_name) * 21) / 8; 
+   
+   if(_gstate.last_producer_schedule_size != total_prods) error = true;
+   
+   //approx cycle time
+   auto cycle_slots = 2 * total_prods * 6; // 6s 
+   if(timestamp.slot - _grotations.last_rotation_time.slot < cycle_slots) error = true;
+   
+   if(new_schedule_proposed(producers_schedule, total_prods) && timestamp.slot - _gstate.last_proposed_schedule_update.slot < cycle_slots) error = true;
+    
+   if(error) {
+    _gschedule_metrics.cycle_counter = 0;
+    _gschedule_metrics.last_onblock_caller = producer;
+    return false;
    }
+    
+   auto pIdx = std::distance(producers_schedule, std::find(producers_schedule, producers_schedule + total_prods, producer));
+   auto locIdx = std::distance(producers_schedule, std::find(producers_schedule, producers_schedule + total_prods, _gschedule_metrics.last_onblock_caller));
+   auto diffIdx = std::abs(pIdx - locIdx);
+
+   if (pIdx > locIdx && diffIdx > 1) {
+     for (int i = locIdx + 1; i < pIdx; i++)  _gschedule_metrics.cycle_counter++;
+   } else if (pIdx < locIdx) {
+     for (int i = locIdx + 1; i < total_prods; i++) _gschedule_metrics.cycle_counter++;
+
+     for (int i = locIdx + 1; i < total_prods; i++) _gschedule_metrics.cycle_counter++;
+   }
+
+   update_producer_missed_blocks(producer); 
+
+   _gschedule_metrics.cycle_counter++;
    _gschedule_metrics.last_onblock_caller = producer;
+
+   return _gschedule_metrics.cycle_counter == total_prods; 
 }
 
 void system_contract::onblock(block_timestamp timestamp, account_name producer) {
     require_auth(N(eosio));
     
+
     // Until activated stake crosses this threshold no new rewards are paid
     if (_gstate.thresh_activated_stake_time == 0) {
         _gstate.block_num++;
@@ -243,8 +284,13 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer) 
         _gstate.last_pervote_bucket_fill = current_time();
 
 
-    check_missed_blocks(timestamp, producer);
+    if(check_missed_blocks(timestamp, producer)) {
+        reset_last_producer_missed_blocks();
+        _gschedule_metrics.cycle_counter = 0;
+    }
 
+
+    //check counter, reset missed blocks, reset counter
     /**
     * At startup the initial producer may not be one that is registered / elected
     * and therefore there may be no producer object for them.
@@ -261,11 +307,11 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer) 
 
     // Only update block producers once every minute, block_timestamp is in half seconds
     if (timestamp.slot - _gstate.last_producer_schedule_update.slot > 120) {
-        _gschedule_metrics.cycle_counter++;
-        if(_gschedule_metrics.cycle_counter == 27) {
+        // _gschedule_metrics.cycle_counter++;
+        // if(_gschedule_metrics.cycle_counter == 27) {
             //check kick
-            _gschedule_metrics.cycle_counter = 0;
-        }
+            // _gschedule_metrics.cycle_counter = 0;
+        // }
 
         update_elected_producers(timestamp);
 

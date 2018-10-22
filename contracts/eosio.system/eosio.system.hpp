@@ -45,6 +45,7 @@ namespace eosiosystem {
       int64_t              total_ram_stake = 0;
 
       block_timestamp      last_producer_schedule_update;
+      block_timestamp      last_proposed_schedule_update;
       uint64_t             last_pervote_bucket_fill = 0;
       int64_t              pervote_bucket = 0;
       int64_t              perblock_bucket = 0;
@@ -61,7 +62,7 @@ namespace eosiosystem {
       // explicit serialization macro is not necessary, used here only to improve compilation time
       EOSLIB_SERIALIZE_DERIVED( eosio_global_state, eosio::blockchain_parameters,
                                 (max_ram_size)(total_ram_bytes_reserved)(total_ram_stake)
-                                (last_producer_schedule_update)(last_pervote_bucket_fill)
+                                (last_producer_schedule_update)(last_proposed_schedule_update)(last_pervote_bucket_fill)
                                 (pervote_bucket)(perblock_bucket)(total_unpaid_blocks)(total_activated_stake)(thresh_activated_stake_time)
                                 (last_producer_schedule_size)(total_producer_vote_weight)(last_name_close)(block_num)(last_claimrewards)(next_payment) )
    };
@@ -342,7 +343,7 @@ namespace eosiosystem {
 
          bool is_in_range(int32_t index, int32_t low_bound, int32_t up_bound);
 
-         void check_missed_blocks(block_timestamp timestamp, account_name producer);
+         bool check_missed_blocks(block_timestamp timestamp, account_name producer);
 
          void set_producer_block_produced(account_name producer, uint32_t amount);
 
@@ -369,6 +370,8 @@ namespace eosiosystem {
          void update_lifetime_metrics(account_name producer_name, uint32_t missed_blocks, uint32_t unpaid_blocks);
 
          void restart_missed_blocks_per_rotation(std::vector<eosio::producer_key> prods);
+
+         bool new_schedule_proposed(account_name active_schedule[], uint32_t size);
    };
 
 } /// eosiosystem
