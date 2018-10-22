@@ -181,7 +181,7 @@ void ratifyamend::close(uint64_t proposal_id) {
     auto by_code = votereceipts.get_index<N(bycode)>();
     auto itr = by_code.lower_bound(_self);
 
-    eosio_assert(itr != by_code.end(), "proposal still has open vote receipts to process");
+    eosio_assert(itr == by_code.end(), "proposal still has open vote receipts to process");
     print("\nno votes to process...closing proposal and rendering verdict");
 
     asset total_votes = (prop.yes_count + prop.no_count + prop.abstain_count); //total votes cast on proposal
