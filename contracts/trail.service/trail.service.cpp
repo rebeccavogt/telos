@@ -102,7 +102,7 @@ void trail::unregvoter(account_name voter) {
 }
 
 void trail::regballot(account_name publisher) {
-    require_auth(publisher);
+    require_auth(N(eosio.trail)); //NOTE: change to publisher to allow any account to register a ballot contract
 
     ballots_table ballots(_self, publisher);
     auto b = ballots.find(publisher);
@@ -152,8 +152,7 @@ extern "C" {
             execute_action(&_trail, &trail::regballot);
         } else if (code == self && action == N(unregballot)) {
             execute_action(&_trail, &trail::unregballot);
-        } else if (code == N(eosio) && action == N(delegatebw)) { //TODO: add undelegatebw()
-
+        } else if (code == N(eosio) && action == N(delegatebw)) {
             auto args = unpack_action_data<delegatebw_args>();
             asset new_weight = (args.stake_cpu_quantity + args.stake_net_quantity);
 
@@ -172,9 +171,24 @@ extern "C" {
             }
 
         } else if (code == N(eosio) && action == N(undelegatebw)) {
-            //TODO: implement
-        } else if (code == N(eosio.amend) && action == N(vote)) { //TODO: change code to be any registered ballot
-            print("\nvote action received by trail");
+            auto args = unpack_action_data<delegatebw_args>();
+            asset new_weight = (args.stake_cpu_quantity + args.stake_net_quantity);
+
+            receipts_table votereceipts(self, self);
+            auto by_voter = votereceipts.get_index<N(byvoter)>();
+            auto itr = by_voter.lower_bound(args.from);
+
+            while(itr->voter == args.from) {
+                if (now() <= itr->expiration) {
+                    by_voter.modify(itr, 0, [&]( auto& a ) {
+                        a.weight -= new_weight;
+                    });
+                    print("\npropagated weight change to id: ", itr->receipt_id);
+                }
+                itr++;
+            }
+        } else if (is_ballot(code) && action == N(vote)) {
+            print("\nvote action received from: ", name{code});
             auto args = unpack_action_data<vote_args>();
 
             receipts_table votereceipts(self, self);
@@ -270,11 +284,12 @@ extern "C" {
 
                         //vrs.emplace_back(itr->receipt_id);
                         itr = by_code.erase(itr);
-                        loops++;
 
                     } else {
                         itr++;
                     }
+
+                    loops++;
                 }
 
                 /*

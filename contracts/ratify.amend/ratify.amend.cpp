@@ -100,10 +100,9 @@ void ratifyamend::propose(string title, uint64_t document_id, vector<uint16_t> n
 void ratifyamend::vote(uint64_t vote_code, uint64_t vote_scope, uint64_t proposal_id, uint16_t direction, uint32_t expiration, account_name voter) {
     require_auth(voter);
     eosio_assert(direction >= 0 && direction <= 2, "Invalid Vote. [0 = NO, 1 = YES, 2 = ABSTAIN]");
+    eosio_assert(is_voter(voter), "voter is not registered");
 
-    //TODO: check that voter is registered
-
-    proposals_table proposals(_self, _self); //TODO: change _self to vote_code and vote_scope?
+    proposals_table proposals(_self, _self);
     auto p = proposals.find(proposal_id);
     eosio_assert(p != proposals.end(), "Proposal Not Found");
     auto prop = *p;
@@ -116,7 +115,7 @@ void ratifyamend::vote(uint64_t vote_code, uint64_t vote_scope, uint64_t proposa
 }
 
 void ratifyamend::processvotes(uint64_t vote_code, uint64_t vote_scope, uint64_t proposal_id) {
-    proposals_table proposals(_self, _self); //TODO: change _self to vote_code and vote_scope?
+    proposals_table proposals(_self, _self);
     auto p = proposals.find(proposal_id);
     eosio_assert(p != proposals.end(), "Proposal Not Found");
     auto prop = *p;
