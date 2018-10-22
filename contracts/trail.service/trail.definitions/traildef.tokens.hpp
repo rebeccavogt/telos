@@ -72,7 +72,7 @@ bool is_registry(account_name publisher) {
     auto by_pub = registries.get_index<N(bypub)>();
     auto itr = by_pub.lower_bound(publisher);
 
-    if (itr != registries.end()) {
+    if (itr != by_pub.end()) {
         return true;
     }
 

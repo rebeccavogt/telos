@@ -220,18 +220,18 @@ extern "C" {
                 }
             }
 
-            auto itr = by_voter.lower_bound(args.recipient);
+            auto itr2 = by_voter.lower_bound(args.recipient);
 
             if (recip_is_voter) {
-                while(itr->voter == args.recipient) {
+                while(itr2->voter == args.recipient) {
                     //NOTE: check if symbol.name() includes precision
-                    if (now() <= itr->expiration && itr->weight.symbol.name() == args.tokens.symbol.name()) {
-                        by_voter.modify(itr, 0, [&]( auto& a ) {
+                    if (now() <= itr2->expiration && itr2->weight.symbol.name() == args.tokens.symbol.name()) {
+                        by_voter.modify(itr2, 0, [&]( auto& a ) {
                             a.weight += args.tokens;
                         });
-                        print("\npropagated weight change to id: ", itr->receipt_id);
+                        print("\npropagated weight change to id: ", itr2->receipt_id);
                     }
-                    itr++;
+                    itr2++;
 
                 }
             }
