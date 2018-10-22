@@ -130,6 +130,7 @@ void ratifyamend::processvotes(uint64_t vote_code, uint64_t vote_scope, uint64_t
     print("\neosio.amend processing votes...");
 
     uint64_t loops = 0;
+    uint64_t unique_voters = 0;
     int64_t new_no_votes = 0;
     int64_t new_yes_votes = 0;
     int64_t new_abs_votes = 0;
@@ -148,8 +149,9 @@ void ratifyamend::processvotes(uint64_t vote_code, uint64_t vote_scope, uint64_t
                 case 2 : new_abs_votes += itr->weight.amount; break;
             }
 
-            loops++;
+            unique_voters++;
         }
+        loops++;
         itr++;
     }
 
@@ -157,6 +159,7 @@ void ratifyamend::processvotes(uint64_t vote_code, uint64_t vote_scope, uint64_t
         a.no_count += asset(new_no_votes);
         a.yes_count += asset(new_yes_votes);
         a.abstain_count += asset(new_abs_votes);
+        a.total_voters += unique_voters;
     });
 
     print("\nloops processed: ", loops);
