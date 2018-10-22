@@ -57,6 +57,13 @@ struct delegatebw_args {
     bool transfer;
 };
 
+struct undelegatebw_args {
+    account_name from;
+    account_name receiver;
+    asset unstake_net_quantity;
+    asset unstake_cpu_quantity;
+};
+
 #pragma endregion Structs
 
 #pragma region Tables

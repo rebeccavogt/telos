@@ -37,7 +37,7 @@ class trail : public contract {
         void unregvoter(account_name voter);
 
         /// @abi action
-        void regballot(account_name publisher);
+        void regballot(account_name publisher, asset voting_token);
 
         /// @abi action
         void unregballot(account_name publisher);
@@ -47,10 +47,10 @@ class trail : public contract {
         #pragma region Reactions
 
         //called by delegatebw/undelegatebw
-        void updatevr(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, symbol_name vote_token, uint16_t direction, uint32_t expiration, account_name voter);
+        //void updatevr(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, symbol_name vote_token, uint16_t direction, uint32_t expiration, account_name voter);
 
         //called by voting contract running processvote
-        void processvr(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, symbol_name vote_token, uint16_t direction, account_name voter);
+        //void processvr(uint64_t vote_code, uint64_t vote_scope, uint64_t vote_key, symbol_name vote_token, uint16_t direction, account_name voter);
 
         #pragma endregion Reactions
 

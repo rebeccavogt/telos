@@ -33,9 +33,11 @@ void trail::regtoken(asset native, account_name publisher) {
     auto eosio_existing = statstable.find(sym);
     eosio_assert(eosio_existing == statstable.end(), "Token with symbol already exists in eosio.token" );
 
-    registries_table registries(_self, sym);
+    registries_table registries(_self, _self);
     auto r = registries.find(sym);
     eosio_assert(r == registries.end(), "Token Registry with that symbol already exists in Trail");
+
+    //TODO: assert only 1 token per publisher
 
     registries.emplace(publisher, [&]( auto& a ){
         a.native = native;
@@ -51,7 +53,7 @@ void trail::unregtoken(asset native, account_name publisher) {
     require_auth(publisher);
     
     auto sym = native.symbol.name();
-    registries_table registries(_self, sym);
+    registries_table registries(_self, _self);
     auto r = registries.find(sym);
 
     eosio_assert(r != registries.end(), "Token Registry does not exist.");
@@ -101,7 +103,7 @@ void trail::unregvoter(account_name voter) {
     print("\nVoterID Unregistration: SUCCESS");
 }
 
-void trail::regballot(account_name publisher) {
+void trail::regballot(account_name publisher, asset voting_token) {
     require_auth(N(eosio.trail)); //NOTE: change to publisher to allow any account to register a ballot contract
 
     ballots_table ballots(_self, publisher);
@@ -109,8 +111,9 @@ void trail::regballot(account_name publisher) {
 
     eosio_assert(b == ballots.end(), "Ballot already exists");
 
-    ballots.emplace(publisher, [&]( auto& a ){
+    ballots.emplace(_self, [&]( auto& a ){ //NOTE: change ram payer if allowing any account to register
         a.publisher = publisher;
+        a.voting_tokens = voting_token;
     });
 
     env_struct.total_ballots++;
@@ -119,7 +122,7 @@ void trail::regballot(account_name publisher) {
 }
 
 void trail::unregballot(account_name publisher) {
-    require_auth(publisher);
+    require_auth(N(eosio.trail)); //NOTE: change to publisher to allow account to unregister itself
 
     ballots_table ballots(_self, publisher);
     auto b = ballots.find(publisher);
@@ -161,7 +164,7 @@ extern "C" {
             auto itr = by_voter.lower_bound(args.from);
 
             while(itr->voter == args.from) {
-                if (now() <= itr->expiration) {
+                if (now() <= itr->expiration && itr->weight.symbol.name() == new_weight.symbol.name()) {
                     by_voter.modify(itr, 0, [&]( auto& a ) {
                         a.weight += new_weight;
                     });
@@ -171,15 +174,15 @@ extern "C" {
             }
 
         } else if (code == N(eosio) && action == N(undelegatebw)) {
-            auto args = unpack_action_data<delegatebw_args>();
-            asset new_weight = (args.stake_cpu_quantity + args.stake_net_quantity);
+            auto args = unpack_action_data<undelegatebw_args>();
+            asset new_weight = (args.unstake_cpu_quantity + args.unstake_net_quantity);
 
             receipts_table votereceipts(self, self);
             auto by_voter = votereceipts.get_index<N(byvoter)>();
             auto itr = by_voter.lower_bound(args.from);
 
             while(itr->voter == args.from) {
-                if (now() <= itr->expiration) {
+                if (now() <= itr->expiration && itr->weight.symbol.name() == new_weight.symbol.name()) {
                     by_voter.modify(itr, 0, [&]( auto& a ) {
                         a.weight -= new_weight;
                     });
@@ -187,14 +190,72 @@ extern "C" {
                 }
                 itr++;
             }
+
+        } else if (is_registry(code) && action == N(transfer)) {
+            print("\ntransfer action received from: ", name{code});
+            auto args = unpack_action_data<trail_transfer_args>();
+
+            bool sender_is_voter = is_voter(args.sender);
+            bool recip_is_voter = is_voter(args.recipient);
+
+            if (!sender_is_voter && !recip_is_voter) { //if both false no need to continue
+                return;
+            }
+
+            receipts_table votereceipts(self, self);
+            auto by_voter = votereceipts.get_index<N(byvoter)>();
+            auto itr = by_voter.lower_bound(args.sender);
+
+            if (sender_is_voter) {
+                while(itr->voter == args.sender) {
+                    //NOTE: check if symbol.name() includes precision
+                    if (now() <= itr->expiration && itr->weight.symbol.name() == args.tokens.symbol.name()) {
+                        by_voter.modify(itr, 0, [&]( auto& a ) {
+                            a.weight -= args.tokens;
+                        });
+                        print("\npropagated weight change to id: ", itr->receipt_id);
+                    }
+                    itr++;
+
+                }
+            }
+
+            auto itr = by_voter.lower_bound(args.recipient);
+
+            if (recip_is_voter) {
+                while(itr->voter == args.recipient) {
+                    //NOTE: check if symbol.name() includes precision
+                    if (now() <= itr->expiration && itr->weight.symbol.name() == args.tokens.symbol.name()) {
+                        by_voter.modify(itr, 0, [&]( auto& a ) {
+                            a.weight += args.tokens;
+                        });
+                        print("\npropagated weight change to id: ", itr->receipt_id);
+                    }
+                    itr++;
+
+                }
+            }
+
+            print("\ntoken balances propagated");
+
         } else if (is_ballot(code) && action == N(vote)) {
             print("\nvote action received from: ", name{code});
             auto args = unpack_action_data<vote_args>();
+            
+            asset new_weight;
+            auto vt = get_ballot_sym(code);
+
+            if (vt.symbol.name() == asset(0).symbol.name()) { //voting token is TLOS
+                new_weight = get_staked_tlos(args.voter);
+            } else if (is_trail_token(vt.symbol.name())) { //voting token is other token
+                new_weight = get_token_balance(vt.symbol.name(), args.voter);
+            } else {
+                new_weight = asset(10000); //default weight of 1 TLOS?
+            }
 
             receipts_table votereceipts(self, self);
             auto by_voter = votereceipts.get_index<N(byvoter)>();
             auto itr = by_voter.lower_bound(args.voter);
-            asset new_weight = get_staked_tlos(args.voter);
 
             if (itr == by_voter.end()) {
 
@@ -250,62 +311,47 @@ extern "C" {
                 print("\n\nvotereceipt changes complete");
             }
 
-        } else if (code == N(eosio.amend) && action == N(processvotes)) {
+        } else if (code == N(eosio.amend) && action == N(processvotes)) { //TODO: change to is_ballot()
             auto args = unpack_action_data<processvotes_args>();
             receipts_table votereceipts(self, self);
             auto by_code = votereceipts.get_index<N(bycode)>();
             auto itr = by_code.lower_bound(args.vote_code);
 
+            eosio_assert(itr != by_code.end(), "no votes to process");
             print("\nTrail beginning vr search...");
 
-            if (itr == by_code.end()) {
-                print("\nno votes to process");
-            } else {
-                uint64_t loops = 0;
-                int64_t new_no_votes = 0;
-                int64_t new_yes_votes = 0;
-                int64_t new_abs_votes = 0;
-                //symbol_name sym;
-                //vector<uint64_t> vrs;
+            uint64_t loops = 0;
+            int64_t new_no_votes = 0;
+            int64_t new_yes_votes = 0;
+            int64_t new_abs_votes = 0;
 
-                print("\nlower bound id: ", itr->receipt_id);
+            print("\nlower bound id: ", itr->receipt_id);
 
-                while(itr->vote_code == args.vote_code && loops < 10) { //loops variable to limit cpu/net expense per call
-                    
-                    if (itr->vote_scope == args.vote_scope &&
-                        itr->prop_id == args.proposal_id &&
-                        now() > itr->expiration) {
+            while(itr->vote_code == args.vote_code && loops < 10) { //loops variable to limit cpu/net expense per call
+                
+                if (itr->vote_scope == args.vote_scope &&
+                    itr->prop_id == args.proposal_id &&
+                    now() > itr->expiration) {
 
-                        switch (itr->direction) { //NOTE: cast as voted asset
-                            case 0 : new_no_votes += itr->weight.amount; break;
-                            case 1 : new_yes_votes += itr->weight.amount; break;
-                            case 2 : new_abs_votes += itr->weight.amount; break;
-                        }
-
-                        //vrs.emplace_back(itr->receipt_id);
-                        itr = by_code.erase(itr);
-
-                    } else {
-                        itr++;
+                    switch (itr->direction) { //NOTE: cast as voted asset
+                        case 0 : new_no_votes += itr->weight.amount; break;
+                        case 1 : new_yes_votes += itr->weight.amount; break;
+                        case 2 : new_abs_votes += itr->weight.amount; break;
                     }
 
-                    loops++;
+                    itr = by_code.erase(itr);
+
+                } else {
+                    itr++;
                 }
 
-                /*
-                print("\nerasing vrs...");
-                for (uint64_t rid : vrs) {
-                    auto id = votereceipts.find(rid); //NOTE: finding by primary key
-                    votereceipts.erase(id);
-                    print("\nerased vr_id: ", rid);
-                }
-                */
-
-                print("\nloops processed: ", loops);
-                print("\nnew no votes: ", asset(new_no_votes));
-                print("\nnew yes votes: ", asset(new_yes_votes));
-                print("\nnew abstain votes: ", asset(new_abs_votes));
+                loops++;
             }
+
+            print("\nloops processed: ", loops);
+            print("\nnew no votes: ", asset(new_no_votes));
+            print("\nnew yes votes: ", asset(new_yes_votes));
+            print("\nnew abstain votes: ", asset(new_abs_votes));
 
         }
     } //end apply

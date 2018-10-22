@@ -58,9 +58,11 @@ struct voter_id {
 /// @abi table ballots
 struct ballot {
     account_name publisher;
+    asset voting_tokens;
 
     uint64_t primary_key() const { return publisher; }
-    EOSLIB_SERIALIZE(ballot, (publisher))
+    //uint64_t by_sym() const { return voting_tokens.symbol.name(); }
+    EOSLIB_SERIALIZE(ballot, (publisher)(voting_tokens))
 };
 
 struct vote_args {
@@ -116,6 +118,13 @@ bool is_ballot(account_name publisher) {
     }
 
     return false;
+}
+
+asset get_ballot_sym(account_name publisher) {
+    ballots_table ballots(N(eosio.trail), publisher);
+    auto b = ballots.get(publisher);
+
+    return b.voting_tokens;
 }
 
 // receipts_table::const_iterator find_receipt(uint64_t r_code, uint64_t r_scope, uint64_t prop_id, symbol_name r_token, account_name voter) {

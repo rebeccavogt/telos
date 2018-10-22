@@ -1,6 +1,6 @@
 # Trail Walkthrough
 
-Trail offers a comprehensive suite of blockchain-based services.
+Trail offers a comprehensive suite of blockchain-based contract services.
 
 ## Voting and Ballot/Voter Registration
 
@@ -10,27 +10,19 @@ All users on the Telos Blockchain Network can register their account and receive
 
 * `regvoter()`
 
-    Calling regvoter will affiliate the given account_name with the given token symbol.
+    Calling regvoter will affiliate the given account_name with the given token symbol. Any user with an account_name may call regvoter, thereby allowing the given user to vote on any proposal or in any election powered by Trail.
 
 * `unregvoter()`
 
-    Calling unregvoter will remove the registration from the table.
-
-* `addreceipt()`
-
-    The addreceipt function is called as an inline action by the external voting contract. This action should only be called when a vote has been deemed valid (criteria for validity is at the discretion of the developer), and the vote is ready to be logged. Once validation passes, the inline action should store the code, scope, and key of the data object for which the vote was cast.
-
-* `rmvexpvotes()`
-
-    The rmvexpreceipts action is called by the owner of a VoterID to remove all expired receipts still logged on their VoterID.
+    Calling unregvoter will remove the voter registration from the voters table. Since the user pays a small amount of RAM to register, calling unregvoter will reclaim the RAM spent on the registration.
 
 * `regballot()`
 
-    RegBallot is called to register a voting contract.
+    RegBallot is called to register a voting contract. After calling regballot, Trail will automatically begin tracking votes on any open proposal/election made by the contract.
 
 * `unregballot()`
 
-    Unregballot is called to remove a registered voting contract from the table.
+    Unregballot is called to remove a registered voting contract from the table. This will also cause Trail to stop propagating votes for the unregistered contract.
 
 ## Token Registration
 

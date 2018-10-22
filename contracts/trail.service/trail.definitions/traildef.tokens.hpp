@@ -16,6 +16,8 @@
 using namespace std;
 using namespace eosio;
 
+#pragma region Structs
+
 /// @abi table registries i64
 struct registration {
     asset native;
@@ -35,12 +37,27 @@ struct balance {
     EOSLIB_SERIALIZE(balance, (owner)(tokens))
 };
 
+struct trail_transfer_args {
+    account_name sender;
+    account_name recipient;
+    asset tokens;
+};
+
+#pragma endregion Structs
+
+#pragma region Tables
+
 typedef multi_index<N(balances), balance> balances_table;
 
-typedef multi_index<N(registries), registration> registries_table;
+typedef multi_index<N(registries), registration,
+    indexed_by<N(bypub), const_mem_fun<registration, uint64_t, &registration::by_publisher>>> registries_table;
+
+#pragma endregion Tables
+
+#pragma region Helper_Functions
 
 bool is_trail_token(symbol_name sym) {
-    registries_table registries(N(eosio.trail), sym);
+    registries_table registries(N(eosio.trail), N(eosio.trail));
     auto r = registries.find(sym);
 
     if (r != registries.end()) {
@@ -50,8 +67,20 @@ bool is_trail_token(symbol_name sym) {
     return false;
 }
 
+bool is_registry(account_name publisher) {
+    registries_table registries(N(eosio.trail), N(eosio.trail));
+    auto by_pub = registries.get_index<N(bypub)>();
+    auto itr = by_pub.lower_bound(publisher);
+
+    if (itr != registries.end()) {
+        return true;
+    }
+
+    return false;
+}
+
 registries_table::const_iterator find_registry(symbol_name sym) {
-    registries_table registries(N(eosio.trail), sym);
+    registries_table registries(N(eosio.trail), N(eosio.trail));
     auto itr = registries.find(sym);
 
     if (itr != registries.end()) {
@@ -62,23 +91,25 @@ registries_table::const_iterator find_registry(symbol_name sym) {
 }
 
 registration get_registry(symbol_name sym) {
-    registries_table registries(N(eosio.trail), sym);
+    registries_table registries(N(eosio.trail), N(eosio.trail));
     return registries.get(sym);
 }
 
-int64_t get_token_balance(symbol_name sym, account_name voter) {
+symbol_name get_sym(account_name publisher) {
+    registries_table registries(N(eosio.trail), N(eosio.trail));
+    auto by_pub = registries.get_index<N(bypub)>();
+    auto itr = by_pub.lower_bound(publisher);
+
+    return itr->native.symbol.name();
+}
+
+asset get_token_balance(symbol_name sym, account_name voter) {
     auto reg = get_registry(sym).publisher;
 
     balances_table balances(reg, voter);
     auto b = balances.get(voter);
 
-    auto amount = b.tokens.amount;
-    auto prec = b.tokens.symbol.precision();
-
-    int64_t p10 = 1;
-    while(prec > 0) {
-        p10 *= 10; --prec;
-    }
-
-    return amount / p10;
+    return b.tokens;
 }
+
+#pragma endregion Helper_Functions
