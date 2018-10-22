@@ -179,65 +179,62 @@ void ratifyamend::close(uint64_t proposal_id) {
     auto by_code = votereceipts.get_index<N(bycode)>();
     auto itr = by_code.lower_bound(_self);
 
-    if (itr == by_code.end()) {
-        print("\nno votes to process...closing proposal and rendering verdict");
+    eosio_assert(itr != by_code.end(), "proposal still has open vote receipts to process");
+    print("\nno votes to process...closing proposal and rendering verdict");
 
-        asset total_votes = (prop.yes_count + prop.no_count + prop.abstain_count); //total votes cast on proposal
+    asset total_votes = (prop.yes_count + prop.no_count + prop.abstain_count); //total votes cast on proposal
 
-        //pass thresholds
-        uint64_t quorum_thresh = (thresh_struct.total_voters / 20); // 5% of all registered voters //TODO: update percentage with real value
-        asset pass_thresh = ((prop.yes_count + prop.no_count) / 3) * 2; // 66.67% yes votes of total_votes
+    //pass thresholds
+    uint64_t quorum_thresh = (thresh_struct.total_voters / 20); // 5% of all registered voters //TODO: update percentage with real value
+    asset pass_thresh = ((prop.yes_count + prop.no_count) / 3) * 2; // 66.67% yes votes of total_votes
 
-        //refund thresholds - both must be met for a refund - proposal pass triggers automatic refund
-        uint64_t q_refund_thresh = (thresh_struct.total_voters / 25); //4% of all registered voters
-        asset p_refund_thresh = total_votes / 4; //25% yes votes of total_votes
+    //refund thresholds - both must be met for a refund - proposal pass triggers automatic refund
+    uint64_t q_refund_thresh = (thresh_struct.total_voters / 25); //4% of all registered voters
+    asset p_refund_thresh = total_votes / 4; //25% yes votes of total_votes
 
-        if (prop.total_voters >= quorum_thresh && total_votes >= pass_thresh) {
-            
-            //TODO: update document
+    if (prop.total_voters >= quorum_thresh && total_votes >= pass_thresh) {
 
-            //proposal passed
-            proposals.modify(p, 0, [&]( auto& a ) {
-                a.status = 1;
-            });
+        //proposal passed, refund granted
 
-            //refund
-            action(permission_level{ _self, N(active) }, N(eosio.token), N(transfer), make_tuple(
-    	        _self,
-                prop.proposer,
-                asset(int64_t(1000000), S(4, TLOS)),
-                std::string("Ratify/Amend Proposal Fee Refund")
-	        )).send();
+        proposals.modify(p, 0, [&]( auto& a ) {
+            a.status = 1;
+        });
 
-        } else if (prop.total_voters >= q_refund_thresh && total_votes >= p_refund_thresh) {
-            
-            //proposal failed
-            proposals.modify(p, 0, [&]( auto& a ) {
-                a.status = 2;
-            });
+        action(permission_level{ _self, N(active) }, N(eosio.token), N(transfer), make_tuple(
+            _self,
+            prop.proposer,
+            asset(int64_t(1000000), S(4, TLOS)),
+            std::string("Ratify/Amend Proposal Fee Refund")
+        )).send();
 
-            //refund
-            action(permission_level{ _self, N(active) }, N(eosio.token), N(transfer), make_tuple(
-    	        _self,
-                prop.proposer,
-                asset(int64_t(1000000), S(4, TLOS)),
-                std::string("Ratify/Amend Proposal Fee Refund")
-	        )).send();
-            
-        } else {
+        update_doc(prop.document_id, prop.new_clause_ids, prop.new_ipfs_urls);
 
-            //proposal failed
-            proposals.modify(p, 0, [&]( auto& a ) {
-                a.status = 2;
-            });
+    } else if (prop.total_voters >= q_refund_thresh && total_votes >= p_refund_thresh) {
+        
+        //proposal failed, refund granted
 
-            print("\nproposal refund witheld");
-        }
+        proposals.modify(p, 0, [&]( auto& a ) {
+            a.status = 2;
+        });
 
+        action(permission_level{ _self, N(active) }, N(eosio.token), N(transfer), make_tuple(
+            _self,
+            prop.proposer,
+            asset(int64_t(1000000), S(4, TLOS)),
+            std::string("Ratify/Amend Proposal Fee Refund")
+        )).send();
+        
     } else {
-        print("\nproposal still has open vote receipts to process");
-        return;
+        
+        //proposal failed, refund witheld
+
+        proposals.modify(p, 0, [&]( auto& a ) {
+            a.status = 2;
+        });
+
+        print("\nproposal refund witheld");
     }
+
 }
 
 #pragma region Helper_Functions
