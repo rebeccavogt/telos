@@ -91,6 +91,13 @@
         {"name":"state", "type":"bool"}
       ]
     },{
+      "name": "votebpout",
+      "base": "",
+      "fields": [
+        {"name":"bp", "type":"account_name"},
+        {"name":"penalty_hours", "type":"uint32"}
+      ]
+    },{
       "name": "wait_weight",
       "base": "",
       "fields": [
@@ -309,16 +316,21 @@
       "name": "producer_info",
       "base": "",
       "fields": [
-         {"name":"owner",           "type":"account_name"},
-         {"name":"total_votes",     "type":"float64"},
-         {"name":"producer_key",    "type":"public_key"},
-         {"name":"is_active",       "type":"bool"},
-         {"name":"url",             "type":"string"},
-         {"name":"unpaid_blocks",   "type":"uint32"},
-         {"name":"missed_blocks",   "type":"uint32"},
-         {"name":"blocks_per_cycle",   "type":"uint32"},
-         {"name":"last_claim_time", "type":"uint64"},
-         {"name":"location",        "type":"uint16"}
+         {"name":"owner",                       "type":"account_name"},
+         {"name":"total_votes",                 "type":"float64"},
+         {"name":"producer_key",                "type":"public_key"},
+         {"name":"is_active",                   "type":"bool"},
+         {"name":"url",                         "type":"string"},
+         {"name":"unpaid_blocks",               "type":"uint32"},
+         {"name":"missed_blocks",               "type":"uint32"},
+         {"name":"blocks_per_cycle",            "type":"uint32"},
+         {"name":"last_claim_time",             "type":"uint64"},
+         {"name":"location",                    "type":"uint16"},
+         {"name":"kick_reason_id",              "type":"uint32"},
+         {"name":"kick_reason",                 "type":"string"},
+         {"name":"times_kicked",                "type":"uint32"},
+         {"name":"kick_penalty_hours",          "type":"uint32"},
+         {"name":"last_time_kicked",            "type":"block_timestamp_type"}
       ]
     },{
       "name": "regproducer",
@@ -493,6 +505,10 @@
    },{
      "name": "setrotate",
      "type": "setrotate",
+     "ricardian_contract": ""
+   },{
+     "name": "votebpout",
+     "type": "votebpout",
      "ricardian_contract": ""
    },{
      "name": "onerror",

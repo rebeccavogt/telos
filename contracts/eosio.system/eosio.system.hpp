@@ -13,6 +13,7 @@
 
 #include "../trail.service/trail.definitions/traildef.voting.hpp"
 
+#include <cmath>  
 #include <string>
 
 namespace eosiosystem {
@@ -68,6 +69,11 @@ namespace eosiosystem {
                                 (last_producer_schedule_size)(total_producer_vote_weight)(last_name_close)(block_num)(last_claimrewards)(next_payment) )
    };
 
+   enum class kick_type {
+     REACHED_TRESHOLD = 1,
+     PREVENT_LIB_STOP_MOVING = 2,
+     BPS_VOTING = 3
+   };
    /**
     * TELOS CHANGES:
     * 
@@ -84,15 +90,47 @@ namespace eosiosystem {
       uint32_t              blocks_per_cycle = 0;
       uint64_t              last_claim_time = 0;
       uint16_t              location = 0;
+      
+      uint32_t              kick_reason_id = 0;
+      std::string           kick_reason;
+      uint32_t              times_kicked = 0;
+      uint32_t              kick_penalty_hours = 0; 
+      block_timestamp       last_time_kicked;
 
       uint64_t primary_key()const { return owner;                                   }
       double   by_votes()const    { return is_active ? -total_votes : total_votes;  }
       bool     active()const      { return is_active;                               }
-      void     deactivate()       { producer_key = public_key(); is_active = false; missed_blocks = 0; }
+      void     deactivate()       { producer_key = public_key(); is_active = false; }
+      
+      void kick(kick_type kt, uint32_t penalty = 0) {
+        times_kicked++;
+        last_time_kicked = block_timestamp(eosio::time_point(eosio::microseconds(int64_t(current_time()))));
+        
+        if(penalty == 0) kick_penalty_hours  = uint32_t(std::pow(2, times_kicked));
+        
+        switch(kt) {
+          case kick_type::REACHED_TRESHOLD:
+            kick_reason_id = uint32_t(kick_type::REACHED_TRESHOLD);
+            kick_reason = "Producer account was deactivated because it reached the maximum missed blocks in this rotation timeframe.";
+          break;
+          case kick_type::PREVENT_LIB_STOP_MOVING:
+            kick_reason_id = uint32_t(kick_type::PREVENT_LIB_STOP_MOVING);
+            kick_reason = "Producer account was deactivated to prevent the LIB from halting.";
+          break;
+          case kick_type::BPS_VOTING:
+            kick_reason_id = uint32_t(kick_type::BPS_VOTING);
+            kick_reason = "Producer account was deactivated by vote.";
+            kick_penalty_hours = penalty;
+          break;
+        }
+        
+        deactivate();
+      } 
 
       // explicit serialization macro is not necessary, used here only to improve compilation time
       EOSLIB_SERIALIZE( producer_info, (owner)(total_votes)(producer_key)(is_active)(url)
-                        (unpaid_blocks)(missed_blocks)(blocks_per_cycle)(last_claim_time)(location) )
+                        (unpaid_blocks)(missed_blocks)(blocks_per_cycle)(last_claim_time)
+                        (location)(kick_reason_id)(kick_reason)(times_kicked)(kick_penalty_hours)(last_time_kicked) )
    };
 
    struct rotation_info {
@@ -272,6 +310,7 @@ namespace eosiosystem {
 
          void bidname( account_name bidder, account_name newname, asset bid );
         
+         void votebpout(account_name bp, uint32_t penalty_hours);
       private:
          
          void recalculate_votes();
@@ -313,7 +352,7 @@ namespace eosiosystem {
          
          void add_producer_to_kick_list(offline_producer producer);
 
-         void remove_producer_to_kick_list(offline_producer producer);
+         void remove_producer_from_kick_list(offline_producer producer);
 
          bool reach_consensus();
 
