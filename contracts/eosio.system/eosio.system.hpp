@@ -19,7 +19,7 @@ namespace eosiosystem {
    using eosio::indexed_by;
    using eosio::const_mem_fun;
    using eosio::block_timestamp;
-   const uint32_t block_num_network_activation = 200; // debug version 3600 blocks = 30 min
+   const uint32_t block_num_network_activation = 108000; // debug version 3600 blocks = 30 min
   //  const uint32_t block_num_network_activation = 1000000; 
    
    struct name_bid {
