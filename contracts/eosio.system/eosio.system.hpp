@@ -19,7 +19,7 @@ namespace eosiosystem {
    using eosio::indexed_by;
    using eosio::const_mem_fun;
    using eosio::block_timestamp;
-   const uint32_t block_num_network_activation = 3600; // debug version 3600 blocks = 30 min
+   const uint32_t block_num_network_activation = 108000; // debug version 3600 blocks = 30 min
   //  const uint32_t block_num_network_activation = 1000000; 
    
    struct name_bid {
@@ -182,7 +182,7 @@ namespace eosiosystem {
       EOSLIB_SERIALIZE( voter_info, (owner)(proxy)(producers)(staked)(last_stake)(last_vote_weight)(proxied_vote_weight)(is_proxy)(reserved1)(reserved2)(reserved3) )
    };
 
-   //tracks automated claimreward payments
+   //tracks automated claimreward _payments
    struct payment {
      account_name bp;
      asset pay;
@@ -191,7 +191,7 @@ namespace eosiosystem {
      EOSLIB_SERIALIZE(payment, (bp)(pay))
    };
 
-   typedef eosio::multi_index<N(payments), payment> payments_table;
+   typedef eosio::multi_index<N(_payments), payment> payments_table;
 
    typedef eosio::multi_index< N(voters), voter_info>  voters_table;
 
@@ -217,7 +217,7 @@ namespace eosiosystem {
          eosio_global_state     _gstate;
          rotation_info          _grotations;
          rammarket              _rammarket;
-         payments_table         payments;
+         payments_table         _payments;
 
       public:
          system_contract( account_name s );
