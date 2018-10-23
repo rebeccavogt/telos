@@ -267,7 +267,7 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer) 
 
     recalculate_votes();
 
-    check_missed_blocks(timestamp, producer);
+    //check_missed_blocks(timestamp, producer);
 
     // Only update block producers once every minute, block_timestamp is in half seconds
     if (timestamp.slot - _gstate.last_producer_schedule_update.slot > 120) {
