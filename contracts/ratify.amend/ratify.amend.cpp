@@ -108,7 +108,9 @@ void ratifyamend::vote(uint64_t vote_code, uint64_t vote_scope, uint64_t proposa
     auto prop = *p;
     eosio_assert(prop.expiration >= now(), "Proposal Has Expired");
 
-    //TODO: more checks before sending to trail eg. check matching expire
+    eosio_assert(expiration == prop.expiration, "expiration does not match proposal");
+    eosio_assert(vote_code == _self, "vote_code must be eosio.amend");
+    eosio_assert(vote_scope == _self, "vote_scope must be eosio.amend");
 
     require_recipient(N(eosio.trail));
     print("\nVote sent to Trail");

@@ -35,6 +35,7 @@ class ratifyamend : public contract {
         /// @abi action
         void propose(string title, uint64_t document_id, vector<uint16_t> new_clause_ids, vector<string> new_ipfs_urls, account_name proposer);
 
+        //TODO: consider renaming/retyping params
         /// @abi action
         void vote(uint64_t vote_code, uint64_t vote_scope, uint64_t proposal_id, uint16_t direction, uint32_t expiration, account_name voter);
 
