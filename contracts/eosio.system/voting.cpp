@@ -100,22 +100,6 @@ namespace eosiosystem {
       _grotations.next_rotation_time = block_timestamp(block_time.to_time_point() + time_point(microseconds(SIX_MINUTES_US)));
    }
 
-   void system_contract::update_lifetime_metrics(account_name producer_name, uint32_t missed_blocks, uint32_t unpaid_blocks) {
-     auto pitr = _lifetime_metrics.find(producer_name);
-     if (pitr != _lifetime_metrics.end()) {
-       _lifetime_metrics.modify(pitr, 0, [&](auto &bp) {
-         bp.missed_blocks += missed_blocks;
-         bp.unpaid_blocks += unpaid_blocks;
-       });
-     } else {
-       _lifetime_metrics.emplace(producer_name, [&](auto &bp) {
-         bp.producer_name = producer_name;
-         bp.missed_blocks = missed_blocks;
-         bp.unpaid_blocks = unpaid_blocks;
-       });
-     }
-   }
-
    void system_contract::restart_missed_blocks_per_rotation(std::vector<eosio::producer_key> prods) {
         // restart all missed blocks to bps and sbps
         for (size_t i = 0; i < prods.size(); i++) {
