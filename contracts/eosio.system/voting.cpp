@@ -108,7 +108,7 @@ namespace eosiosystem {
 
           if (pitr != _producers.end() && pitr->active()) {
             _producers.modify(pitr, 0, [&](auto &p) {
-              update_lifetime_metrics(p.owner, p.missed_blocks_per_rotation, p.unpaid_blocks);
+              //update_lifetime_metrics(p.owner, p.missed_blocks_per_rotation, p.unpaid_blocks);
               p.missed_blocks_per_rotation = 0;
               if (p.kick_penalty_hours > 0) p.kick_penalty_hours--;
             });

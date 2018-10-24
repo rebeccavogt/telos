@@ -124,7 +124,7 @@ bool system_contract::new_schedule_proposed(account_name active_schedule[], uint
     std::sort(new_schedule.begin(), new_schedule.end());
     std::sort(active_schedule, active_schedule + size);
 
-    for(int i = 0; i < _gstate.last_producer_schedule_size; i++){
+    for(size_t i = 0; i < _gstate.last_producer_schedule_size; i++){
         if(active_schedule[i] != new_schedule[i]) return true;
     }
 

@@ -106,7 +106,7 @@ namespace eosiosystem {
       require_auth( _self );
       _grotations.is_rotation_active = state;
    }
-
+  //TODO
    void system_contract::setkick( bool state ) {
       require_auth( _self );
       // _grotations.is_kick_active = state;
