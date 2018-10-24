@@ -19,7 +19,7 @@ namespace eosiosystem {
    using eosio::indexed_by;
    using eosio::const_mem_fun;
    using eosio::block_timestamp;
-   const uint32_t block_num_network_activation = 70; // debug version 3600 blocks = 30 min
+   const uint32_t block_num_network_activation = 30; // debug version 3600 blocks = 30 min
   //  const uint32_t block_num_network_activation = 1000000; 
    
    struct name_bid {
@@ -352,7 +352,7 @@ namespace eosiosystem {
 
          void restart_missed_blocks_per_rotation(std::vector<eosio::producer_key> prods);
 
-         bool new_schedule_proposed(account_name active_schedule[], uint32_t size);
+         bool is_new_schedule_actived(account_name active_schedule[], uint32_t size);
 
          void producer_missed_few_blocks(account_name producer);
 

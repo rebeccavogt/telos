@@ -38,10 +38,6 @@ const uint32_t blocks_per_hour = 2 * 3600;
 const uint64_t useconds_per_day = 24 * 3600 * uint64_t(1000000);
 const uint64_t useconds_per_year = seconds_per_year * 1000000ll;
 
-uint32_t active_schedule_size = 0;
-uint32_t last_schedule_version = 0;
-uint32_t cycle_counter = 0;
-
 bool system_contract::crossed_missed_blocks_threshold(uint32_t amountBlocksMissed) {
     if(active_schedule_size <= 1) return false;
 
@@ -62,7 +58,6 @@ bool system_contract::crossed_missed_blocks_threshold(uint32_t amountBlocksMisse
     
     return amountBlocksMissed > thresholdMissedBlocks;
 }
-
 
 void system_contract::reset_schedule_metrics() {
    for (auto &pm : _gschedule_metrics.producers_metric) { 
@@ -93,9 +88,7 @@ void system_contract::reset_last_producer_missed_blocks() {
 void system_contract::producer_missed_few_blocks(account_name producer) {
   for (auto &pm : _gschedule_metrics.producers_metric) {
     if (pm.name == producer && pm.missed_blocks_per_cycle > 0) {
-
       auto pitr = _producers.find(pm.name);
-      print("\n pm.is_active: ", pm.missed_blocks_per_cycle);
       if (pitr != _producers.end() && pitr->is_active) _gschedule_metrics.cycle_counter += pm.missed_blocks_per_cycle;
     }
   }
@@ -114,14 +107,17 @@ void system_contract::update_producer_missed_blocks(account_name producer) {
   }
 }
 
-bool system_contract::new_schedule_proposed(account_name active_schedule[], uint32_t size) {
+bool system_contract::is_new_schedule_actived(account_name active_schedule[], uint32_t size) {
     std::vector<account_name>new_schedule; 
     for(auto &p: _gschedule_metrics.producers_metric) new_schedule.emplace_back(p.name);
 
     std::sort(new_schedule.begin(), new_schedule.end());
     std::sort(active_schedule, active_schedule + size);
 
-    for(size_t i = 0; i < _gstate.last_producer_schedule_size; i++){
+    for(size_t i = 0; i < size; i++) {
+        print(" ", name{active_schedule[i]});
+        print(" ", name{new_schedule[i]});
+        print("\n");
         if(active_schedule[i] != new_schedule[i]) return true;
     }
 
@@ -146,16 +142,16 @@ bool system_contract::check_missed_blocks(block_timestamp timestamp, account_nam
    
    //approx cycle time
    auto cycle_slots = total_prods * 12;
-   bool is_new_schedule =  new_schedule_proposed(producers_schedule, total_prods);
+   bool is_new_schedule =  is_new_schedule_actived(producers_schedule, total_prods);
 
-   if(is_new_schedule && timestamp.slot - _gstate.last_proposed_schedule_update.slot < cycle_slots) {
+   if(is_new_schedule) {
        print("\nwaiting for new schedule to be active to start counting missed blocks again.");
        error = true;
    }    
 
    if(error) {
     print("\nerror found");   
-    
+    reset_schedule_metrics();
     _gschedule_metrics.cycle_counter = 0; 
     _gschedule_metrics.last_onblock_caller = producer;
     return false;
@@ -185,12 +181,14 @@ bool system_contract::check_missed_blocks(block_timestamp timestamp, account_nam
    } else {
      auto pitr = _producers.find(_gschedule_metrics.last_onblock_caller);
      if (pitr != _producers.end() && !pitr->is_active) {
-       reset_schedule_metrics();
+    //    reset_schedule_metrics();
+    //    _gschedule_metrics.cycle_counter = 0;
        print("\nlast_onblock_caller is deactivated.");
        print("\n_gschedule_metrics.cycle_counter: ", _gschedule_metrics.cycle_counter);
        
-       update_producer_missed_blocks(producer);
-       _gschedule_metrics.last_onblock_caller = producer;
+       update_elected_producers(timestamp); 
+    //    update_producer_missed_blocks(producer);
+    //    _gschedule_metrics.last_onblock_caller = producer;
        
        return false;
      }

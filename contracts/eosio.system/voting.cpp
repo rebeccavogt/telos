@@ -20,6 +20,7 @@
 
 #define TWELVE_HOURS_US  43200000000
 #define SIX_HOURS_US     21600000000
+#define ONE_HOUR_US       3600000000
 #define SIX_MINUTES_US     360000000 // debug version
 #define TWELVE_MINUTES_US  720000000
 #define MAX_PRODUCERS             51
@@ -97,7 +98,7 @@ namespace eosiosystem {
 
    void system_contract::updateRotationTime(block_timestamp block_time) {
       _grotations.last_rotation_time = block_time;
-      _grotations.next_rotation_time = block_timestamp(block_time.to_time_point() + time_point(microseconds(SIX_MINUTES_US)));
+      _grotations.next_rotation_time = block_timestamp(block_time.to_time_point() + time_point(microseconds(ONE_HOUR_US)));
    }
 
    void system_contract::restart_missed_blocks_per_rotation(std::vector<eosio::producer_key> prods) {
@@ -109,6 +110,7 @@ namespace eosiosystem {
           if (pitr != _producers.end() && pitr->active()) {
             _producers.modify(pitr, 0, [&](auto &p) {
               //update_lifetime_metrics(p.owner, p.missed_blocks_per_rotation, p.unpaid_blocks);
+              p.lifetime_missed_blocks += p.missed_blocks_per_rotation;
               p.missed_blocks_per_rotation = 0;
               if (p.kick_penalty_hours > 0) p.kick_penalty_hours--;
             });
@@ -201,6 +203,7 @@ namespace eosiosystem {
             top_producers.emplace_back(*pIt);
           } 
         }
+        restart_missed_blocks_per_rotation(prods);
       } 
       else {
         top_producers = prods;
@@ -218,8 +221,6 @@ namespace eosiosystem {
 
       auto schedule_version = set_proposed_producers( packed_schedule.data(),  packed_schedule.size());
       if (schedule_version >= 0) {
-        restart_missed_blocks_per_rotation(top_producers);
-        
         _gstate.last_proposed_schedule_update = block_time;
         _gschedule_metrics.producers_metric.erase(_gschedule_metrics.producers_metric.begin(), _gschedule_metrics.producers_metric.end());
        
@@ -232,6 +233,7 @@ namespace eosiosystem {
 
         _gschedule_metrics.version = uint32_t(schedule_version);
         _gschedule_metrics.producers_metric = psm;
+        _gschedule_metrics.cycle_counter = 0;
 
         _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>(top_producers.size());
       }
