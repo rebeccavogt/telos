@@ -109,7 +109,6 @@ namespace eosiosystem {
 
           if (pitr != _producers.end() && pitr->active()) {
             _producers.modify(pitr, 0, [&](auto &p) {
-              //update_lifetime_metrics(p.owner, p.missed_blocks_per_rotation, p.unpaid_blocks);
               p.lifetime_missed_blocks += p.missed_blocks_per_rotation;
               p.missed_blocks_per_rotation = 0;
               if (p.kick_penalty_hours > 0) p.kick_penalty_hours--;
@@ -230,7 +229,7 @@ namespace eosiosystem {
           auto bp_name = tp.producer_name;
           psm.emplace_back(producer_metric{ bp_name, 12 });
         });
-
+ 
         _gschedule_metrics.version = uint32_t(schedule_version);
         _gschedule_metrics.producers_metric = psm;
         _gschedule_metrics.cycle_counter = 0;
