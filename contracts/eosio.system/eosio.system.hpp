@@ -352,9 +352,7 @@ namespace eosiosystem {
 
          void restart_missed_blocks_per_rotation(std::vector<eosio::producer_key> prods);
 
-         bool is_new_schedule_actived(account_name active_schedule[], uint32_t size);
-
-         void producer_missed_few_blocks(account_name producer);
+         bool is_new_schedule_activated(account_name active_schedule[], uint32_t size);
 
          void reset_schedule_metrics(account_name producer);
    };

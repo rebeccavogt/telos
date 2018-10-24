@@ -23,9 +23,7 @@
       "base": "",
       "fields": [
         {"name":"last_onblock_caller",      "type":"account_name"},
-        {"name":"version",                  "type":"uint32"},
-        {"name":"cycle_counter",            "type":"uint32"},
-        {"name":"cycle_counter_correction", "type":"uint32"},
+        {"name":"block_counter_correction", "type":"uint32"},
         {"name":"producers_metric",         "type":"producer_metric[]"}
       ]
    },{

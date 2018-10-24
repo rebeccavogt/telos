@@ -230,10 +230,8 @@ namespace eosiosystem {
           psm.emplace_back(producer_metric{ bp_name, 12 });
         });
  
-        _gschedule_metrics.version = uint32_t(schedule_version);
         _gschedule_metrics.producers_metric = psm;
-        _gschedule_metrics.cycle_counter = 0;
-
+        
         _gstate.last_producer_schedule_size = static_cast<decltype(_gstate.last_producer_schedule_size)>(top_producers.size());
       }
    }
@@ -435,7 +433,6 @@ namespace eosiosystem {
        });
       }
    }
-
 
    void system_contract::propagate_weight_change(const voter_info &voter) {
       eosio_assert( voter.proxy == 0 || !voter.is_proxy, "account registered as a proxy is not allowed to use a proxy");

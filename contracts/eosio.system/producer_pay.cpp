@@ -63,15 +63,14 @@ bool system_contract::crossed_missed_blocks_threshold(uint32_t amountBlocksMisse
 
 void system_contract::reset_schedule_metrics(account_name producer = NULL) {
    for (auto &pm : _gschedule_metrics.producers_metric) { 
-      // if(producer != NULL && pm.name == producer) pm.missed_blocks_per_cycle = 12 - correction;
-      // else pm.missed_blocks_per_cycle = 12;
+    //   if(producer != NULL && pm.name == producer) pm.missed_blocks_per_cycle = 11;
+    //   else pm.missed_blocks_per_cycle = 12;
       
       if(pm.missed_blocks_per_cycle < 12) pm.missed_blocks_per_cycle = 12;
    }
 }
 
 void system_contract::reset_last_producer_missed_blocks() {
-  // update last_onblock_caller
   for (auto &pm : _gschedule_metrics.producers_metric) {
     if (pm.missed_blocks_per_cycle > 0) {      
       auto pitr = _producers.find(pm.name);
@@ -91,32 +90,16 @@ void system_contract::reset_last_producer_missed_blocks() {
   }
 }
 
-void system_contract::producer_missed_few_blocks(account_name producer) {
-    print("\nproducer_missed_few_blocks call");
-  for (auto &pm : _gschedule_metrics.producers_metric) {
-    if (pm.name == producer && pm.missed_blocks_per_cycle > 0) {
-      auto pitr = _producers.find(pm.name);
-      if (pitr != _producers.end() && pitr->is_active) _gschedule_metrics.cycle_counter += pm.missed_blocks_per_cycle;
-
-      break;
-    }
-  }
-}
-
 void system_contract::update_producer_missed_blocks(account_name producer) {
   for (auto &pm : _gschedule_metrics.producers_metric) {
     if (pm.name == producer && pm.missed_blocks_per_cycle > 0) {
-      auto pitr = _producers.find(producer);
-      if (pitr != _producers.end() && pitr->is_active){
-        _gschedule_metrics.cycle_counter++;  
         pm.missed_blocks_per_cycle--;
-      } 
-      break;
+        break;
     }
   }
 }
 
-bool system_contract::is_new_schedule_actived(account_name active_schedule[], uint32_t size) {
+bool system_contract::is_new_schedule_activated(account_name active_schedule[], uint32_t size) {
     std::vector<account_name>new_schedule; 
     for(auto &p: _gschedule_metrics.producers_metric) new_schedule.emplace_back(p.name);
 
@@ -124,143 +107,91 @@ bool system_contract::is_new_schedule_actived(account_name active_schedule[], ui
     std::sort(active_schedule, active_schedule + size);
 
     for(size_t i = 0; i < size; i++) {
-        if(active_schedule[i] != new_schedule[i]) return true;
+        if(active_schedule[i] != new_schedule[i]) return false;
     }
 
-    return false;
+    return true;
 }
 
 bool system_contract::check_missed_blocks(block_timestamp timestamp, account_name producer) {
   if (producer == N(eosio)) {
-    print("\nprod: eosio");
-    _gschedule_metrics.cycle_counter_correction++;
+    _gschedule_metrics.block_counter_correction++;
     return false;
   }
-   // print("\nProducer: ", producer);
-   bool error = false; 
+
+   print("\nProducer: ", producer);
+   _gschedule_metrics.first_onblock_caller = producer;
+
+   bool on_pause = false; 
    account_name producers_schedule[21];
    auto total_prods = get_active_producers(producers_schedule, sizeof(account_name) * 21) / 8; 
    active_schedule_size = total_prods;
 
    if(_gstate.last_producer_schedule_size != total_prods) {
        print("\nschedule size diff");
-       error = true;
+       on_pause = true;
    }
    
-   //approx cycle time
-   auto cycle_slots = uint32_t(total_prods * 12);
-   bool is_new_schedule =  is_new_schedule_actived(producers_schedule, total_prods);
+   bool is_activated =  is_new_schedule_activated(producers_schedule, total_prods);
 
-   if(is_new_schedule) {
-       print("\nwaiting for new schedule to be active to start counting missed blocks again.");
-      //  if(last_onblock_caller != producer)
-      //    _gschedule_metrics.cycle_counter_correction = 1;
+   if (!is_activated) {
+     print("\nwaiting for new schedule to be active to start counting missed blocks again.");
+     _gschedule_metrics.first_onblock_caller = producer;
+     _gschedule_metrics.block_counter_correction = 0;
+     on_pause = true;
+   } else {
+    //    if(_gschedule_metrics.block_counter_correction != 0)
+    //    reset_schedule_metrics(producer);
 
-      // _gschedule_metrics.cycle_counter_correction++;
-       error = true;
-      //  cycle_counter = -1;
+       if(_gschedule_metrics.first_onblock_caller != producer) _gschedule_metrics.block_counter_correction = 1;
+       else _gschedule_metrics.block_counter_correction++;
+
    }
-   // }else{
-   //    reset_schedule_metrics(producer);
-   //    cycle_counter_correction = 0;
-   // }    
-
-   // last_onblock_caller = producer;
-   if(error) {
-   //  last_onblock_caller = 0;
+ 
+   if(on_pause) {
+    _gschedule_metrics.first_onblock_caller = 0;
     reset_schedule_metrics();
-    _gschedule_metrics.cycle_counter = 0; 
-    _gschedule_metrics.last_onblock_caller = producer;
+    
     return false;
    }
 
-   // if (_gschedule_metrics.last_onblock_caller != producer) {
-   //    for (auto &pm : _gschedule_metrics.producers_metric) {
-   //       if (pm.name == producer && pm.missed_blocks_per_cycle != 12) {
-   //          _gschedule_metrics.last_onblock_caller = producer;
-   //          return true;
-   //       }
-   //    }
-   // }
+   auto pitr = _producers.find(producer);
+   if (pitr != _producers.end() && !pitr->is_active) {
+     print("\nproducer is deactivated.");
 
+     update_elected_producers(timestamp);
 
-   // update_producer_missed_blocks(producer);
-   // everything past here can be removed 
-   if (_gschedule_metrics.cycle_counter_correction > 0) {
-    reset_schedule_metrics();
-
-     for (auto &pm : _gschedule_metrics.producers_metric) {
-       if (pm.name == producer) {
-        auto pitr = _producers.find(producer);
-        if (pitr != _producers.end() && pitr->is_active) {
-            _gschedule_metrics.cycle_counter = _gschedule_metrics.cycle_counter_correction;
-            pm.missed_blocks_per_cycle -= _gschedule_metrics.cycle_counter_correction;
-        }
-        break;
-       }
-     }
-
-     _gschedule_metrics.cycle_counter_correction = 0;
-     
-     update_producer_missed_blocks(producer);
-     _gschedule_metrics.last_onblock_caller = producer;  
-     
      return false;
-   } else {
-     auto pitr = _producers.find(_gschedule_metrics.last_onblock_caller);
-     if (pitr != _producers.end() && !pitr->is_active) {
-       print("\nlast_onblock_caller is deactivated.");
-       print("\n_gschedule_metrics.cycle_counter: ", _gschedule_metrics.cycle_counter);
-       
-       _gschedule_metrics.last_onblock_caller = producer;
-       update_elected_producers(timestamp); 
-       
-       return false;
-     }
    }
 
-   auto pIdx = std::distance(producers_schedule, std::find(producers_schedule, producers_schedule + total_prods, producer));
-   auto locIdx = std::distance(producers_schedule, std::find(producers_schedule, producers_schedule + total_prods, _gschedule_metrics.last_onblock_caller));
-   auto diffIdx = std::abs(pIdx - locIdx);
-
-   if (pIdx > locIdx && diffIdx > 1 && _gschedule_metrics.cycle_counter > 0) {
-
-     for (auto i = locIdx + 1; i < pIdx; i++)
-       _gschedule_metrics.cycle_counter += 12;
-   } else if (pIdx < locIdx && _gschedule_metrics.cycle_counter > 0) {
-
-     for (auto i = locIdx + 1; i < total_prods; i++)
-       _gschedule_metrics.cycle_counter += 12;
-
-     for (auto i = 0; i < pIdx; i++)
-       _gschedule_metrics.cycle_counter += 12;
-   } else if (_gschedule_metrics.last_onblock_caller != producer) {
-     auto total_missed_blocks = 0;
-
-     for (auto &pm : _gschedule_metrics.producers_metric)
-       total_missed_blocks += pm.missed_blocks_per_cycle;
-
-     // this would never get called !!! 
-     // blind, 0
+   if (_gschedule_metrics.block_counter_correction > 0) {
+    reset_schedule_metrics();
+     for (auto &pm : _gschedule_metrics.producers_metric) {
+       if (pm.name == producer) {
+            pm.missed_blocks_per_cycle -= _gschedule_metrics.block_counter_correction;
+            break;
+       }
+     }
+     _gschedule_metrics.block_counter_correction = 0;
      
-     // good, 1
-     // blind, 1
-     
-     // good 2, good 3, good 4, good 5
-     // because cycle_counter never gets incremented WHEN blocks are missed by SOMEONE ELSE 
-     // .. it continues from before the miss
-     if (_gschedule_metrics.cycle_counter != cycle_slots - total_missed_blocks)
-       producer_missed_few_blocks(_gschedule_metrics.last_onblock_caller);
+     return false;
+   }
+
+   if (_gschedule_metrics.first_onblock_caller != producer) {
+     for (auto &pm : _gschedule_metrics.producers_metric) {
+       if (pm.name == producer) {
+         if (pm.missed_blocks_per_cycle == 0) {
+           return true;
+         }
+         break;
+       }
+     }
    }
 
    update_producer_missed_blocks(producer);
-
-   _gschedule_metrics.last_onblock_caller = producer;
-
-   print("\n_gschedule_metrics.cycle_counter: ",
-         _gschedule_metrics.cycle_counter);
-
-   return _gschedule_metrics.cycle_counter >= cycle_slots;
+   
+   
+   return false;
 }
 
 void system_contract::onblock(block_timestamp timestamp, account_name producer) {
@@ -282,7 +213,6 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer) 
     if(check_missed_blocks(timestamp, producer)) {
         reset_last_producer_missed_blocks();
         reset_schedule_metrics(producer);
-        _gschedule_metrics.cycle_counter = 0;
     }
 
 

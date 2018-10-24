@@ -24,7 +24,7 @@ namespace eosiosystem {
       _grotations = _rotations.get_or_create(_self, rotation_info{
         true, 0, 0, 21, 75, block_timestamp(), block_timestamp(), 
       });
-      _gschedule_metrics = _schedule_metrics.get_or_create(_self, schedule_metrics{ 0, 0, 0, 0, std::vector<producer_metric>() });
+      _gschedule_metrics = _schedule_metrics.get_or_create(_self, schedule_metrics{ 0, 0, std::vector<producer_metric>() });
       auto itr = _rammarket.find(S(4,RAMCORE));
 
       if( itr == _rammarket.end() ) {

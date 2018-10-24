@@ -28,15 +28,13 @@ namespace eosiosystem {
    };   
 
    struct schedule_metrics {
-     account_name                     last_onblock_caller;
-     uint32_t                         version;
-     uint32_t                         cycle_counter;
-     uint32_t                         cycle_counter_correction;  
+     account_name                     first_onblock_caller;
+     uint32_t                         block_counter_correction;  
      std::vector<producer_metric>     producers_metric;
 
-     uint64_t primary_key()const { return last_onblock_caller; }
+     uint64_t primary_key()const { return first_onblock_caller; }
      // explicit serialization macro is not necessary, used here only to improve compilation time
-     EOSLIB_SERIALIZE(schedule_metrics, (last_onblock_caller)(version)(cycle_counter)(cycle_counter_correction)(producers_metric))
+     EOSLIB_SERIALIZE(schedule_metrics, (first_onblock_caller)(block_counter_correction)(producers_metric))
    };
    
    struct permission_level_weight {
