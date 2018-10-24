@@ -19,14 +19,6 @@
    }],
    "____comment": "eosio.bios structs: set_account_limits, setpriv, set_global_limits, producer_key, set_producers, require_auth are provided so abi available for deserialization in future.",
    "structs": [{
-     "name": "lifetime_metrics",
-      "base": "",
-      "fields": [
-        {"name":"producer_name",   "type":"account_name"},
-        {"name":"missed_blocks",   "type":"uint32"},
-        {"name":"unpaid_blocks",   "type":"uint32"}
-      ]
-   },{
      "name": "schedule_metrics",
       "base": "",
       "fields": [
@@ -609,12 +601,6 @@
       "ricardian_contract": ""
     }],
    "tables": [{
-      "name": "lifetimemetr",
-      "type": "lifetime_metrics",
-      "index_type": "i64",
-      "key_names" : ["producer_name"],
-      "key_types" : ["uint64"]
-    },{
       "name": "schedulemetr",
       "type": "schedule_metrics",
       "index_type": "i64",

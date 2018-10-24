@@ -19,16 +19,6 @@ namespace eosiosystem {
 
    typedef std::vector<char> bytes;
 
-   struct lifetime_metrics {
-     account_name   producer_name;
-     uint32_t       missed_blocks = 0;
-     uint32_t       unpaid_blocks = 0;
-
-     uint64_t primary_key() const { return producer_name; }
-     // explicit serialization macro is not necessary, used here only to improve compilation time
-     EOSLIB_SERIALIZE(lifetime_metrics, (producer_name)(missed_blocks)(unpaid_blocks))
-   };
-
    struct producer_metric {
      account_name   name;
      uint32_t       missed_blocks_per_cycle = 12;
