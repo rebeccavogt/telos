@@ -363,6 +363,7 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer) 
         _gstate.total_unpaid_blocks++;
         _producers.modify(prod, 0, [&](auto &p) {
             p.unpaid_blocks++;
+            p.lifetime_unpaid_blocks;
         });
     }
 
