@@ -136,7 +136,7 @@ void ratifyamend::processvotes(uint64_t vote_code, uint64_t vote_scope, uint64_t
     int64_t new_yes_votes = 0;
     int64_t new_abs_votes = 0;
 
-    while(itr->vote_code == vote_code && loops < 10) { //loops variable to limit cpu/net expense per call
+    while(itr->vote_code == vote_code && loops < loop_count) { //loops variable to limit cpu/net expense per call
         
         if (itr->vote_scope == vote_scope &&
             itr->prop_id == proposal_id &&
