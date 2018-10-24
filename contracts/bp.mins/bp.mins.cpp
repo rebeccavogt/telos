@@ -23,6 +23,7 @@ class bpmins : public eosio::contract {
         if (itr != producermins.end()) {
             producermins.modify(itr, owner, [&](auto& f) {
                 f.owner = owner;
+                f.last_update = now();
             });
         } else {
             producermins.emplace(owner, [&](auto& f) {
@@ -135,6 +136,20 @@ class bpmins : public eosio::contract {
 
     }
 
+    void validatebp(account_name validator, account_name prod) {
+        require_auth(validator);
+
+        auto itr = producermins.find(prod);
+        eosio_assert(itr != producermins.end(), "producer not found in producermins table");
+        producermin p = *itr;
+
+        //NOTE: excluding validatebp() from triggering last_update
+        producermins.modify(itr, 0, [&](auto& f) {
+            f.last_validate = now();
+            f.last_validator = validator;
+        });
+    }
+
 
     private:
         
@@ -142,8 +157,8 @@ class bpmins : public eosio::contract {
             string node_name;
             string node_type;
 
-            //location info //TODO: maybe have lat/long as doubles? 
-            string location;
+            //location info //NOTE: maybe have lat/long as doubles? 
+            string location; //city, state
             string country;
             string latitude;
             string longitude;
@@ -160,6 +175,7 @@ class bpmins : public eosio::contract {
             account_name owner;
             uint32_t last_update;
             uint32_t last_validate;
+            account_name last_validator;
 
             //org info
             string org_name;
@@ -187,7 +203,7 @@ class bpmins : public eosio::contract {
             vector<node_info> nodes;
 
             uint64_t primary_key() const { return owner; }
-            EOSLIB_SERIALIZE(producermin, (owner)(last_update)(last_validate)
+            EOSLIB_SERIALIZE(producermin, (owner)(last_update)(last_validate)(last_validator)
                 (org_name)(website)(code_of_conduct)(ownership_disclosure)(email)
                 (location)(country)(latitude)(longitude)
                 (steemit)(twitter)(youtube)(facebook)(github)(telegram)(wechat)
@@ -198,4 +214,4 @@ class bpmins : public eosio::contract {
         producermins_table producermins;
 };
 
-EOSIO_ABI(bpmins, (setmins)(delmins)(setorg)(setlocation)(setsocial)(addnode)(delnode))
+EOSIO_ABI(bpmins, (setmins)(delmins)(setorg)(setlocation)(setsocial)(addnode)(delnode)(validatebp))
