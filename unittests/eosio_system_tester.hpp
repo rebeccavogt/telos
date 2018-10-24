@@ -425,6 +425,12 @@ public:
       return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "eosio_global_state", data, abi_serializer_max_time );
    }
 
+   fc::variant get_gmetrics_state() {
+      vector<char> data = get_row_by_account( config::system_account_name, config::system_account_name, N(schedulemetr), N(schedulemetr) );
+      if (data.empty()) std::cout << "\nData is empty\n" << std::endl;
+      return data.empty() ? fc::variant() : abi_ser.binary_to_variant( "schedule_metrics", data, abi_serializer_max_time );
+   }
+
    fc::variant get_rotation_state() {
       vector<char> data = get_row_by_account( config::system_account_name, config::system_account_name, N(rotations), N(rotations) );
       if (data.empty()) std::cout << "\nData is empty\n" << std::endl;

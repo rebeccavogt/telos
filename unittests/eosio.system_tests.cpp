@@ -8,10 +8,124 @@
 
 #include "eosio_system_tester.hpp"
 #include <iostream>
+#include <iomanip>
 
 using namespace eosio_system;
 
 BOOST_AUTO_TEST_SUITE(eosio_system_tests)
+
+
+BOOST_FIXTURE_TEST_CASE( missed_blocks, eosio_system_tester ) try {
+   transfer( "eosio", "alice1111111", core_from_string("650000000.0000"), "eosio" );
+   BOOST_REQUIRE_EQUAL( success(), stake( "alice1111111", "alice1111111", core_from_string("300000000.0000"), core_from_string("300000000.0000") ) );
+
+   // create accounts {defproducera, defproducerb, ..., defproducerz} and register as producers
+   std::vector<account_name> producer_names;
+   {
+         producer_names.reserve('z' - 'a' + 1);
+         const std::string root("defproducer");
+         for ( char c = 'a'; c < 'a'+21; ++c ) {
+            producer_names.emplace_back(root + std::string(1, c));
+         }
+         setup_producer_accounts(producer_names);
+         for (const auto& p: producer_names) {
+            BOOST_REQUIRE_EQUAL( success(), regproducer(p) );
+         }
+   }
+   produce_blocks(250);
+
+   auto trace_auth = TESTER::push_action(config::system_account_name, updateauth::get_name(), config::system_account_name, mvo()
+                                             ("account", name(config::system_account_name).to_string())
+                                             ("permission", name(config::active_name).to_string())
+                                             ("parent", name(config::owner_name).to_string())
+                                             ("auth",  authority(1, {key_weight{get_public_key( config::system_account_name, "active" ), 1}}, {
+                                                   permission_level_weight{{config::system_account_name, config::eosio_code_name}, 1},
+                                                   permission_level_weight{{config::producers_account_name,  config::active_name}, 1}
+                                             }
+                                             ))
+   );
+   BOOST_REQUIRE_EQUAL(transaction_receipt::executed, trace_auth->receipt->status);
+
+   //vote for producers
+   {
+      transfer( config::system_account_name, "alice1111111", core_from_string("100000000.0000"), config::system_account_name );
+      BOOST_REQUIRE_EQUAL(success(), stake( "alice1111111", core_from_string("30000000.0000"), core_from_string("30000000.0000") ) );
+      BOOST_REQUIRE_EQUAL(success(), buyram( "alice1111111", "alice1111111", core_from_string("30000000.0000") ) );
+      BOOST_REQUIRE_EQUAL(success(), push_action(N(alice1111111), N(voteproducer), mvo()
+                                                ("voter",  "alice1111111")
+                                                ("proxy", name(0).to_string())
+                                                ("producers", vector<account_name>(producer_names.begin(), producer_names.begin()+21))
+                        )
+      );
+   }
+   produce_blocks( 245 );
+
+   auto producer_keys = control->head_block_state()->active_schedule.producers;
+   BOOST_REQUIRE_EQUAL( 21, producer_keys.size() );
+   BOOST_REQUIRE_EQUAL( name("defproducera"), producer_keys[0].producer_name );
+
+   wdump((producer_names));
+   wdump((producer_keys));
+
+   auto metrics = get_gmetrics_state();
+   wdump((metrics));
+   int miss_counts = 2;
+   int producers_to_miss[] = {2,  6};
+   int blocks_to_miss[]    = {6, 30};
+   int last_missed_prod = 0;
+   
+   auto printMetrics = [&](vector<account_name> producer_names){
+      auto metrics = get_gmetrics_state();
+      auto x = metrics["producers_metric"];
+      uint64_t counter = metrics["cycle_counter"].as_uint64();
+      std::cout<<(counter/100)<<((counter%100)/10)<<(counter%10)<<" | ";
+      std::cout<<metrics["last_onblock_caller"]<<" | ";
+      std::cout<<'[';
+      for(int i = 0; i < 21; i++){
+         std::cout<<std::setfill('0')<<std::setw(2)<<x[i]["missed_blocks_per_cycle"];
+         std::cout<<", ";
+      }
+      std::cout<<']'<<std::endl;
+      if(metrics["cycle_counter"] == 0){
+         int space = 0;
+         std::cout<<" !! producers !! : ["<<std::endl;
+         for (const auto& p: producer_names) {
+            auto q = get_producer_info(p);
+            std::cout<<q["owner"]<<" | ";
+            std::cout<<std::setfill('0')<<std::setw(4)<<q["missed_blocks_per_rotation"];
+            std::cout<<' ';
+            std::cout<<std::setfill('0')<<std::setw(4)<<q["lifetime_missed_blocks"];
+            std::cout<<" = ";
+            if(++space % 3 == 0){
+               std::cout<<std::endl;
+            }
+         }
+         std::cout<<']'<<std::endl;
+      }
+   };
+
+   for(int cycle = 0; cycle < 2; cycle++){
+      for(int producer = 0; producer < 21; producer++){
+         for(int block = 0; block < 12; block++){
+            if(last_missed_prod < miss_counts && producer == producers_to_miss[last_missed_prod]){
+               std::cout<<"miss !"<<std::endl;
+               block += blocks_to_miss[last_missed_prod];
+               produce_block(fc::milliseconds(blocks_to_miss[last_missed_prod] * 500 + 500));
+               last_missed_prod++;
+               printMetrics(producer_names);
+            }
+            
+            produce_blocks(1);
+            printMetrics(producer_names);
+         }
+      }
+
+      
+   }
+   metrics = get_gmetrics_state();
+   wdump((metrics));
+   
+} FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE( bp_rotations, eosio_system_tester ) try {
    const asset net = core_from_string("80.0000");

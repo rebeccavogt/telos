@@ -356,7 +356,7 @@ namespace eosiosystem {
 
          void producer_missed_few_blocks(account_name producer);
 
-         void reset_schedule_metrics();
+         void reset_schedule_metrics(account_name producer);
    };
 
 } /// eosiosystem
