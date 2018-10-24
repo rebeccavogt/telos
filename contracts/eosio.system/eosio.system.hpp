@@ -346,8 +346,6 @@ namespace eosiosystem {
 
          bool crossed_missed_blocks_threshold(uint32_t amountBlocksMissed);
 
-         bool reach_consensus();
-
          void update_producer_missed_blocks(account_name producer);
 
          void reset_last_producer_missed_blocks();
