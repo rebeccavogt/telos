@@ -25,8 +25,9 @@ class bpmins : public eosio::contract {
                 f.owner = owner;
             });
         } else {
-            producermins.emplace(owner, [&](auto& f) { //TODO: instantiate whole struct with empty values?
+            producermins.emplace(owner, [&](auto& f) {
                 f.owner = owner;
+                f.last_update = now();
             });
         }
     }
@@ -37,12 +38,13 @@ class bpmins : public eosio::contract {
         producermins.erase(itr);
     }
 
-    void setorg(account_name prod, string or_gname, string website, string coc, string od, string email) {
+    void setorg(account_name prod, string org_name, string website, string coc, string od, string email) {
         require_auth(prod);
         auto itr = producermins.find(prod);
         eosio_assert(itr != producermins.end(), "producer not found in producermins table");
 
         producermins.modify(itr, 0, [&](auto& f) {
+            f.last_update = now();
             f.org_name = org_name;
             f.website = website;
             f.code_of_conduct = coc;
@@ -57,6 +59,7 @@ class bpmins : public eosio::contract {
         eosio_assert(itr != producermins.end(), "producer not found in producermins table");
 
         producermins.modify(itr, 0, [&](auto& f) {
+            f.last_update = now();
             f.location = location;
             f.country = country;
             f.latitude = latitude;
@@ -70,6 +73,7 @@ class bpmins : public eosio::contract {
         eosio_assert(itr != producermins.end(), "producer not found in producermins table");
 
         producermins.modify(itr, 0, [&](auto& f) {
+            f.last_update = now();
             f.steemit = steemit;
             f.twitter = twitter;
             f.youtube = youtube;
@@ -103,6 +107,7 @@ class bpmins : public eosio::contract {
         temp_nodes.emplace_back(ni);
 
         producermins.modify(itr, 0, [&](auto& f) {
+            f.last_update = now();
             f.nodes = temp_nodes;
         });
     }
@@ -122,6 +127,11 @@ class bpmins : public eosio::contract {
             }
             node_itr++;
         }
+
+        producermins.modify(itr, 0, [&](auto& f) {
+            f.last_update = now();
+            f.nodes = p.nodes;
+        });
 
     }
 
@@ -188,4 +198,4 @@ class bpmins : public eosio::contract {
         producermins_table producermins;
 };
 
-EOSIO_ABI(bpmins, (setmins)(delmins)(setorg)(setlocation)(setsocial)(addnode))
+EOSIO_ABI(bpmins, (setmins)(delmins)(setorg)(setlocation)(setsocial)(addnode)(delnode))
