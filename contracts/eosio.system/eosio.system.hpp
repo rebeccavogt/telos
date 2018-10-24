@@ -344,25 +344,11 @@ namespace eosiosystem {
 
          bool check_missed_blocks(block_timestamp timestamp, account_name producer);
 
-         void set_producer_block_produced(account_name producer, uint32_t amount);
-
-         void set_producer_block_missed(account_name producer, uint32_t amount);
-
-         void update_producer_blocks(account_name producer, uint32_t amountBlocksProduced, uint32_t amountBlocksMissed);
-
          bool crossed_missed_blocks_threshold(uint32_t amountBlocksMissed);
-         
-         void add_producer_to_kick_list(producer_metric producer);
-
-         void remove_producer_from_kick_list(producer_metric producer);
 
          bool reach_consensus();
 
-         void kick_producer();
-
          void update_producer_missed_blocks(account_name producer);
-
-         void producer_missed_full(account_name producer);
 
          void reset_last_producer_missed_blocks();
 

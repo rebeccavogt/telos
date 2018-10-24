@@ -47,58 +47,6 @@ bool system_contract::reach_consensus() {
     //_grotations.offline_bps.size() < (active_schedule_size / 3) - 1;
 }
 
-void system_contract::add_producer_to_kick_list(producer_metric producer) {
-    //add unique producer to the list
-    // account_name bp_name = producer.name;
-    // auto bp = std::find_if(_grotations.offline_bps.begin(), _grotations.offline_bps.end(), [&bp_name](const offline_producer &op) {
-    //     return op.name == bp_name; 
-    // }); 
-
-    // if(bp == _grotations.offline_bps.end())  _grotations.offline_bps.push_back(producer);
-    // else { // update producer missed blocks and total votes
-    //    for(size_t i = 0; i < _grotations.offline_bps.size(); i++) {
-    //        if(bp_name == _grotations.offline_bps[i].name){
-    //            _grotations.offline_bps[i].total_votes = producer.total_votes;
-    //            _grotations.offline_bps[i].missed_blocks = producer.missed_blocks;
-    //            break;
-    //        }
-    //    }    
-    // }
-     
-    // if(active_schedule_size > 1 && !reach_consensus()) kick_producer();
-}
-
-void system_contract::remove_producer_from_kick_list(producer_metric producer) {
-    // verify if bp was missing blocks
-    //     account_name bp_name = producer.name;
-    //     auto bp = std::find_if(_grotations.offline_bps.begin(), _grotations.offline_bps.end(), [&bp_name](const offline_producer &op) {
-    //         return op.name == bp_name; 
-    //     });   
-    
-    //   // producer found
-    //   if (bp != _grotations.offline_bps.end()) _grotations.offline_bps.erase(bp);
-}
-
-void system_contract::kick_producer() {
-    // std::vector<offline_producer> o_bps = _grotations.offline_bps;
-    // std::sort(o_bps.begin(), o_bps.end(), [](const offline_producer &op1, const offline_producer &op2){
-    //     if(op1.missed_blocks != op2.missed_blocks) return op1.missed_blocks > op2.missed_blocks;
-    //     else return op1.total_votes < op2.total_votes;
-    // });
-    // for(uint32_t i = 0; i < o_bps.size(); i++) {
-    //     auto obp = o_bps[i];
-    //     auto bp = _producers.find(obp.name);
-
-    //     _producers.modify(bp, 0, [&](auto &p) {
-    //         // p.deactivate();
-    //         p.kick(kick_type::PREVENT_LIB_STOP_MOVING);
-    //         remove_producer_from_kick_list(obp);
-    //     });
-
-    //     if(reach_consensus()) break;
-    // }
-}
-
 bool system_contract::crossed_missed_blocks_threshold(uint32_t amountBlocksMissed) {
     if(active_schedule_size <= 1) return false;
 
@@ -120,66 +68,6 @@ bool system_contract::crossed_missed_blocks_threshold(uint32_t amountBlocksMisse
     return amountBlocksMissed > thresholdMissedBlocks;
 }
 
-void system_contract::set_producer_block_produced(account_name producer, uint32_t amount) {
-  auto pitr = _producers.find(producer);
-  if (pitr != _producers.end()) {
-    _producers.modify(pitr, 0, [&](auto &p) {
-        // if(amount == 0) p.blocks_per_cycle = amount;
-        // else p.blocks_per_cycle += amount;
-        
-        // offline_producer op{p.owner, p.total_votes, p.missed_blocks};
-        // remove_producer_from_kick_list(op);
-    });
-  }
-}
-
-void system_contract::set_producer_block_missed(account_name producer, uint32_t amount) {
-  auto pitr = _producers.find(producer);
-  if (pitr != _producers.end() && pitr->active()) {
-    _producers.modify(pitr, 0, [&](auto &p) {
-        p.missed_blocks_per_rotation += amount;
-
-        // offline_producer op{p.owner, p.total_votes, p.missed_blocks};
-        if(crossed_missed_blocks_threshold(p.missed_blocks_per_rotation)) {
-            // p.deactivate();
-            p.kick(kick_type::REACHED_TRESHOLD);
-            // remove_producer_from_kick_list(op);
-        }
-        // else if(op.missed_blocks > 0) add_producer_to_kick_list(op);
-    });
-  }
-}
-
-void system_contract::update_producer_blocks(account_name producer, uint32_t amountBlocksProduced, uint32_t amountBlocksMissed) {
-  auto pitr = _producers.find(producer);
-  if (pitr != _producers.end() && pitr->active()) {
-      _producers.modify(pitr, 0, [&](auto &p) { 
-        // p.blocks_per_cycle += amountBlocksProduced; 
-        p.missed_blocks_per_rotation += amountBlocksMissed;
-
-        // offline_producer op{p.owner, p.total_votes, p.missed_blocks};
-        if(crossed_missed_blocks_threshold(p.missed_blocks_per_rotation)) {
-            // p.deactivate();
-            p.kick(kick_type::REACHED_TRESHOLD);
-            // remove_producer_from_kick_list(op);
-        } 
-        // else if(op.missed_blocks > 0) add_producer_to_kick_list(op);
-      });    
-  }
-}
-
-void system_contract::producer_missed_full(account_name producer) {
-  auto prod = _producers.find(producer);
-  if (prod != _producers.end()) {
-    _producers.modify(prod, 0, [&](auto &p) {
-      p.missed_blocks_per_rotation += 12;
-    //   if (crossed_missed_blocks_threshold(p.missed_blocks_per_rotation)) {
-    //     update_lifetime_metrics(p.owner, p.missed_blocks_per_rotation, p.unpaid_blocks);
-    //     p.kick(kick_type::REACHED_TRESHOLD);
-    //   }
-    });
-  }
-}
 
 void system_contract::reset_schedule_metrics() {
    for (auto &pm : _gschedule_metrics.producers_metric) { 
