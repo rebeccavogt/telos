@@ -29,7 +29,7 @@ namespace eosiosystem {
 
    struct schedule_metrics {
      account_name                     last_onblock_caller;
-     uint32_t                         block_counter_correction;  
+     int32_t                          block_counter_correction;  
      std::vector<producer_metric>     producers_metric;
 
      uint64_t primary_key()const { return last_onblock_caller; }

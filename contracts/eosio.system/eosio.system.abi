@@ -23,7 +23,7 @@
       "base": "",
       "fields": [
         {"name":"last_onblock_caller",      "type":"account_name"},
-        {"name":"block_counter_correction", "type":"uint32"},
+        {"name":"block_counter_correction", "type":"int32"},
         {"name":"producers_metric",         "type":"producer_metric[]"}
       ]
    },{

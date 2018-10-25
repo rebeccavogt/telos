@@ -19,12 +19,13 @@ BOOST_FIXTURE_TEST_CASE( missed_blocks, eosio_system_tester ) try {
    transfer( "eosio", "alice1111111", core_from_string("650000000.0000"), "eosio" );
    BOOST_REQUIRE_EQUAL( success(), stake( "alice1111111", "alice1111111", core_from_string("300000000.0000"), core_from_string("300000000.0000") ) );
 
+   int producer_count = 'z' - 'a' + 1;
    // create accounts {defproducera, defproducerb, ..., defproducerz} and register as producers
    std::vector<account_name> producer_names;
    {
          producer_names.reserve('z' - 'a' + 1);
          const std::string root("defproducer");
-         for ( char c = 'a'; c < 'a'+21; ++c ) {
+         for ( char c = 'a'; c <= 'z'; ++c ) {
             producer_names.emplace_back(root + std::string(1, c));
          }
          setup_producer_accounts(producer_names);
@@ -69,26 +70,57 @@ BOOST_FIXTURE_TEST_CASE( missed_blocks, eosio_system_tester ) try {
 
    auto metrics = get_gmetrics_state();
    wdump((metrics));
+
+   // how many times miss happens
    int miss_counts = 2;
+
+   // which producers miss 2 = 2nd in the checking cylce, not in order or votes or anything
+   // and how many blocks to miss 
    int producers_to_miss[] = {2,  6};
    int blocks_to_miss[]    = {6, 30};
+   
+   // how many times should vote = length of vote_out / vote_in - 1
+   int voting_count = 4;
+   
+   // when to apply the votes
+   int voting_cycle[] = {1, 3, 5, 7};
+
+   // the first 2,4 is to specify the lengths of the subsequent arrays - i know, lazy
+   // vote-out = who to remove from the top 21 'a' to 'u'
+   // then vote-in = who to add from the leftover 'v' to 'z'
+   // 3 = voting_count + 1
+   int vote_out[5][4] = {{2,4,4,4}, { 2,  3, -1, -1}, { 2,  3,  7,  8}, { 1,  2,  3,  4}, { 5,  6,  7,  8}}; // keep the numbers ordered
+   int vote_in[5][4] =  {{2,4,4,4}, {21, 22, -1, -1}, {21, 22, 23, 24}, {22, 23, 24, 25}, {21, 22, 24, 25}}; 
+
+   // how many cycles to run
+   int cycles = 10;
+
+   // helpers
    int last_missed_prod = 0;
+   int last_voting = 0;
    
    auto printMetrics = [&](vector<account_name> producer_names){
       auto metrics = get_gmetrics_state();
       auto x = metrics["producers_metric"];
-      uint64_t counter = metrics["cycle_counter"].as_uint64();
+      int64_t counter = metrics["block_counter_correction"].as_int64();
       std::cout<<(counter/100)<<((counter%100)/10)<<(counter%10)<<" | ";
       std::cout<<metrics["last_onblock_caller"]<<" | ";
       std::cout<<'[';
+      int count11 = 0, all12 = 1;
       for(int i = 0; i < 21; i++){
+         if ( x[i]["missed_blocks_per_cycle"].as_int64() == 11 ) {
+            count11++;
+         }else
+         if ( x[i]["missed_blocks_per_cycle"].as_int64() != 12 ) {
+            all12 = 0;
+         }
          std::cout<<std::setfill('0')<<std::setw(2)<<x[i]["missed_blocks_per_cycle"];
          std::cout<<", ";
       }
       std::cout<<']'<<std::endl;
-      if(metrics["cycle_counter"] == 0){
+      if(all12 == 1 && count11 == 1){
          int space = 0;
-         std::cout<<" !! producers !! : ["<<std::endl;
+         std::cout<<" !! end of cylce / reset  ::  producers !! : ["<<std::endl;
          for (const auto& p: producer_names) {
             auto q = get_producer_info(p);
             std::cout<<q["owner"]<<" | ";
@@ -104,7 +136,46 @@ BOOST_FIXTURE_TEST_CASE( missed_blocks, eosio_system_tester ) try {
       }
    };
 
-   for(int cycle = 0; cycle < 2; cycle++){
+   auto doVoting = [&](vector<account_name> producers, int cycle_to_apply, int voteout[3][4], int votein[3][4]){
+      vector<account_name> voted;
+      voted.reserve(30);
+
+      int voteoutSize = voteout[0][cycle_to_apply], lastVoteout = 0;
+      int* currentVoteout = voteout[cycle_to_apply+1];
+      int voteinSize = votein[0][cycle_to_apply], lastVotein = 0;
+      int* currentVotein = votein[cycle_to_apply+1];
+      int size = 0;
+      for(int i = 'a'-'a'; i <= 'z'-'a'; i++){
+         if(lastVoteout < voteoutSize && currentVoteout[lastVoteout] == i){
+            lastVoteout++;
+            continue;
+         } 
+         if(i < 21){
+            voted.emplace_back(producers[i]);
+            size++;
+         } else
+         if(i >= 21 && lastVotein < voteinSize && currentVotein[lastVotein] == i){
+            lastVotein++;
+            voted.emplace_back(producers[i]);
+            size++;
+            continue;
+         }
+      }
+
+      std::cout<<"===== VOTING : [";
+      for(int i = 0 ; i < size ; i++){
+         std::cout<<voted[i]<<", ";
+      }
+      std::cout<<"]"<<std::endl;
+      BOOST_REQUIRE_EQUAL(success(), push_action(N(alice1111111), N(voteproducer), mvo()
+            ("voter",  "alice1111111")
+            ("proxy", name(0).to_string())
+            ("producers", voted)
+         )
+      );
+   };
+
+   for(int cycle = 0; cycle < cycles; cycle++){
       for(int producer = 0; producer < 21; producer++){
          for(int block = 0; block < 12; block++){
             if(last_missed_prod < miss_counts && producer == producers_to_miss[last_missed_prod]){
@@ -120,7 +191,14 @@ BOOST_FIXTURE_TEST_CASE( missed_blocks, eosio_system_tester ) try {
          }
       }
 
-      
+      if(last_voting < voting_count && cycle == voting_cycle[last_voting]){
+         doVoting(producer_names, last_voting, vote_out, vote_in);
+         last_voting++;
+         std::cout<<"360 for pending - ";
+         produce_blocks(360);
+         std::cout<<"360 for active"<<std::endl;
+         produce_blocks(360);
+      }
    }
    metrics = get_gmetrics_state();
    wdump((metrics));
