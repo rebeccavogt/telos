@@ -20,7 +20,7 @@
 
 #define TWELVE_HOURS_US  43200000000
 #define SIX_HOURS_US     21600000000
-#define ONE_HOUR_US       3600000000
+#define ONE_HOUR_US        900000000 // 15 min ***quick test
 #define SIX_MINUTES_US     360000000 // debug version
 #define TWELVE_MINUTES_US  720000000
 #define MAX_PRODUCERS             51
@@ -65,9 +65,6 @@ namespace eosiosystem {
           info.location = location;
           info.missed_blocks_per_rotation = 0;
           info.is_active = true;
-          // info.kick_reason = "";
-          // info.kick_reason_id = 0;
-          // info.last_time_kicked = block_timestamp();
         });
       } else {
         _producers.emplace(producer, [&](producer_info &info) {
@@ -155,6 +152,7 @@ namespace eosiosystem {
         } 
 
         updateRotationTime(block_time);
+        restart_missed_blocks_per_rotation(prods);
       }
       else {
         if(_grotations.bp_currently_out != 0 && _grotations.sbp_currently_in != 0) {
@@ -202,7 +200,6 @@ namespace eosiosystem {
             top_producers.emplace_back(*pIt);
           } 
         }
-        restart_missed_blocks_per_rotation(prods);
       } 
       else {
         top_producers = prods;
