@@ -348,7 +348,7 @@ namespace eosiosystem {
 
          void update_producer_missed_blocks(account_name producer);
 
-         void reset_last_producer_missed_blocks();
+         void update_missed_blocks_per_rotation();
 
          void restart_missed_blocks_per_rotation(std::vector<eosio::producer_key> prods);
 
