@@ -237,7 +237,7 @@ namespace eosiosystem {
    * This function caculates the inverse weight voting. 
    * The maximum weighted vote will be reached if an account votes for the maximum number of registered producers (up to 30 in total).  
    */   
-   double system_contract::inverseVoteWeight(double staked, double amountVotedProducers) {
+   double system_contract::inverse_vote_weight(double staked, double amountVotedProducers) {
      if (amountVotedProducers == 0.0) {
        return 0;
      }
@@ -324,7 +324,7 @@ namespace eosiosystem {
          _gstate.total_activated_stake += totalStaked - voter->last_stake;
       }
 
-      auto new_vote_weight = inverseVoteWeight((double )totalStaked, (double) producers.size());
+      auto new_vote_weight = inverse_vote_weight((double )totalStaked, (double) producers.size());
       boost::container::flat_map<account_name, pair<double, bool /*new*/> > producer_deltas;
 
       // print("\n Voter : ", voter->last_stake, " = ", voter->last_vote_weight, " = ", proxy, " = ", producers.size(), " = ", totalStaked, " = ", new_vote_weight);
@@ -438,7 +438,7 @@ namespace eosiosystem {
       if(voter.is_proxy){
          totalStake += voter.proxied_vote_weight;
       } 
-      double new_weight = inverseVoteWeight(totalStake, voter.producers.size());
+      double new_weight = inverse_vote_weight(totalStake, voter.producers.size());
     
       if (new_weight - voter.last_vote_weight > 1){
          if (voter.proxy) {

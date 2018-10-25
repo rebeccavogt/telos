@@ -38,18 +38,13 @@ const uint32_t blocks_per_hour = 2 * 3600;
 const uint64_t useconds_per_day = 24 * 3600 * uint64_t(1000000);
 const uint64_t useconds_per_year = seconds_per_year * 1000000ll;
 
-bool system_contract::crossed_missed_blocks_threshold(uint32_t amountBlocksMissed) {
-    auto active_schedule_size = std::distance(_gschedule_metrics.producers_metric.begin(), _gschedule_metrics.producers_metric.end());
-    if(active_schedule_size <= 1) return false;
+bool system_contract::crossed_missed_blocks_threshold(uint32_t amountBlocksMissed, uint32_t schedule_size) {
+    if(schedule_size <= 1) return false;
 
     //6hrs
     auto timeframe = (_grotations.next_rotation_time.to_time_point() - _grotations.last_rotation_time.to_time_point()).to_seconds();
-   
-    //get_active_producers returns the number of bytes populated
-    // account_name prods[21];
-    auto totalProds = active_schedule_size;//get_active_producers(prods, sizeof(account_name) * 21) / 8;
     //Total blocks that can be produced in a cycle
-    auto maxBlocksPerCycle = (totalProds - 1) * MAX_BLOCK_PER_CYCLE;
+    auto maxBlocksPerCycle = (schedule_size - 1) * MAX_BLOCK_PER_CYCLE;
     //total block that can be produced in the current timeframe
     auto totalBlocksPerTimeframe = (maxBlocksPerCycle * timeframe) / (maxBlocksPerCycle / 2);
     //max blocks that can be produced by a single producer in a timeframe
@@ -62,10 +57,8 @@ bool system_contract::crossed_missed_blocks_threshold(uint32_t amountBlocksMisse
 
 void system_contract::reset_schedule_metrics(account_name producer = NULL) {
    for (auto &pm : _gschedule_metrics.producers_metric) { 
-      if(producer != NULL && pm.name == producer) pm.missed_blocks_per_cycle = 11;
-      else pm.missed_blocks_per_cycle = 12;
-      
-    //   if(pm.missed_blocks_per_cycle < 12) pm.missed_blocks_per_cycle = 12;
+      if(producer != NULL && pm.name == producer) pm.missed_blocks_per_cycle = MAX_BLOCK_PER_CYCLE - 1;
+      else pm.missed_blocks_per_cycle = MAX_BLOCK_PER_CYCLE;
    }
 }
 
@@ -79,7 +72,7 @@ void system_contract::update_missed_blocks_per_rotation() {
       if (pitr != _producers.end() && pitr->is_active) {
         _producers.modify(pitr, 0, [&](auto &p) {
           p.missed_blocks_per_rotation += pm.missed_blocks_per_cycle;
-          if(crossed_missed_blocks_threshold(p.missed_blocks_per_rotation) && max_kick_bps > 0) {
+          if(crossed_missed_blocks_threshold(p.missed_blocks_per_rotation, uint32_t(active_schedule_size)) && max_kick_bps > 0) {
               p.lifetime_missed_blocks += p.missed_blocks_per_rotation;
               p.kick(kick_type::REACHED_TRESHOLD);
               max_kick_bps--;
@@ -151,7 +144,7 @@ bool system_contract::check_missed_blocks(block_timestamp timestamp, account_nam
          }
        }
      } else {
-       _gschedule_metrics.block_counter_correction = -3;
+       _gschedule_metrics.block_counter_correction = -6;
      }
      _gschedule_metrics.last_onblock_caller = producer;
    }
@@ -178,7 +171,7 @@ bool system_contract::check_missed_blocks(block_timestamp timestamp, account_nam
    if (_gschedule_metrics.last_onblock_caller != producer) {
      for (auto &pm : _gschedule_metrics.producers_metric) {
        if (pm.name == producer) {                       
-         if (pm.missed_blocks_per_cycle != 12) {        
+         if (pm.missed_blocks_per_cycle != MAX_BLOCK_PER_CYCLE) {        
            _gschedule_metrics.last_onblock_caller = producer;
            return true;
          }

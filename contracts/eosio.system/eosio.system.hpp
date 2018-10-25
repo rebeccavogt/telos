@@ -338,13 +338,13 @@ namespace eosiosystem {
          void propagate_weight_change( const voter_info& voter );
 
          //calculate the inverse vote weight
-         double inverseVoteWeight(double staked, double amountVotedProducers);
+         double inverse_vote_weight(double staked, double amountVotedProducers);
 
          bool is_in_range(int32_t index, int32_t low_bound, int32_t up_bound);
 
          bool check_missed_blocks(block_timestamp timestamp, account_name producer);
 
-         bool crossed_missed_blocks_threshold(uint32_t amountBlocksMissed);
+         bool crossed_missed_blocks_threshold(uint32_t amountBlocksMissed, uint32_t schedule_size);
 
          void update_producer_missed_blocks(account_name producer);
 
