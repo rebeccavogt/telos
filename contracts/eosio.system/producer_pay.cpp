@@ -144,7 +144,7 @@ bool system_contract::check_missed_blocks(block_timestamp timestamp, account_nam
          }
        }
      } else {
-       _gschedule_metrics.block_counter_correction = -6;
+       _gschedule_metrics.block_counter_correction = -3;
      }
      _gschedule_metrics.last_onblock_caller = producer;
    }
