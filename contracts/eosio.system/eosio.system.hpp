@@ -317,9 +317,9 @@ namespace eosiosystem {
          
          void recalculate_votes();
 
-         void updateRotationTime(block_timestamp block_time);
+         void update_rotation_time(block_timestamp block_time);
 
-         void setBPsRotation(account_name bpOut, account_name sbpIn);
+         void set_bps_rotation(account_name bpOut, account_name sbpIn);
 
          void update_elected_producers( block_timestamp timestamp );
 

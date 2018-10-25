@@ -88,12 +88,12 @@ namespace eosiosystem {
       });
    }
 
-   void system_contract::setBPsRotation(account_name bpOut, account_name sbpIn) {
+   void system_contract::set_bps_rotation(account_name bpOut, account_name sbpIn) {
       _grotations.bp_currently_out = bpOut;
       _grotations.sbp_currently_in = sbpIn;
    }
 
-   void system_contract::updateRotationTime(block_timestamp block_time) {
+   void system_contract::update_rotation_time(block_timestamp block_time) {
       _grotations.last_rotation_time = block_time;
       _grotations.next_rotation_time = block_timestamp(block_time.to_time_point() + time_point(microseconds(ONE_HOUR_US)));
    }
@@ -148,10 +148,10 @@ namespace eosiosystem {
           it_bp = prods.begin() + int32_t(_grotations.bp_out_index);
           it_sbp = prods.begin() + int32_t(_grotations.sbp_in_index);
 
-          setBPsRotation(bp_name, sbp_name);
+          set_bps_rotation(bp_name, sbp_name);
         } 
 
-        updateRotationTime(block_time);
+        update_rotation_time(block_time);
         restart_missed_blocks_per_rotation(prods);
       }
       else {
@@ -169,14 +169,14 @@ namespace eosiosystem {
           auto _sbp_index = std::distance(prods.begin(), it_sbp);
 
           if(it_bp == prods.end() || it_sbp == prods.end()) {
-              setBPsRotation(0, 0);
+              set_bps_rotation(0, 0);
 
             if(totalActiveVotedProds < TOP_PRODUCERS) {
               _grotations.bp_out_index = TOP_PRODUCERS;
               _grotations.sbp_in_index = MAX_PRODUCERS+1;
             }
           } else if (totalActiveVotedProds > TOP_PRODUCERS && (!is_in_range(_bp_index, 0, TOP_PRODUCERS) || !is_in_range(_sbp_index, TOP_PRODUCERS, MAX_PRODUCERS))) {
-              setBPsRotation(0, 0);
+              set_bps_rotation(0, 0);
               it_bp = prods.end();
               it_sbp = prods.end();
           }
