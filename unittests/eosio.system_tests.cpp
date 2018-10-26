@@ -19,13 +19,15 @@ BOOST_FIXTURE_TEST_CASE( missed_blocks, eosio_system_tester ) try {
    transfer( "eosio", "alice1111111", core_from_string("650000000.0000"), "eosio" );
    BOOST_REQUIRE_EQUAL( success(), stake( "alice1111111", "alice1111111", core_from_string("300000000.0000"), core_from_string("300000000.0000") ) );
 
-   int producer_count = 'z' - 'a' + 1;
+   //update producer count here   
+   int producer_count = 'j' - 'a' + 1;
+   producer_count = producer_count > 21 ? 21 : producer_count;
    // create accounts {defproducera, defproducerb, ..., defproducerz} and register as producers
    std::vector<account_name> producer_names;
    {
-         producer_names.reserve('z' - 'a' + 1);
+         producer_names.reserve(producer_count);
          const std::string root("defproducer");
-         for ( char c = 'a'; c <= 'z'; ++c ) {
+         for ( char c = 'a'; c <= 'j'; ++c ) {
             producer_names.emplace_back(root + std::string(1, c));
          }
          setup_producer_accounts(producer_names);
@@ -55,15 +57,15 @@ BOOST_FIXTURE_TEST_CASE( missed_blocks, eosio_system_tester ) try {
       BOOST_REQUIRE_EQUAL(success(), push_action(N(alice1111111), N(voteproducer), mvo()
                                                 ("voter",  "alice1111111")
                                                 ("proxy", name(0).to_string())
-                                                ("producers", vector<account_name>(producer_names.begin(), producer_names.begin()+21))
+                                                ("producers", vector<account_name>(producer_names.begin(), producer_names.begin()+producer_count))
                         )
       );
    }
    produce_blocks( 245 );
 
    auto producer_keys = control->head_block_state()->active_schedule.producers;
-   BOOST_REQUIRE_EQUAL( 21, producer_keys.size() );
-   BOOST_REQUIRE_EQUAL( name("defproducera"), producer_keys[0].producer_name );
+   BOOST_REQUIRE_EQUAL( producer_count, producer_keys.size() );
+   BOOST_REQUIRE_EQUAL( name("defproducera"), producer_names[0] );
 
    wdump((producer_names));
    wdump((producer_keys));
@@ -93,7 +95,7 @@ BOOST_FIXTURE_TEST_CASE( missed_blocks, eosio_system_tester ) try {
    int vote_in[5][4] =  {{2,4,4,4}, {21, 22, -1, -1}, {21, 22, 23, 24}, {22, 23, 24, 25}, {21, 22, 24, 25}}; 
 
    // how many cycles to run
-   int cycles = 10;
+   int cycles = 8;
 
    // helpers
    int last_missed_prod = 0;
@@ -107,7 +109,7 @@ BOOST_FIXTURE_TEST_CASE( missed_blocks, eosio_system_tester ) try {
       std::cout<<metrics["last_onblock_caller"]<<" | ";
       std::cout<<'[';
       int count11 = 0, all12 = 1;
-      for(int i = 0; i < 21; i++){
+      for(int i = 0; i < x.size(); i++){
          if ( x[i]["missed_blocks_per_cycle"].as_int64() == 11 ) {
             count11++;
          }else
@@ -145,16 +147,16 @@ BOOST_FIXTURE_TEST_CASE( missed_blocks, eosio_system_tester ) try {
       int voteinSize = votein[0][cycle_to_apply], lastVotein = 0;
       int* currentVotein = votein[cycle_to_apply+1];
       int size = 0;
-      for(int i = 'a'-'a'; i <= 'z'-'a'; i++){
+      for(int i = 0; i < producer_count; i++){
          if(lastVoteout < voteoutSize && currentVoteout[lastVoteout] == i){
             lastVoteout++;
             continue;
          } 
-         if(i < 21){
+         if(i < 5){
             voted.emplace_back(producers[i]);
             size++;
          } else
-         if(i >= 21 && lastVotein < voteinSize && currentVotein[lastVotein] == i){
+         if(i < 10 && lastVotein < voteinSize && currentVotein[lastVotein] == i){
             lastVotein++;
             voted.emplace_back(producers[i]);
             size++;
@@ -176,7 +178,7 @@ BOOST_FIXTURE_TEST_CASE( missed_blocks, eosio_system_tester ) try {
    };
 
    for(int cycle = 0; cycle < cycles; cycle++){
-      for(int producer = 0; producer < 21; producer++){
+      for(int producer = 0; producer < producer_count; producer++){ 
          for(int block = 0; block < 12; block++){
             if(last_missed_prod < miss_counts && producer == producers_to_miss[last_missed_prod]){
                std::cout<<"miss !"<<std::endl;
