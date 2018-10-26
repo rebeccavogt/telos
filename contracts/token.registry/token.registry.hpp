@@ -10,6 +10,8 @@
 #include <eosiolib/asset.hpp>
 #include <eosiolib/singleton.hpp>
 
+#include "../trail.service/trail.definitions/traildef.voting.hpp"
+
 using namespace eosio;
 using namespace std;
 
@@ -20,7 +22,7 @@ class registry : public contract {
 
         ~registry();
 
-        // ABI Actions
+        //TIP-5 Token Actions
         void mint(account_name recipient, asset tokens);
 
         void transfer(account_name sender, account_name recipient, asset tokens);
@@ -34,6 +36,16 @@ class registry : public contract {
         void createwallet(account_name recipient);
 
         void deletewallet(account_name owner);
+
+        //Trail Voting Actions
+
+        void vote(uint64_t vote_code, uint64_t vote_scope, uint64_t proposal_id, uint16_t direction, uint32_t expiration, account_name voter);
+
+        void processvotes(uint64_t vote_code, uint64_t vote_scope, uint64_t proposal_id, uint16_t loop_count);
+
+        //TFVT Voting Actions
+
+        
 
     protected:
 
