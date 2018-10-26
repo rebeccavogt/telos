@@ -116,20 +116,16 @@ bool system_contract::check_missed_blocks(block_timestamp timestamp, account_nam
    account_name producers_schedule[21];
    auto total_prods = get_active_producers(producers_schedule, sizeof(account_name) * 21) / 8; 
    
-   if(_gstate.last_producer_schedule_size != total_prods) {
-       reset_schedule_metrics();
-        _gschedule_metrics.last_onblock_caller = producer;
-       return false;
-   }
+   // if(_gstate.last_producer_schedule_size != total_prods) {
+   //    _gstate.last_producer_schedule_size = total_prods;
+   //    _gschedule_metrics.last_onblock_caller = producer;
+   //    reset_schedule_metrics();
+   //    return false;
+   // }
    
-   bool is_activated =  is_new_schedule_activated(producers_schedule, total_prods);
+   bool is_activated = _gstate.last_producer_schedule_size == total_prods && is_new_schedule_activated(producers_schedule, total_prods);
 
    if (!is_activated) {
-     
-     if(_gschedule_metrics.block_counter_correction <= 1){
-        reset_schedule_metrics();
-     }
-     
      if (_gschedule_metrics.last_onblock_caller != producer) _gschedule_metrics.block_counter_correction = 1;
      else _gschedule_metrics.block_counter_correction++;
 
@@ -144,7 +140,8 @@ bool system_contract::check_missed_blocks(block_timestamp timestamp, account_nam
          }
        }
      } else {
-       _gschedule_metrics.block_counter_correction = -3;
+         reset_schedule_metrics();
+         _gschedule_metrics.block_counter_correction = -3;
      }
      _gschedule_metrics.last_onblock_caller = producer;
    }
@@ -158,7 +155,6 @@ bool system_contract::check_missed_blocks(block_timestamp timestamp, account_nam
      if (_gschedule_metrics.block_counter_correction < 0) {
        return false;
      }
-     reset_schedule_metrics(producer);
    }
 
    auto pitr = _producers.find(producer);

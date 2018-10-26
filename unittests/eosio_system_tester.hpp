@@ -332,6 +332,49 @@ public:
       return r;
    }
 
+   
+   void printMetrics(vector<account_name> producer_names){
+      auto metrics = get_gmetrics_state();
+      auto x = metrics["producers_metric"];
+      int64_t counter = metrics["block_counter_correction"].as_int64();
+      std::cout<<(counter/100)<<((counter%100)/10)<<(counter%10)<<" | ";
+      std::cout<<metrics["last_onblock_caller"]<<" | ";
+      std::cout<<'[';
+      int count11 = 0; bool allOthersHave12 = true;
+      for(int i = 0; i < x.size(); i++){
+         if ( x[i]["missed_blocks_per_cycle"].as_int64() == 11 ) {
+            count11++;
+         }else
+         if ( x[i]["missed_blocks_per_cycle"].as_int64() != 12 ) {
+            allOthersHave12 = 0;
+         }
+         std::cout<<std::setfill('0')<<std::setw(2)<<x[i]["missed_blocks_per_cycle"];
+         std::cout<<", ";
+      }
+      std::cout<<']';
+      if(allOthersHave12 && count11 <= 1){
+         int space = 0;
+         std::cout<<" !! end of cylce / reset / wait !!";
+         if(count11 > 0){
+            std::cout<<" !! producers !! : ["<<std::endl;
+            for (const auto& p: producer_names) {
+               auto q = get_producer_info(p);
+               std::cout<<q["owner"]<<" = ";
+               std::cout<<std::setfill('0')<<std::setw(4)<<q["missed_blocks_per_rotation"];
+               std::cout<<' ';
+               std::cout<<std::setfill('0')<<std::setw(4)<<q["lifetime_missed_blocks"];
+               std::cout<<" | ";
+               if(++space % 5 == 0){
+                  std::cout<<std::endl;
+               }
+            }
+            std::cout<<']'<<std::endl;
+         }
+
+      }
+      std::cout<<std::endl;
+   }
+
    action_result vote( const account_name& voter, const std::vector<account_name>& producers, const account_name& proxy = name(0) ) {
       return push_action(voter, N(voteproducer), mvo()
                          ("voter",     voter)

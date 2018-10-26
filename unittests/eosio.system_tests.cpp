@@ -16,11 +16,47 @@ BOOST_AUTO_TEST_SUITE(eosio_system_tests)
 
 
 BOOST_FIXTURE_TEST_CASE( missed_blocks, eosio_system_tester ) try {
+   
+   auto waitForSchedule = [&](vector<account_name> producer_names, int max_votable_producers, int type = -1){
+      int produced = 0;
+      if(type > 0){
+         auto initialPendingVersion = control->head_block_state()->pending_schedule.version;
+         auto initialActiveVersion = control->head_block_state()->active_schedule.version;
+         if(type > 1){
+            while(initialPendingVersion == control->head_block_state()->pending_schedule.version){
+               produce_blocks(1);
+               produced++;
+               // if(produced > max_votable_producers * 12){
+                  // printMetrics(producer_names);
+               // }
+            }
+            std::cout<<produced<<" for pending - ";
+         }
+
+         produced = 0;
+         while(initialActiveVersion == control->head_block_state()->active_schedule.version){
+            produce_blocks(1);
+            produced++;
+            // if(produced > max_votable_producers * 12){
+               // printMetrics(producer_names);
+            // }
+         }
+         std::cout<<produced<<" for active"<<std::endl;
+      }else if(type < 0){ //static skip
+         produced = 12 * max_votable_producers;
+         produce_blocks( produced );
+         produce_blocks( produced );
+         
+         std::cout<<produced<<" for pending - ";
+         std::cout<<produced<<" for active"<<std::endl;
+      }
+   };
+
    transfer( "eosio", "alice1111111", core_from_string("650000000.0000"), "eosio" );
    BOOST_REQUIRE_EQUAL( success(), stake( "alice1111111", "alice1111111", core_from_string("300000000.0000"), core_from_string("300000000.0000") ) );
 
    //update producer count here   
-   int producer_count = 'j' - 'a' + 1;
+   int producer_count = 'z' - 'a' + 1;
    int max_votable_producers = producer_count > 21 ? 21 : producer_count;
    // create accounts {defproducera, defproducerb, ..., defproducerz} and register as producers
    std::vector<account_name> producer_names;
@@ -62,19 +98,9 @@ BOOST_FIXTURE_TEST_CASE( missed_blocks, eosio_system_tester ) try {
       );
    }
 
-   bool okToStart = false;
+   waitForSchedule(producer_names, max_votable_producers, 2);
+
    auto producer_keys = control->head_block_state()->active_schedule.producers;
-   int blocks_produced = 0;
-   while(!okToStart){
-      blocks_produced++;
-      produce_blocks(1);
-      producer_keys = control->head_block_state()->active_schedule.producers;
-      okToStart = producer_keys.size() == max_votable_producers;
-   }
-   // produce_blocks( max_votable_producers * 12 );
-
-   std::cout<<"PRODUCED blocks["<<blocks_produced<<"] to get schedule out => can start counting missed blocks !"<<std::endl;
-
    BOOST_REQUIRE_EQUAL( max_votable_producers, producer_keys.size() );
    BOOST_REQUIRE_EQUAL( name("defproducera"), producer_names[0] );
 
@@ -90,24 +116,24 @@ BOOST_FIXTURE_TEST_CASE( missed_blocks, eosio_system_tester ) try {
 
    // which producers miss 2 = 2nd in the checking cylce, not in order or votes or anything
    // and how many blocks to miss 
-   int producers_to_miss[] = { 2,  2};//,  2,  2,  2,  2,  2,  2,  2,  2};
-   int blocks_to_miss[]    = {10, 10};//, 10, 10, 10, 10, 10, 10, 10, 10};
+   int producers_to_miss[] = { 2,  2,  2,  2,  2,  2,  2,  2,  2,  2};
+   int blocks_to_miss[]    = {10, 10, 10, 10, 10, 10, 10, 10, 10, 10};
    
    // how many times should vote = length of vote_out / vote_in - 1
    int voting_count = 4;
    
    // when to apply the votes
-   int voting_cycle[] = {1, 3, 5, 7};
+   int voting_cycle[] = {1, 4, 6, 8};
 
    // the first 2,4 is to specify the lengths of the subsequent arrays - i know, lazy
    // vote-out = who to remove from the top 21 'a' to 'u'
    // then vote-in = who to add from the leftover 'v' to 'z'
    // 3 = voting_count + 1
    int vote_out[5][4] = {{2,4,4,4}, { 2,  3, -1, -1}, { 2,  3,  7,  8}, { 1,  2,  3,  4}, { 5,  6,  7,  8}}; // keep the numbers ordered
-   int vote_in[5][4] =  {{2,4,4,4}, {21, 22, -1, -1}, {21, 22, 23, 24}, {22, 23, 24, 25}, {21, 22, 24, 25}}; 
+   int vote_in[5][4] =  {{2,4,4,4}, {21, 25, -1, -1}, {21, 22, 23, 24}, {21, 22, 23, 25}, {21, 23, 24, 25}}; 
 
    // how many cycles to run
-   int cycles = 8;
+   int cycles = 80;
 
    // helpers
    int last_missed_prod = 0;
@@ -115,7 +141,7 @@ BOOST_FIXTURE_TEST_CASE( missed_blocks, eosio_system_tester ) try {
    int last_register = 0;
 
    int register_count = 2;
-   int register_cycle[] = {2, 4};
+   int register_cycle[] = {1, 3};
    vector<vector<account_name>> registers;
    vector<vector<account_name>> unregisters;
    vector<account_name> tmp;
@@ -124,7 +150,7 @@ BOOST_FIXTURE_TEST_CASE( missed_blocks, eosio_system_tester ) try {
    
    tmp = {};
    registers.emplace_back(tmp);
-   tmp = {"defproducera", "defproducerb"};
+   tmp = {"defproducerb"};
    unregisters.emplace_back(tmp);
    
    registers.emplace_back(tmp);
@@ -132,43 +158,6 @@ BOOST_FIXTURE_TEST_CASE( missed_blocks, eosio_system_tester ) try {
    unregisters.emplace_back(tmp);
 
    std::cout<<"after emplace"<<std::endl;
-   
-   auto printMetrics = [&](vector<account_name> producer_names){
-      auto metrics = get_gmetrics_state();
-      auto x = metrics["producers_metric"];
-      int64_t counter = metrics["block_counter_correction"].as_int64();
-      std::cout<<(counter/100)<<((counter%100)/10)<<(counter%10)<<" | ";
-      std::cout<<metrics["last_onblock_caller"]<<" | ";
-      std::cout<<'[';
-      int count11 = 0; bool allOthersHave12 = true;
-      for(int i = 0; i < x.size(); i++){
-         if ( x[i]["missed_blocks_per_cycle"].as_int64() == 11 ) {
-            count11++;
-         }else
-         if ( x[i]["missed_blocks_per_cycle"].as_int64() != 12 ) {
-            allOthersHave12 = 0;
-         }
-         std::cout<<std::setfill('0')<<std::setw(2)<<x[i]["missed_blocks_per_cycle"];
-         std::cout<<", ";
-      }
-      std::cout<<']'<<std::endl;
-      if(allOthersHave12 && count11 <= 1){
-         int space = 0;
-         std::cout<<" !! end of cylce / reset  ::  producers !! : ["<<std::endl;
-         for (const auto& p: producer_names) {
-            auto q = get_producer_info(p);
-            std::cout<<q["owner"]<<" | ";
-            std::cout<<std::setfill('0')<<std::setw(4)<<q["missed_blocks_per_rotation"];
-            std::cout<<' ';
-            std::cout<<std::setfill('0')<<std::setw(4)<<q["lifetime_missed_blocks"];
-            std::cout<<" = ";
-            if(++space % 5 == 0){
-               std::cout<<std::endl;
-            }
-         }
-         std::cout<<']'<<std::endl;
-      }
-   };
 
    auto doVoting = [&](vector<account_name> producers, int cycle_to_apply, int voteout[3][4], int votein[3][4], int max_votable_producers){
       vector<account_name> voted;
@@ -208,13 +197,23 @@ BOOST_FIXTURE_TEST_CASE( missed_blocks, eosio_system_tester ) try {
          )
       );
    };
+   
+   // produce_blocks(12*max_votable_producers*cycles);
+   // for (const auto& p: unregisters.at(0)) {
+   //    BOOST_REQUIRE_EQUAL( 
+   //       success(), 
+   //       push_action(name(p), N(unregprod), mvo()("producer", p))
+   //    );
+   // }
+   // produce_blocks(12*max_votable_producers*cycles);
+
 
    for(int cycle = 0; cycle < cycles; cycle++){
       for(int producer = 0; producer < max_votable_producers; producer++){ 
          for(int block = 0; block < 12; block++){
             // std::cout<<cycle<<' '<<producer<<' '<<block<<std::endl;
             if(last_missed_prod < miss_counts && producer == producers_to_miss[last_missed_prod]){
-               std::cout<<"miss !"<<std::endl;
+               std::cout<<"miss blocks["<<blocks_to_miss[last_missed_prod]<<"] aka time["<<(blocks_to_miss[last_missed_prod] * 500 + 500)<<"]"<<std::endl;
                block += blocks_to_miss[last_missed_prod];
                produce_block(fc::milliseconds(blocks_to_miss[last_missed_prod] * 500 + 500));
                last_missed_prod++;
@@ -230,19 +229,8 @@ BOOST_FIXTURE_TEST_CASE( missed_blocks, eosio_system_tester ) try {
          doVoting(producer_names, last_voting, vote_out, vote_in, max_votable_producers);
          last_voting++;
 
-         int produced = 0;
-         while(control->head_block_state()->pending_schedule.producers.size() == 0){
-            produce_blocks(1);
-            produced++;
-         }
-         std::cout<<produced<<" for pending - ";
-
-         produced = 0;
-         while(control->head_block_state()->pending_schedule.producers.size() > 0){
-            produce_blocks(1);
-            produced++;
-         }
-         std::cout<<produced<<" for active"<<std::endl;
+         waitForSchedule(producer_names, max_votable_producers, 2);
+         printMetrics(producer_names);
       }
 
       if(last_register < register_count && cycle == register_cycle[last_register]){
@@ -257,25 +245,14 @@ BOOST_FIXTURE_TEST_CASE( missed_blocks, eosio_system_tester ) try {
             );
          }
          
-         int produced = 0;
-         while(control->head_block_state()->pending_schedule.producers.size() == 0){
-            produce_blocks(1);
-            produced++;
-         }
-         std::cout<<produced<<" for pending - ";
-
-         produced = 0;
-         while(control->head_block_state()->pending_schedule.producers.size() > 0){
-            produce_blocks(1);
-            produced++;
-         }
-         std::cout<<produced<<" for active"<<std::endl;
+         waitForSchedule(producer_names, max_votable_producers, 2);
+         printMetrics(producer_names);
          last_register++;
       }
    }
-   metrics = get_gmetrics_state();
-   wdump((metrics));
    
+   // produce_blocks(2000);
+   // printMetrics(producer_names);
 } FC_LOG_AND_RETHROW()
 
 BOOST_FIXTURE_TEST_CASE( bp_rotations, eosio_system_tester ) try {
