@@ -50,7 +50,7 @@ bool system_contract::crossed_missed_blocks_threshold(uint32_t amountBlocksMisse
     //max blocks that can be produced by a single producer in a timeframe
     auto maxBlocksPerProducer = (totalBlocksPerTimeframe * MAX_BLOCK_PER_CYCLE) / maxBlocksPerCycle;
     //15% is the max allowed missed blocks per single producer
-    auto thresholdMissedBlocks = maxBlocksPerProducer * 0.3; // .3 for debug
+    auto thresholdMissedBlocks = maxBlocksPerProducer * 0.15;
     
     return amountBlocksMissed > thresholdMissedBlocks;
 }
