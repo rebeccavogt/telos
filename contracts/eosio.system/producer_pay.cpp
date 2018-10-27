@@ -247,9 +247,11 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer) 
     }
 
     //called once per day to set payments snapshot
-    if (_gstate.last_claimrewards + uint32_t(172800) <= timestamp.slot) { //172800 blocks in a day
+    if (_gstate.last_claimrewards + uint32_t(3600) <= timestamp.slot) { //172800 blocks in a day
         print("\nNew ClaimRewards Snapshot");
+		auto start_time = current_time();
         claimrewards_snapshot();
+		print("Elapsed Execution (in microseconds): ", (current_time() - start_time));
         _gstate.last_claimrewards = timestamp.slot;
     }
 }
@@ -339,16 +341,15 @@ void system_contract::claimrewards_snapshot(){
     uint32_t sharecount = 0;
 
     //calculate shares, should be between 2 and 72 shares
-    for (const auto &item : sortedprods)
+    for (const auto &prod : sortedprods)
     {
-        if (item.active()) { //only count activated producers
+        if (prod.active()) { //only count activated producers
             if (sharecount <= 42) {
                 sharecount += 2; //top producers count as double shares
             } else if (sharecount >= 43 && sharecount < 72) {
                 sharecount++;
-            } else {
-                break; //no need to count past 72 shares
-            }
+            } else
+            	break; //no need to count past 72 shares
         }
     }
 
@@ -357,23 +358,20 @@ void system_contract::claimrewards_snapshot(){
 
     for (const auto &prod : sortedprods) {
 
-        if (!prod.active()) { //skip inactive producers
+        if (!prod.active()) //skip inactive producers
             continue;
-        }
 
         int64_t pay_amount = 0;
         index++;
         
-        if (index <= 21 && prod.unpaid_blocks >= min_unpaid_blocks_threshold) {
+		//TODO: Refactor these conditions if we remove min_unpaid_blocks_threshold
+        if (index <= 21) {
             pay_amount = (shareValue * int64_t(2));
-        } else if (index <= 21 && prod.unpaid_blocks <= min_unpaid_blocks_threshold) {
-            pay_amount = shareValue;
         } else if (index >= 22 && index <= 51) {
             pay_amount = shareValue;
-        } else {
-            pay_amount = 0; //edge case where outside top 51
-        }
-
+        } else 
+			break;
+		
         _gstate.perblock_bucket -= pay_amount;
         _gstate.total_unpaid_blocks -= prod.unpaid_blocks;
 
@@ -382,18 +380,17 @@ void system_contract::claimrewards_snapshot(){
             p.unpaid_blocks = 0;
         });
 
-        auto itr = payments.find(prod.owner);
+        auto itr = _payments.find(prod.owner);
         
-        if (itr == payments.end()) {
-            payments.emplace(prod.owner, [&]( auto& a ) { //have eosio pay? no issues so far...
+        if (itr == _payments.end()) {
+            _payments.emplace(prod.owner, [&]( auto& a ) { //have eosio pay? no issues so far...
                 a.bp = prod.owner;
                 a.pay = asset(pay_amount);
             });
-        } else { //adds new payment to existing payment
-            payments.modify(itr, 0, [&]( auto& a ) {
+        } else //adds new payment to existing payment
+            _payments.modify(itr, 0, [&]( auto& a ) {
                 a.pay += asset(pay_amount);
             });
-        }
     }
 }
 
@@ -410,16 +407,19 @@ void system_contract::claimrewards_snapshot(){
  */
 void system_contract::claimrewards(const account_name &owner) {
     require_auth(owner);
+	eosio_assert(_gstate.thresh_activated_stake_time > 0, "cannot claim rewards until the chain is activated (1,000,000 blocks produced)");
 
-    auto p = payments.find(owner);
-    eosio_assert(p != payments.end(), "No payment exists for account");
+    auto p = _payments.find(owner);
+    eosio_assert(p != _payments.end(), "No payment exists for account");
     auto prod_payment = *p;
     auto pay_amount = prod_payment.pay;
 
-    INLINE_ACTION_SENDER(eosio::token, transfer)
-    (N(eosio.token), {N(eosio.bpay), N(active)}, {N(eosio.bpay), owner, pay_amount, std::string("Automatic Producer/Standby Payment")});
+	//NOTE: consider resettingprooducer's last claim time to 0 here, instead of during snapshot. M
 
-    payments.erase(p);
+    INLINE_ACTION_SENDER(eosio::token, transfer)
+    (N(eosio.token), {N(eosio.bpay), N(active)}, {N(eosio.bpay), owner, pay_amount, std::string("Producer/Standby Payment")});
+
+    _payments.erase(p);
 }
 
 } //namespace eosiosystem

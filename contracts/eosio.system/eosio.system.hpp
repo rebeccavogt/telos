@@ -183,7 +183,7 @@ namespace eosiosystem {
       EOSLIB_SERIALIZE( voter_info, (owner)(proxy)(producers)(staked)(last_stake)(last_vote_weight)(proxied_vote_weight)(is_proxy)(reserved1)(reserved2)(reserved3) )
    };
 
-   //tracks automated claimreward payments
+   //tracks automated claimreward _payments
    struct payment {
      account_name bp;
      asset pay;
@@ -192,7 +192,7 @@ namespace eosiosystem {
      EOSLIB_SERIALIZE(payment, (bp)(pay))
    };
 
-   typedef eosio::multi_index<N(payments), payment> payments_table;
+   typedef eosio::multi_index<N(_payments), payment> payments_table;
 
    typedef eosio::multi_index< N(voters), voter_info> voters_table;
 
@@ -212,17 +212,17 @@ namespace eosiosystem {
 
    class system_contract : public native {
       private:
-         voters_table                 _voters;
-         producers_table              _producers;
-         global_state_singleton       _global;
-         rotation_info_singleton      _rotations;
+         voters_table           _voters;
+         producers_table        _producers;
+         global_state_singleton _global;
+         rotation_info_singleton _rotations;
          schedule_metrics_singleton   _schedule_metrics; 
-
-         eosio_global_state           _gstate;
-         rotation_info                _grotations;
-         rammarket                    _rammarket;
-         payments_table               payments;
-         schedule_metrics             _gschedule_metrics;          
+         
+         eosio_global_state     _gstate;
+         rotation_info          _grotations;
+         rammarket              _rammarket;
+         schedule_metrics       _gschedule_metrics;
+         payments_table         _payments;
 
       public:
          system_contract( account_name s );
