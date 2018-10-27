@@ -19,7 +19,7 @@ namespace eosiosystem {
    using eosio::indexed_by;
    using eosio::const_mem_fun;
    using eosio::block_timestamp;
-   const uint32_t block_num_network_activation = 108000; // debug version 3600 blocks = 30 min
+   const uint32_t block_num_network_activation = 10800; // debug version 3600 blocks = 30 min
   //  const uint32_t block_num_network_activation = 1000000; 
    
    struct name_bid {
@@ -40,7 +40,7 @@ namespace eosiosystem {
    struct eosio_global_state : eosio::blockchain_parameters {
       uint64_t free_ram()const { return max_ram_size - total_ram_bytes_reserved; }
 
-      uint64_t             max_ram_size = 64ll*1024 * 1024 * 1024;
+      uint64_t             max_ram_size = 12ll*1024 * 1024 * 1024;
       uint64_t             total_ram_bytes_reserved = 0;
       int64_t              total_ram_stake = 0;
 
