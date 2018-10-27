@@ -19,7 +19,7 @@ namespace eosiosystem {
    using eosio::indexed_by;
    using eosio::const_mem_fun;
    using eosio::block_timestamp;
-   const uint32_t block_num_network_activation = 108000; // debug version 3600 blocks = 30 min
+   const uint32_t block_num_network_activation = 10800; // debug version 3600 blocks = 30 min
   //  const uint32_t block_num_network_activation = 1000000; 
    
    struct name_bid {
@@ -40,7 +40,7 @@ namespace eosiosystem {
    struct eosio_global_state : eosio::blockchain_parameters {
       uint64_t free_ram()const { return max_ram_size - total_ram_bytes_reserved; }
 
-      uint64_t             max_ram_size = 64ll*1024 * 1024 * 1024;
+      uint64_t             max_ram_size = 12ll*1024 * 1024 * 1024;
       uint64_t             total_ram_bytes_reserved = 0;
       int64_t              total_ram_stake = 0;
 
@@ -183,7 +183,7 @@ namespace eosiosystem {
       EOSLIB_SERIALIZE( voter_info, (owner)(proxy)(producers)(staked)(last_stake)(last_vote_weight)(proxied_vote_weight)(is_proxy)(reserved1)(reserved2)(reserved3) )
    };
 
-   //tracks automated claimreward _payments
+   //tracks automated claimreward payments
    struct payment {
      account_name bp;
      asset pay;
@@ -192,7 +192,7 @@ namespace eosiosystem {
      EOSLIB_SERIALIZE(payment, (bp)(pay))
    };
 
-   typedef eosio::multi_index<N(_payments), payment> payments_table;
+   typedef eosio::multi_index<N(payments), payment> payments_table;
 
    typedef eosio::multi_index< N(voters), voter_info> voters_table;
 
@@ -212,17 +212,17 @@ namespace eosiosystem {
 
    class system_contract : public native {
       private:
-         voters_table           _voters;
-         producers_table        _producers;
-         global_state_singleton _global;
-         rotation_info_singleton _rotations;
+         voters_table                 _voters;
+         producers_table              _producers;
+         global_state_singleton       _global;
+         rotation_info_singleton      _rotations;
          schedule_metrics_singleton   _schedule_metrics; 
-         
-         eosio_global_state     _gstate;
-         rotation_info          _grotations;
-         rammarket              _rammarket;
-         schedule_metrics       _gschedule_metrics;
-         payments_table         _payments;
+
+         eosio_global_state           _gstate;
+         rotation_info                _grotations;
+         rammarket                    _rammarket;
+         payments_table               payments;
+         schedule_metrics             _gschedule_metrics;          
 
       public:
          system_contract( account_name s );

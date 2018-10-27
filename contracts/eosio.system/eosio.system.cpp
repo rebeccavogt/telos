@@ -16,7 +16,7 @@ namespace eosiosystem {
     _global(_self,_self),
     _rotations(_self,_self),
     _rammarket(_self,_self),
-    _schedule_metrics(_self, _self)
+    _schedule_metrics(_self, _self),
     _payments(_self, _self)
    {
       //print( "construct system\n" );
