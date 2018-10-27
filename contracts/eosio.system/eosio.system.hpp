@@ -221,7 +221,7 @@ namespace eosiosystem {
          eosio_global_state           _gstate;
          rotation_info                _grotations;
          rammarket                    _rammarket;
-         payments_table               payments;
+         payments_table               _payments;
          schedule_metrics             _gschedule_metrics;          
 
       public:
