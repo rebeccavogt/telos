@@ -63,7 +63,6 @@ namespace eosiosystem {
           info.producer_key = producer_key;
           info.url = url;
           info.location = location;
-          info.missed_blocks_per_rotation = 0;
           info.is_active = true;
         });
       } else {
@@ -104,7 +103,7 @@ namespace eosiosystem {
           auto bp_name = prods[i].producer_name;
           auto pitr = _producers.find(bp_name);
 
-          if (pitr != _producers.end() && pitr->active()) {
+          if (pitr != _producers.end()) {
             _producers.modify(pitr, 0, [&](auto &p) {
               if (p.kick_penalty_hours > 0 && p.missed_blocks_per_rotation == 0) {
                 p.kick_penalty_hours--;
