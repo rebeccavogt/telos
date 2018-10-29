@@ -43,7 +43,7 @@ namespace eosiosystem {
     *  @pre authority of producer to register
     *
     */
-   void system_contract::regproducer( const account_name producer, const eosio::public_key& producer_key, const std::string& url, uint16_t location ) {
+   void system_contract::regproducer( const account_name producer, const eosio::public_key& producer_key, const std::string& url, const std::string ipfs_url, uint16_t location ) {
       eosio_assert( url.size() < 512, "url too long" );
       eosio_assert( producer_key != eosio::public_key(), "public key should not be the default value" );
       require_auth( producer );
@@ -62,6 +62,7 @@ namespace eosiosystem {
             
           info.producer_key = producer_key;
           info.url = url;
+          info.bpinfo_ipfs_url = ipfs_url;
           info.location = location;
           info.missed_blocks_per_rotation = 0;
           info.is_active = true;
@@ -73,6 +74,7 @@ namespace eosiosystem {
           info.producer_key = producer_key;
           info.is_active = true;
           info.url = url;
+          info.bpinfo_ipfs_url = ipfs_url;
           info.location = location;
         });
       }

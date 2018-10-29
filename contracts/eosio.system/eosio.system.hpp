@@ -83,6 +83,7 @@ namespace eosiosystem {
       eosio::public_key     producer_key; /// a packed public key object
       bool                  is_active = true;
       std::string           url;
+      std::string           bpinfo_ipfs_url;
       uint32_t              unpaid_blocks = 0;
       uint32_t              lifetime_unpaid_blocks = 0;
       uint32_t              missed_blocks_per_rotation = 0;
@@ -285,7 +286,7 @@ namespace eosiosystem {
 
          // functions defined in voting.cpp
 
-         void regproducer( const account_name producer, const public_key& producer_key, const std::string& url, uint16_t location );
+         void regproducer( const account_name producer, const public_key& producer_key, const std::string& url, const std::string bpinfo_ipfs_url, uint16_t location );
 
          void unregprod( const account_name producer );
 
