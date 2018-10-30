@@ -80,8 +80,8 @@ class arbitration : public contract {
         struct config {
             account_name publisher;
             uint16_t max_arbs;
-            uint32_t default_time; //TODO: double check time_point units
-            vector<int64_t> fee_structure; //NOTE: int64_t is pre-precision value
+            uint32_t default_time;
+            vector<asset> fee_structure;
             //TODO: Arbitrator schedule field based on class
             //CLARIFY: usage of "schedule" in requirements doc
 
@@ -161,7 +161,7 @@ class arbitration : public contract {
 
         ~arbitration();
 
-        void setconfig(uint16_t max_arbs, uint32_t default_time, vector<int64_t> fees); //setting global configuration 
+        void setconfig(uint16_t max_arbs, uint32_t default_time, vector<asset> fees); //setting global configuration 
 
         #pragma region Arb_Elections
 

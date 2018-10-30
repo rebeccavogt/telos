@@ -10,7 +10,7 @@
 arbitration::arbitration(account_name self) : contract(self), configs(_self, _self) {
     if (!configs.exists()) {
 
-        vector<int64_t> fees{ 100000, 200000, 300000 };
+        vector<asset> fees{ asset(1000000), asset(200000), asset(300000) }; //denoted in TLOS
        
        //TODO: update along with config struct
         _config = config{
@@ -32,7 +32,7 @@ arbitration::~arbitration() {
     }
 }
 
-void arbitration::setconfig(uint16_t max_arbs, uint32_t default_time, vector<int64_t> fees) {
+void arbitration::setconfig(uint16_t max_arbs, uint32_t default_time, vector<asset> fees) {
     require_auth(_self);
 
     //TODO: expand as struct is developed
@@ -41,7 +41,7 @@ void arbitration::setconfig(uint16_t max_arbs, uint32_t default_time, vector<int
         _self, //publisher
         max_arbs, //max_arbs
         default_time, //default_time
-        fees
+        fees //fee_structure
     };
 
     print("\nSettings Configured: SUCCESS");
