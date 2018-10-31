@@ -132,13 +132,6 @@ bool system_contract::check_missed_blocks(block_timestamp timestamp, account_nam
    account_name producers_schedule[21];
    auto total_prods = get_active_producers(producers_schedule, sizeof(account_name) * 21) / 8; 
    
-   // if(_gstate.last_producer_schedule_size != total_prods) {
-   //    _gstate.last_producer_schedule_size = total_prods;
-   //    _gschedule_metrics.last_onblock_caller = producer;
-   //    reset_schedule_metrics();
-   //    return false;
-   // }
-   
    bool is_activated = _gstate.last_producer_schedule_size == total_prods && is_new_schedule_activated(producers_schedule, total_prods);
 
    if (!is_activated) {
@@ -264,10 +257,8 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer) 
 
     //called once per day to set payments snapshot
     if (_gstate.last_claimrewards + uint32_t(3600) <= timestamp.slot) { //172800 blocks in a day
-        print("\nNew ClaimRewards Snapshot");
 		auto start_time = current_time();
         claimrewards_snapshot();
-		print("Elapsed Execution (in microseconds): ", (current_time() - start_time));
         _gstate.last_claimrewards = timestamp.slot;
     }
 }
@@ -399,7 +390,7 @@ void system_contract::claimrewards_snapshot(){
         auto itr = _payments.find(prod.owner);
         
         if (itr == _payments.end()) {
-            _payments.emplace(prod.owner, [&]( auto& a ) { //have eosio pay? no issues so far...
+            _payments.emplace(_self, [&]( auto& a ) { //have eosio pay? no issues so far...
                 a.bp = prod.owner;
                 a.pay = asset(pay_amount);
             });
