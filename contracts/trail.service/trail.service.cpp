@@ -123,6 +123,7 @@ void trail::regballot(account_name publisher, asset voting_token, uint32_t begin
     });
 
     env_struct.total_ballots++;
+    env_struct.active_ballots++;
 
     print("\nBallot Registration: SUCCESS");
 }
@@ -142,7 +143,7 @@ void trail::unregballot(account_name publisher, uint64_t ballot_id) {
     print("\nBallot Deletion: SUCCESS");
 }
 
-void stakeforvote(account_name voter, asset amount) {
+void trail::stakeforvote(account_name voter, asset amount) {
     require_auth(voter);
     eosio_assert(amount.symbol == S(4, TLOS), "only TLOS can be staked for votes");
     eosio_assert(amount >= asset(0, S(4, TLOS)), "must stake a positive amount");
@@ -168,7 +169,7 @@ void stakeforvote(account_name voter, asset amount) {
     print("\nStake For Votes: SUCCESS");
 }
 
-void unstakevotes(account_name voter, asset amount) {
+void trail::unstakevotes(account_name voter, asset amount) {
     require_auth(voter);
     eosio_assert(amount.symbol == S(4, TLOS), "only TLOS can be staked for votes");
     eosio_assert(amount >= asset(0, S(4, TLOS)), "must stake a positive amount");
@@ -179,6 +180,9 @@ void unstakevotes(account_name voter, asset amount) {
 
     auto vid = *v;
     eosio_assert(amount <= asset(vid.liquid_votes.amount, S(4, TLOS)), "insufficient liquid votes to unstake");
+
+    //TODO: implement staggered release
+    eosio_assert(now() >= vid.release_time, "VOTE tokens haven't been released yet. Wait until you have no active ballots.");
 
     asset new_liquid = vid.liquid_votes - asset(amount.amount, S(4, VOTE));
 
@@ -196,7 +200,75 @@ void unstakevotes(account_name voter, asset amount) {
     print("\nUnstake Votes: SUCCESS");
 }
 
-void castvote(account_name voter, uint64_t ballot_id, asset amount, uint16_t direction) {
+void trail::castvote(account_name voter, uint64_t ballot_id, asset amount, uint16_t direction) {
+    require_auth(voter);
+    eosio_assert(amount.symbol == S(4, TLOS), "only TLOS can be staked for votes");
+    eosio_assert(amount >= asset(0, S(4, TLOS)), "must vote a positive amount");
+    eosio_assert(direction >= uint16_t(0) && direction <= uint16_t(2), "Invalid Vote. [0 = NO, 1 = YES, 2 = ABSTAIN]");
+
+    voters_table voters(N(eosio.trail), N(eosio.trail));
+    auto v = voters.find(voter);
+    eosio_assert(v != voters.end(), "voter is not registered");
+
+    auto vid = *v;
+    eosio_assert(amount <= asset(vid.liquid_votes.amount, S(4, TLOS)), "insufficient liquid votes");
+
+    ballots_table ballots(N(eosio.trail), N(eosio.trail));
+    auto b = ballots.find(ballot_id);
+    eosio_assert(b != ballots.end(), "ballot with given ballot_id doesn't exist");
+
+    auto bal = *b;
+    uint32_t time_now = now();
+    eosio_assert(time_now >= bal.begin_time && time_now <= bal.end_time, "ballot voting window not open");
+
+    asset spent_liquid = asset(amount.amount, S(4, VOTE));
+
+    voters.modify(v, 0, [&]( auto& a ) {
+        a.liquid_votes -= spent_liquid;
+        a.spent_votes += spent_liquid;
+        a.release_time = bal.end_time;
+    });
+
+    switch (direction) {
+        case 0 : bal.no_count + spent_liquid; break;
+        case 1 : bal.yes_count + spent_liquid; break;
+        case 2 : bal.abstain_count + spent_liquid; break;
+    }
+
+    ballots.modify(b, 0, [&]( auto& a ) {
+        a.no_count = bal.no_count;
+        a.yes_count = bal.yes_count;
+        a.abstain_count = bal.abstain_count;
+    });
+
+    print("\nVote: SUCCESS");
+}
+
+void trail::closevote(account_name publisher, uint64_t ballot_id) {
+    require_auth(publisher);
+
+    ballots_table ballots(N(eosio.trail), N(eosio.trail));
+    auto b = ballots.find(ballot_id);
+    eosio_assert(b != ballots.end(), "ballot with given ballot_id doesn't exist");
+
+    auto bal = *b;
+    eosio_assert(now() >= bal.end_time, "ballot voting window still open");
+
+    asset total_votes = (bal.yes_count + bal.no_count + bal.abstain_count); //total VOTE tokens cast on ballot
+    asset pass_thresh = ((bal.yes_count + bal.no_count) / 3) * 2; //66.67% of total_votes are YES
+
+    //TODO: update percentage with real value
+    uint64_t quorum_thresh = (env_struct.total_voters / 20); //5% of all registered voters 
+
+    if (bal.yes_count >= pass_thresh && bal.unique_voters >= quorum_thresh) {
+        bal.status = true;
+    } else {
+        bal.status = false;
+    }
+
+    ballots.modify(b, 0, [&]( auto& a ) {
+        a.status = bal.status;
+    });
 
 }
 
@@ -219,6 +291,14 @@ extern "C" {
             execute_action(&trailservice, &trail::regballot);
         } else if (code == self && action == N(unregballot)) {
             execute_action(&trailservice, &trail::unregballot);
+        } else if (code == self && action == N(stakeforvote)) {
+            execute_action(&trailservice, &trail::stakeforvote);
+        } else if (code == self && action == N(unstakevotes)) {
+            execute_action(&trailservice, &trail::unstakevotes);
+        } else if (code == self && action == N(castvote)) {
+            execute_action(&trailservice, &trail::castvote);
+        } else if (code == self && action == N(closevote)) {
+            execute_action(&trailservice, &trail::closevote);
         }
     } //end apply
 }; //end dispatcher
