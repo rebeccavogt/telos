@@ -4,8 +4,6 @@
  */
 #include "eosio.system.hpp"
 
-//#include <../trail.service/trail.definitions/traildef.voting.hpp>
-
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/print.hpp>
 #include <eosiolib/datastream.hpp>
