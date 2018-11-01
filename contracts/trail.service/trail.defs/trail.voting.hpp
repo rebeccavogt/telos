@@ -33,7 +33,7 @@ struct vote_receipt {
     uint32_t expiration;
 
     uint64_t primary_key() const { return receipt_id; }
-    EOSLIB_SERIALIZE(vote_receipt, (receipt_id)(ballot_id)(voter)(direction)(weight)(expiration))
+    EOSLIB_SERIALIZE(vote_receipt, (receipt_id)(ballot_id)(direction)(weight)(expiration))
 };
 
 /// @abi table voters i64
@@ -47,7 +47,7 @@ struct voter_id {
 
     uint64_t primary_key() const { return voter; }
     EOSLIB_SERIALIZE(voter_id, (voter)
-        (staked_tlos)(liquid_votes)(spent_votes))
+        (liquid_votes)(spent_votes))
 };
 
 /// @abi table ballots
