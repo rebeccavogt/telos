@@ -147,7 +147,7 @@ void trail::unregballot(account_name publisher, uint64_t ballot_id) {
 void trail::getvotes(account_name voter, asset amount, uint32_t lock_period) {
     require_auth(voter);
     eosio_assert(amount.symbol == S(4, TLOS), "only TLOS can be used to get votes");
-    eosio_assert(amount >= asset(0, S(4, TLOS)), "must use a positive amount");
+    eosio_assert(amount > asset(0, S(4, TLOS)), "must use a positive amount");
 
     asset max_votes = get_liquid_tlos(voter) + get_staked_tlos(voter);
     eosio_assert(amount <= max_votes, "insufficient funds to issue for votes");
@@ -184,7 +184,7 @@ void trail::castvotes(account_name voter, uint64_t ballot_id, uint16_t direction
     auto bal = *b;
     uint32_t time_now = now();
     eosio_assert(time_now >= bal.begin_time && time_now <= bal.end_time, "ballot voting window not open");
-    eosio_assert(vid.release_time <= bal.end_time, "can only vote for ballots that end before your lock period is over...prevents double voting!");
+    eosio_assert(vid.release_time >= bal.end_time, "can only vote for ballots that end before your lock period is over...prevents double voting!");
 
     switch (direction) {
         case 0 : bal.no_count + vid.votes; break;
