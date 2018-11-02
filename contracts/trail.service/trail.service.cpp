@@ -14,6 +14,7 @@ trail::trail(account_name self) : contract(self), environment(self, self) {
         environment.set(env_struct, self);
     } else {
         env_struct = environment.get();
+        env_struct.time_now = now();
     }
 }
 
