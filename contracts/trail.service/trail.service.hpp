@@ -48,7 +48,7 @@ class trail : public contract {
         void unregballot(account_name publisher, uint64_t ballot_id);
 
         /// @abi action
-        void getvotes(account_name voter, asset amount, uint32_t release_time);
+        void getvotes(account_name voter, asset amount, uint32_t lock_period);
 
         /// @abi action
         void castvotes(account_name voter, uint64_t ballot_id, uint16_t direction);
