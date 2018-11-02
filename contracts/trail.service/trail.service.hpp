@@ -42,19 +42,16 @@ class trail : public contract {
         void unregvoter(account_name voter);
 
         /// @abi action
-        void regballot(account_name publisher, asset voting_token, uint32_t begin_time, uint32_t end_time);
+        void regballot(account_name publisher, asset voting_token, uint32_t begin_time, uint32_t end_time, string info_url);
 
         /// @abi action
         void unregballot(account_name publisher, uint64_t ballot_id);
 
         /// @abi action
-        void stakeforvote(account_name voter, asset amount);
+        void getvotes(account_name voter, asset amount, uint32_t release_time);
 
         /// @abi action
-        void unstakevotes(account_name voter, asset amount);
-
-        /// @abi action
-        void castvote(account_name voter, uint64_t ballot_id, asset amount, uint16_t direction);
+        void castvotes(account_name voter, uint64_t ballot_id, uint16_t direction);
 
         /// @abi action
         void closevote(account_name publisher, uint64_t ballot_id);

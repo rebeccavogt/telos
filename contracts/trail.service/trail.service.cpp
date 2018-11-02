@@ -106,7 +106,7 @@ void trail::unregvoter(account_name voter) {
     print("\nVoterID Unregistration: SUCCESS");
 }
 
-void trail::regballot(account_name publisher, asset voting_token, uint32_t begin_time, uint32_t end_time) {
+void trail::regballot(account_name publisher, asset voting_token, uint32_t begin_time, uint32_t end_time, string info_url) {
     require_auth(publisher);
 
     ballots_table ballots(_self, _self);
@@ -114,6 +114,7 @@ void trail::regballot(account_name publisher, asset voting_token, uint32_t begin
     ballots.emplace(publisher, [&]( auto& a ){
         a.ballot_id = ballots.available_primary_key();
         a.publisher = publisher;
+        a.info_url = info_url;
         a.no_count = asset(0, voting_token.symbol.name());
         a.yes_count = asset(0, voting_token.symbol.name());
         a.abstain_count = asset(0, voting_token.symbol.name());
@@ -143,67 +144,28 @@ void trail::unregballot(account_name publisher, uint64_t ballot_id) {
     print("\nBallot Deletion: SUCCESS");
 }
 
-void trail::stakeforvote(account_name voter, asset amount) {
+void trail::getvotes(account_name voter, asset amount, uint32_t lock_period) {
     require_auth(voter);
-    eosio_assert(amount.symbol == S(4, TLOS), "only TLOS can be staked for votes");
-    eosio_assert(amount >= asset(0, S(4, TLOS)), "must stake a positive amount");
+    eosio_assert(amount.symbol == S(4, TLOS), "only TLOS can be used to get votes");
+    eosio_assert(amount >= asset(0, S(4, TLOS)), "must use a positive amount");
     
     voters_table voters(N(eosio.trail), N(eosio.trail));
     auto v = voters.find(voter);
     eosio_assert(v != voters.end(), "voter is not registered");
 
     auto vid = *v;
-    asset new_liquid = vid.liquid_votes + asset(amount.amount, S(4, VOTE));
+    eosio_assert(now() >= vid.release_time, "cannot get more votes until lock period is over");
 
     voters.modify(v, 0, [&]( auto& a ) {
-        a.liquid_votes = new_liquid;
+        a.votes = asset(amount.amount, S(4, VOTE));
+        a.release_time = now() + lock_period;
     });
 
-    action(permission_level{ voter, N(active) }, N(eosio.token), N(transfer), make_tuple(
-    	voter,
-        N(eosio.trail),
-        amount,
-        std::string("Staking TLOS for VOTE")
-	)).send();
-
-    print("\nStake For Votes: SUCCESS");
+    print("\nRegister For Votes: SUCCESS");
 }
 
-void trail::unstakevotes(account_name voter, asset amount) {
+void trail::castvotes(account_name voter, uint64_t ballot_id, uint16_t direction) {
     require_auth(voter);
-    eosio_assert(amount.symbol == S(4, TLOS), "only TLOS can be staked for votes");
-    eosio_assert(amount >= asset(0, S(4, TLOS)), "must stake a positive amount");
-
-    voters_table voters(N(eosio.trail), N(eosio.trail));
-    auto v = voters.find(voter);
-    eosio_assert(v != voters.end(), "voter is not registered");
-
-    auto vid = *v;
-    eosio_assert(amount <= asset(vid.liquid_votes.amount, S(4, TLOS)), "insufficient liquid votes to unstake");
-
-    //TODO: implement staggered release
-    eosio_assert(now() >= vid.release_time, "VOTE tokens haven't been released yet. Wait until you have no active ballots.");
-
-    asset new_liquid = vid.liquid_votes - asset(amount.amount, S(4, VOTE));
-
-    voters.modify(v, 0, [&]( auto& a ) {
-        a.liquid_votes = new_liquid;
-    });
-
-    action(permission_level{ voter, N(active) }, N(eosio.token), N(transfer), make_tuple(
-    	N(eosio.trail),
-        voter,
-        amount,
-        std::string("Unstaking VOTE for TLOS")
-	)).send();
-
-    print("\nUnstake Votes: SUCCESS");
-}
-
-void trail::castvote(account_name voter, uint64_t ballot_id, asset amount, uint16_t direction) {
-    require_auth(voter);
-    eosio_assert(amount.symbol == S(4, TLOS), "only TLOS can be staked for votes");
-    eosio_assert(amount >= asset(0, S(4, TLOS)), "must vote a positive amount");
     eosio_assert(direction >= uint16_t(0) && direction <= uint16_t(2), "Invalid Vote. [0 = NO, 1 = YES, 2 = ABSTAIN]");
 
     voters_table voters(N(eosio.trail), N(eosio.trail));
@@ -211,7 +173,6 @@ void trail::castvote(account_name voter, uint64_t ballot_id, asset amount, uint1
     eosio_assert(v != voters.end(), "voter is not registered");
 
     auto vid = *v;
-    eosio_assert(amount <= asset(vid.liquid_votes.amount, S(4, TLOS)), "insufficient liquid votes");
 
     ballots_table ballots(N(eosio.trail), N(eosio.trail));
     auto b = ballots.find(ballot_id);
@@ -220,25 +181,19 @@ void trail::castvote(account_name voter, uint64_t ballot_id, asset amount, uint1
     auto bal = *b;
     uint32_t time_now = now();
     eosio_assert(time_now >= bal.begin_time && time_now <= bal.end_time, "ballot voting window not open");
-
-    asset spent_liquid = asset(amount.amount, S(4, VOTE));
-
-    voters.modify(v, 0, [&]( auto& a ) {
-        a.liquid_votes -= spent_liquid;
-        a.spent_votes += spent_liquid;
-        a.release_time = bal.end_time;
-    });
+    eosio_assert(vid.release_time <= bal.end_time, "can only vote for ballots that end before your lock period is over...prevents double voting!");
 
     switch (direction) {
-        case 0 : bal.no_count + spent_liquid; break;
-        case 1 : bal.yes_count + spent_liquid; break;
-        case 2 : bal.abstain_count + spent_liquid; break;
+        case 0 : bal.no_count + vid.votes; break;
+        case 1 : bal.yes_count + vid.votes; break;
+        case 2 : bal.abstain_count + vid.votes; break;
     }
 
     ballots.modify(b, 0, [&]( auto& a ) {
         a.no_count = bal.no_count;
         a.yes_count = bal.yes_count;
         a.abstain_count = bal.abstain_count;
+        a.unique_voters += uint32_t(1);
     });
 
     print("\nVote: SUCCESS");
@@ -270,6 +225,8 @@ void trail::closevote(account_name publisher, uint64_t ballot_id) {
         a.status = bal.status;
     });
 
+    env_struct.active_ballots--;
+
 }
 
 #pragma endregion Voting
@@ -291,12 +248,10 @@ extern "C" {
             execute_action(&trailservice, &trail::regballot);
         } else if (code == self && action == N(unregballot)) {
             execute_action(&trailservice, &trail::unregballot);
-        } else if (code == self && action == N(stakeforvote)) {
-            execute_action(&trailservice, &trail::stakeforvote);
-        } else if (code == self && action == N(unstakevotes)) {
-            execute_action(&trailservice, &trail::unstakevotes);
-        } else if (code == self && action == N(castvote)) {
-            execute_action(&trailservice, &trail::castvote);
+        } else if (code == self && action == N(getvotes)) {
+            execute_action(&trailservice, &trail::getvotes);
+        } else if (code == self && action == N(castvotes)) {
+            execute_action(&trailservice, &trail::castvotes);
         } else if (code == self && action == N(closevote)) {
             execute_action(&trailservice, &trail::closevote);
         }

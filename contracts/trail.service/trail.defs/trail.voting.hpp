@@ -24,6 +24,7 @@ uint64_t const VOTE_ISSUE_RATIO = 1; //indicates a 1:1 TLOS/VOTE issuance
 
 #pragma region Structs
 
+/*
 ///@abi table votereceipts i64
 struct vote_receipt {
     uint64_t receipt_id;
@@ -35,25 +36,23 @@ struct vote_receipt {
     uint64_t primary_key() const { return receipt_id; }
     EOSLIB_SERIALIZE(vote_receipt, (receipt_id)(ballot_id)(direction)(weight)(expiration))
 };
+*/
 
 /// @abi table voters i64
 struct voter_id {
     account_name voter;
-
-    asset liquid_votes;
-    asset spent_votes;
-
+    asset votes;
     uint32_t release_time;
 
     uint64_t primary_key() const { return voter; }
-    EOSLIB_SERIALIZE(voter_id, (voter)
-        (liquid_votes)(spent_votes))
+    EOSLIB_SERIALIZE(voter_id, (voter)(votes)(release_time))
 };
 
 /// @abi table ballots
 struct ballot {
     uint64_t ballot_id;
     account_name publisher;
+    string info_url;
     
     asset no_count;
     asset yes_count;
@@ -65,7 +64,7 @@ struct ballot {
     bool status; // 0 = FAIL, 1 = PASS
 
     uint64_t primary_key() const { return ballot_id; }
-    EOSLIB_SERIALIZE(ballot, (ballot_id)(publisher)
+    EOSLIB_SERIALIZE(ballot, (ballot_id)(publisher)(info_url)
         (no_count)(yes_count)(abstain_count)(unique_voters)
         (begin_time)(end_time)(status))
 };
