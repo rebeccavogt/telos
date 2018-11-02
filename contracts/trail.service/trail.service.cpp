@@ -148,6 +148,9 @@ void trail::getvotes(account_name voter, asset amount, uint32_t lock_period) {
     require_auth(voter);
     eosio_assert(amount.symbol == S(4, TLOS), "only TLOS can be used to get votes");
     eosio_assert(amount >= asset(0, S(4, TLOS)), "must use a positive amount");
+
+    asset max_votes = get_liquid_tlos(voter) + get_staked_tlos(voter);
+    eosio_assert(amount <= max_votes, "insufficient funds to issue for votes");
     
     voters_table voters(N(eosio.trail), N(eosio.trail));
     auto v = voters.find(voter);
