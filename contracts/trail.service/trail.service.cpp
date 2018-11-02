@@ -115,9 +115,9 @@ void trail::regballot(account_name publisher, asset voting_token, uint32_t begin
         a.ballot_id = ballots.available_primary_key();
         a.publisher = publisher;
         a.info_url = info_url;
-        a.no_count = asset(0, voting_token.symbol.name());
-        a.yes_count = asset(0, voting_token.symbol.name());
-        a.abstain_count = asset(0, voting_token.symbol.name());
+        a.no_count = asset(0, voting_token.symbol);
+        a.yes_count = asset(0, voting_token.symbol);
+        a.abstain_count = asset(0, voting_token.symbol);
         a.unique_voters = uint32_t(0);
         a.begin_time = begin_time;
         a.end_time = end_time;
