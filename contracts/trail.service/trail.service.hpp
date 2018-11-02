@@ -76,10 +76,13 @@ class trail : public contract {
 
             uint32_t active_ballots;
 
+            uint32_t time_now;
+
             uint64_t primary_key() const { return publisher; }
             EOSLIB_SERIALIZE(env, (publisher)
                 (total_tokens)(total_voters)(total_ballots)
-                (active_ballots))
+                (active_ballots)
+                (time_now))
         };
 
         typedef singleton<N(environment), env> environment_singleton;
