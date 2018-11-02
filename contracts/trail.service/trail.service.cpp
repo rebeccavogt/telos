@@ -80,6 +80,7 @@ void trail::regvoter(account_name voter) {
 
     voters.emplace(voter, [&]( auto& a ){
         a.voter = voter;
+        a.votes = asset(0, S(4, VOTE));
     });
 
     env_struct.total_voters++;
