@@ -187,15 +187,15 @@ void trail::castvotes(account_name voter, uint64_t ballot_id, uint16_t direction
     eosio_assert(vid.release_time >= bal.end_time, "can only vote for ballots that end before your lock period is over...prevents double voting!");
 
     switch (direction) {
-        case 0 : bal.no_count + vid.votes; break;
-        case 1 : bal.yes_count + vid.votes; break;
-        case 2 : bal.abstain_count + vid.votes; break;
+        case 0 : bal.no_count = bal.no_count + vid.votes; break;
+        case 1 : bal.yes_count = bal.yes_count + vid.votes; break;
+        case 2 : bal.abstain_count = bal.abstain_count + vid.votes; break;
     }
 
     ballots.modify(b, 0, [&]( auto& a ) {
-        a.no_count = bal.no_count;
-        a.yes_count = bal.yes_count;
-        a.abstain_count = bal.abstain_count;
+        a.no_count += bal.no_count;
+        a.yes_count += bal.yes_count;
+        a.abstain_count += bal.abstain_count;
         a.unique_voters += uint32_t(1);
     });
 
