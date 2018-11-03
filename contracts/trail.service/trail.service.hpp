@@ -23,6 +23,13 @@ class trail : public contract {
 
         ~trail();
 
+        #pragma region Constants
+
+        uint64_t const VOTE_ISSUE_RATIO = 1; //indicates a 1:1 TLOS/VOTE issuance
+        
+
+        #pragma endregion Constants
+
         #pragma region Token_Actions
 
         /// @abi action
@@ -60,7 +67,7 @@ class trail : public contract {
 
         #pragma region Reactions
 
-        
+        //Reactions are regular functions called only as a trigger from the dispatcher.
 
         #pragma endregion Reactions
 
@@ -86,7 +93,6 @@ class trail : public contract {
         };
 
         typedef singleton<N(environment), env> environment_singleton;
-
         environment_singleton environment;
         env env_struct;
 };

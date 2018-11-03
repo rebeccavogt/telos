@@ -16,36 +16,30 @@
 using namespace std;
 using namespace eosio;
 
-#pragma region Constants
-
-uint64_t const VOTE_ISSUE_RATIO = 1; //indicates a 1:1 TLOS/VOTE issuance
-
-#pragma endregion Constants
-
 #pragma region Structs
 
-/*
 ///@abi table votereceipts i64
 struct vote_receipt {
-    uint64_t receipt_id;
+    //uint64_t receipt_id;
     uint64_t ballot_id;
-    uint16_t direction;
-    asset weight;
-    uint32_t expiration;
+    //account_name voter;
+    //uint16_t direction;
+    //asset weight;
+    //uint32_t expiration;
 
-    uint64_t primary_key() const { return receipt_id; }
-    EOSLIB_SERIALIZE(vote_receipt, (receipt_id)(ballot_id)(direction)(weight)(expiration))
+    uint64_t primary_key() const { return ballot_id; }
+    EOSLIB_SERIALIZE(vote_receipt, (ballot_id))
 };
-*/
 
 /// @abi table voters i64
 struct voter_id {
     account_name voter;
     asset votes;
+    asset vote_levy;
     uint32_t release_time;
 
     uint64_t primary_key() const { return voter; }
-    EOSLIB_SERIALIZE(voter_id, (voter)(votes)(release_time))
+    EOSLIB_SERIALIZE(voter_id, (voter)(votes)(vote_levy)(release_time))
 };
 
 /// @abi table ballots
@@ -77,7 +71,7 @@ typedef multi_index<N(voters), voter_id> voters_table;
 
 typedef multi_index<N(ballots), ballot> ballots_table;
 
-//typedef multi_index<N(votestakes), vote_receipt> votereceipts_table;
+typedef multi_index<N(votereceipts), vote_receipt> votereceipts_table;
 
 #pragma endregion Tables
 

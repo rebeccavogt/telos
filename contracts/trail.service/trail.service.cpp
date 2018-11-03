@@ -82,6 +82,7 @@ void trail::regvoter(account_name voter) {
     voters.emplace(voter, [&]( auto& a ){
         a.voter = voter;
         a.votes = asset(0, S(4, VOTE));
+        a.vote_levy = asset(0, S(4, VOTE));
     });
 
     env_struct.total_voters++;
@@ -144,7 +145,7 @@ void trail::unregballot(account_name publisher, uint64_t ballot_id) {
     print("\nBallot Deletion: SUCCESS");
 }
 
-void trail::getvotes(account_name voter, asset amount, uint32_t lock_period) {
+void trail::getvotes(account_name voter, asset amount, uint32_t lock_period) { //TODO: remove amount and just take account balance?
     require_auth(voter);
     eosio_assert(amount.symbol == S(4, TLOS), "only TLOS can be used to get votes");
     eosio_assert(amount > asset(0, S(4, TLOS)), "must use a positive amount");
@@ -186,6 +187,14 @@ void trail::castvotes(account_name voter, uint64_t ballot_id, uint16_t direction
     eosio_assert(time_now >= bal.begin_time && time_now <= bal.end_time, "ballot voting window not open");
     eosio_assert(vid.release_time >= bal.end_time, "can only vote for ballots that end before your lock period is over...prevents double voting!");
 
+    votereceipts_table votereceipts(N(eosio.trail), voter);
+    auto vr_itr = votereceipts.find(ballot_id);
+    eosio_assert(vr_itr == votereceipts.end(), "voter has already cast vote for this ballot");
+
+    votereceipts.emplace(voter, [&]( auto& a ){
+        a.ballot_id = ballot_id;
+    });
+
     switch (direction) {
         case 0 : bal.no_count = bal.no_count + vid.votes; break;
         case 1 : bal.yes_count = bal.yes_count + vid.votes; break;
@@ -193,9 +202,9 @@ void trail::castvotes(account_name voter, uint64_t ballot_id, uint16_t direction
     }
 
     ballots.modify(b, 0, [&]( auto& a ) {
-        a.no_count += bal.no_count;
-        a.yes_count += bal.yes_count;
-        a.abstain_count += bal.abstain_count;
+        a.no_count = bal.no_count;
+        a.yes_count = bal.yes_count;
+        a.abstain_count = bal.abstain_count;
         a.unique_voters += uint32_t(1);
     });
 
@@ -234,7 +243,7 @@ void trail::closevote(account_name publisher, uint64_t ballot_id) {
 
 #pragma endregion Voting
 
-//EOSIO_ABI(trail, (regtoken)(unregtoken)(regvoter)(unregvoter)(addreceipt)(rmvexpvotes)(regballot)(unregballot))
+//EOSIO_ABI(trail, )
 
 extern "C" {
     void apply(uint64_t self, uint64_t code, uint64_t action) {
