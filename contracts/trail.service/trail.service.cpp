@@ -398,8 +398,7 @@ extern "C" {
         } else if (code == N(eosio.token) && action == N(transfer)) { //NOTE: updates vote_levy after transfers
             //TODO: add require_recipient to token contract
             auto args = unpack_action_data<transfer_args>();
-
-
+            update_vote_levy(args.from, args.to, args.quantity);
         }
     } //end apply
 }; //end dispatcher
