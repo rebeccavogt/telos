@@ -26,7 +26,10 @@ class trail : public contract {
         #pragma region Constants
 
         uint64_t const VOTE_ISSUE_RATIO = 1; //indicates a 1:1 TLOS/VOTE issuance
-        
+
+        uint32_t const MIN_LOCK_PERIOD = 86400; //86,400 seconds is ~1 day
+
+        uint32_t const MAX_LOCK_PERIOD = 7776000; //7,776,000 seconds is ~3 months
 
         #pragma endregion Constants
 
@@ -55,19 +58,24 @@ class trail : public contract {
         void unregballot(account_name publisher, uint64_t ballot_id);
 
         /// @abi action
-        void getvotes(account_name voter, asset amount, uint32_t lock_period);
+        void getvotes(account_name voter, uint32_t lock_period);
 
         /// @abi action
-        void castvotes(account_name voter, uint64_t ballot_id, uint16_t direction);
+        void castvote(account_name voter, uint64_t ballot_id, uint16_t direction);
 
         /// @abi action
-        void closevote(account_name publisher, uint64_t ballot_id);
+        void nextcycle(account_name publisher, uint64_t ballot_id, uint32_t new_begin_time, uint32_t new_end_time);
+
+        /// @abi action
+        void deloldvotes(account_name voter, uint16_t num_to_delete);
 
         #pragma endregion Voting_Actions
 
         #pragma region Reactions
 
         //Reactions are regular functions called only as a trigger from the dispatcher.
+
+        void closevote(account_name publisher, uint64_t ballot_id, bool pass);
 
         #pragma endregion Reactions
 
@@ -81,14 +89,14 @@ class trail : public contract {
             uint64_t total_voters;
             uint64_t total_ballots;
 
-            uint32_t active_ballots;
+            asset vote_supply;
 
             uint32_t time_now;
 
             uint64_t primary_key() const { return publisher; }
             EOSLIB_SERIALIZE(env, (publisher)
                 (total_tokens)(total_voters)(total_ballots)
-                (active_ballots)
+                (vote_supply)
                 (time_now))
         };
 

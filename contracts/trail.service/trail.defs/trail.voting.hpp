@@ -20,26 +20,33 @@ using namespace eosio;
 
 ///@abi table votereceipts i64
 struct vote_receipt {
-    //uint64_t receipt_id;
     uint64_t ballot_id;
-    //account_name voter;
-    //uint16_t direction;
-    //asset weight;
-    //uint32_t expiration;
+    uint16_t direction;
+    asset weight;
+    uint32_t expiration;
 
     uint64_t primary_key() const { return ballot_id; }
-    EOSLIB_SERIALIZE(vote_receipt, (ballot_id))
+    EOSLIB_SERIALIZE(vote_receipt, (ballot_id)(direction)(weight)(expiration))
+};
+
+/// @abi table votelevies i64
+struct vote_levy {
+    account_name voter;
+    asset levy_amount;
+    uint32_t last_decay;
+
+    uint64_t primary_key() const { return voter; }
+    EOSLIB_SERIALIZE(vote_levy, (voter)(levy_amount)(last_decay))
 };
 
 /// @abi table voters i64
 struct voter_id {
     account_name voter;
     asset votes;
-    asset vote_levy;
     uint32_t release_time;
 
     uint64_t primary_key() const { return voter; }
-    EOSLIB_SERIALIZE(voter_id, (voter)(votes)(vote_levy)(release_time))
+    EOSLIB_SERIALIZE(voter_id, (voter)(votes)(release_time))
 };
 
 /// @abi table ballots
@@ -63,6 +70,12 @@ struct ballot {
         (begin_time)(end_time)(status))
 };
 
+struct closevote_args {
+    account_name publisher;
+    uint64_t ballot_id;
+    bool pass;
+};
+
 #pragma endregion Structs
 
 #pragma region Tables
@@ -72,6 +85,8 @@ typedef multi_index<N(voters), voter_id> voters_table;
 typedef multi_index<N(ballots), ballot> ballots_table;
 
 typedef multi_index<N(votereceipts), vote_receipt> votereceipts_table;
+
+typedef multi_index<N(votelevies), vote_levy> votelevies_table;
 
 #pragma endregion Tables
 
@@ -94,6 +109,21 @@ bool is_ballot(uint64_t ballot_id) {
 
     if (b != ballots.end()) {
         return true;
+    }
+
+    return false;
+}
+
+bool is_ballot_publisher(account_name publisher, uint64_t ballot_id) {
+    ballots_table ballots(N(eosio.trail), N(eosio.trail));
+    auto b = ballots.find(ballot_id);
+
+    if (b != ballots.end()) {
+        auto bal = *b;
+
+        if (bal.publisher == publisher) {
+            return true;
+        }
     }
 
     return false;
