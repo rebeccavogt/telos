@@ -25,6 +25,7 @@
 #define TWELVE_MINUTES_US  720000000
 #define MAX_PRODUCERS             51
 #define TOP_PRODUCERS             21
+#define MAX_VOTE_PRODUCERS        30
 
 namespace eosiosystem {
    using namespace eosio;
@@ -243,23 +244,7 @@ namespace eosiosystem {
        return 0;
      }
 
-     auto totalProducers = 0;
-     for (const auto &prod : _producers) {
-       if(prod.active()) { 
-         totalProducers++;
-       }
-
-       // 30 max producers allowed to vote
-       if(totalProducers >= 30){
-         break;
-       }
-     }
-
-     if(totalProducers == 0){
-        return 0;
-     }
-
-     double percentVoted = amountVotedProducers / totalProducers;
+     double percentVoted = amountVotedProducers / MAX_VOTE_PRODUCERS;
      double voteWeight = (sin(M_PI * percentVoted - M_PI_2) + 1.0) / 2.0;
      return (voteWeight * staked);
    }
@@ -297,7 +282,7 @@ namespace eosiosystem {
          eosio_assert( voter_name != proxy, "cannot proxy to self" );
          require_recipient( proxy );
       } else {
-         eosio_assert( producers.size() <= 30, "attempt to vote for too many producers" );
+         eosio_assert( producers.size() <= MAX_VOTE_PRODUCERS, "attempt to vote for too many producers" );
          for( size_t i = 1; i < producers.size(); ++i ) {
             eosio_assert( producers[i-1] < producers[i], "producer votes must be unique and sorted" );
          }
