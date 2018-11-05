@@ -310,7 +310,7 @@ void trail::update_vote_levy(account_name from, account_name to, asset amount) {
     votelevies_table votelevies(N(eosio.trail), N(eosio.trail));
     auto vl_from = votelevies.find(from);
     
-    if (vl_from != votelevies.end()) {
+    if (vl_from == votelevies.end()) {
         votelevies.emplace(N(eosio.trail), [&]( auto& a ){
             a.voter = from;
             a.levy_amount = amount;
@@ -334,10 +334,9 @@ void trail::update_vote_levy(account_name from, account_name to, asset amount) {
         });
     }
 
-
     auto vl_to = votelevies.find(to);
 
-    if (vl_to != votelevies.end()) {
+    if (vl_to == votelevies.end()) {
         votelevies.emplace(N(eosio.trail), [&]( auto& a ){
             a.voter = to;
             a.levy_amount = amount;
