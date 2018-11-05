@@ -125,7 +125,8 @@ namespace eosiosystem {
             kick_penalty_hours = penalty;
           break;
         }
-        
+        lifetime_missed_blocks += missed_blocks_per_rotation;
+        missed_blocks_per_rotation = 0;
         deactivate();
       } 
 
