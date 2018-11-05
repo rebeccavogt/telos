@@ -94,7 +94,7 @@ namespace eosiosystem {
 
    void system_contract::update_rotation_time(block_timestamp block_time) {
       _grotations.last_rotation_time = block_time;
-      _grotations.next_rotation_time = block_timestamp(block_time.to_time_point() + time_point(microseconds(SIX_HOURS_US)));
+      _grotations.next_rotation_time = block_timestamp(block_time.to_time_point() + time_point(microseconds(TWELVE_HOURS_US)));
    }
 
    void system_contract::restart_missed_blocks_per_rotation(std::vector<eosio::producer_key> prods) {
