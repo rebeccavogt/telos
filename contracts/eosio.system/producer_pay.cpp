@@ -259,7 +259,7 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer) 
 
     //called once per day to set payments snapshot
     if (_gstate.last_claimrewards + uint32_t(3600) <= timestamp.slot) { //172800 blocks in a day
-		auto start_time = current_time();
+		// auto start_time = current_time();
         claimrewards_snapshot();
         _gstate.last_claimrewards = timestamp.slot;
     }
