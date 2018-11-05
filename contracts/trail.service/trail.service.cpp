@@ -169,7 +169,7 @@ void trail::getvotes(account_name voter, uint32_t lock_period) {
     eosio_assert(now() >= vid.release_time, "cannot get more votes until lock period is over");
 
     voters.modify(v, 0, [&]( auto& a ) {
-        a.votes = asset(amount.amount, S(4, VOTE)); //mirroring TLOS amount, not spending/locking it up
+        a.votes = asset(max_votes.amount, S(4, VOTE)); //mirroring TLOS amount, not spending/locking it up
         a.release_time = now() + lock_period;
     });
 
@@ -269,11 +269,14 @@ void trail::nextcycle(account_name publisher, uint64_t ballot_id, uint32_t new_b
     ballots_table ballots(_self, _self);
     auto b = ballots.find(ballot_id);
     eosio_assert(b != ballots.end(), "Ballot Doesn't Exist");
+    auto bal = *b;
+
+    auto sym = bal.no_count.symbol;
 
     ballots.emplace(publisher, [&]( auto& a ){
-        a.no_count = asset(0, voting_token.symbol);
-        a.yes_count = asset(0, voting_token.symbol);
-        a.abstain_count = asset(0, voting_token.symbol);
+        a.no_count = asset(0, sym);
+        a.yes_count = asset(0, sym);
+        a.abstain_count = asset(0, sym);
         a.unique_voters = uint32_t(0);
         a.begin_time = new_begin_time;
         a.end_time = new_end_time;
