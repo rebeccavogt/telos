@@ -373,7 +373,7 @@ extern "C" {
             execute_action(&trailservice, &trail::regtoken);
         } else if (code == self && action == N(unregtoken)) {
             execute_action(&trailservice, &trail::unregtoken);
-        } else if (code==self && action==N(regvoter)) {
+        } else if (code == self && action == N(regvoter)) {
             execute_action(&trailservice, &trail::regvoter);
         } else if (code == self && action == N(unregvoter)) {
             execute_action(&trailservice, &trail::unregvoter);
@@ -387,18 +387,13 @@ extern "C" {
             execute_action(&trailservice, &trail::castvote);
         } else if (code == self && action == N(closevote)) {
             execute_action(&trailservice, &trail::closevote);
-
-            // auto args = unpack_action_data<closevote_args>();
-            // if (is_ballot_publisher(code, args.ballot_id)) {
-            //     execute_action(&trailservice, &trail::closevote);
-            // } else {
-            //     eosio_exit(0); //ends processing, exits without calling destructor
-            // }
-
+        } else if (code == self && action == N(nextcycle)) {
+            execute_action(&trailservice, &trail::nextcycle);
+        } else if (code == self && action == N(deloldvotes)) {
+            execute_action(&trailservice, &trail::deloldvotes);
         } else if (code == N(eosio.token) && action == N(transfer)) { //NOTE: updates vote_levy after transfers
-            //TODO: add require_recipient to token contract
             auto args = unpack_action_data<transfer_args>();
-            update_vote_levy(args.from, args.to, args.quantity);
+            trailservice.update_vote_levy(args.from, args.to, args.quantity);
         }
     } //end apply
 }; //end dispatcher
