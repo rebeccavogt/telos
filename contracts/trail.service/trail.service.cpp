@@ -312,7 +312,7 @@ void trail::update_vote_levy(account_name from, account_name to, asset amount) {
     
     if (vl_from != votelevies.end()) {
         votelevies.emplace(N(eosio.trail), [&]( auto& a ){
-            a.voter = voter;
+            a.voter = from;
             a.levy_amount = amount;
             a.last_decay = env_struct.time_now;
         });
@@ -339,7 +339,7 @@ void trail::update_vote_levy(account_name from, account_name to, asset amount) {
 
     if (vl_to != votelevies.end()) {
         votelevies.emplace(N(eosio.trail), [&]( auto& a ){
-            a.voter = voter;
+            a.voter = to;
             a.levy_amount = amount;
             a.last_decay = env_struct.time_now;
         });

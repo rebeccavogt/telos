@@ -70,13 +70,6 @@ struct ballot {
         (begin_time)(end_time)(status))
 };
 
-struct transfer_args {
-    account_name from;
-    account_name to;
-    asset quantity;
-    string memo;
-};
-
 #pragma endregion Structs
 
 #pragma region Tables
