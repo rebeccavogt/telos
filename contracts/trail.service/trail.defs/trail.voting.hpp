@@ -70,10 +70,11 @@ struct ballot {
         (begin_time)(end_time)(status))
 };
 
-struct closevote_args {
-    account_name publisher;
-    uint64_t ballot_id;
-    bool pass;
+struct transfer_args {
+    account_name from;
+    account_name to;
+    asset quantity;
+    string memo;
 };
 
 #pragma endregion Structs

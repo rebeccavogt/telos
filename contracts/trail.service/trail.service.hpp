@@ -31,6 +31,9 @@ class trail : public contract {
 
         uint32_t const MAX_LOCK_PERIOD = 7776000; //7,776,000 seconds is ~3 months
 
+        //vector<double> const DECAY_STRUCTURE{-0.1, -0.3, -0.5};
+        //double const DECAY_RATE = 0.5;
+
         #pragma endregion Constants
 
         #pragma region Token_Actions
@@ -69,13 +72,16 @@ class trail : public contract {
         /// @abi action
         void deloldvotes(account_name voter, uint16_t num_to_delete);
 
+        /// @abi action
+        void closevote(account_name publisher, uint64_t ballot_id, bool pass);
+
         #pragma endregion Voting_Actions
 
         #pragma region Reactions
 
         //Reactions are regular functions called only as a trigger from the dispatcher.
 
-        void closevote(account_name publisher, uint64_t ballot_id, bool pass);
+        void update_vote_levy(account_name from, account_name to, asset amount);
 
         #pragma endregion Reactions
 
@@ -90,6 +96,8 @@ class trail : public contract {
             uint64_t total_ballots;
 
             asset vote_supply;
+
+            //vector<> decay_rates;
 
             uint32_t time_now;
 

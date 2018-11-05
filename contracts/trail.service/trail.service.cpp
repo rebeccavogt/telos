@@ -306,7 +306,61 @@ void trail::deloldvotes(account_name voter, uint16_t num_to_delete) {
 
 #pragma region Reactions
 
+void trail::update_vote_levy(account_name from, account_name to, asset amount) { //NOTE: amount is already correct symbol/precision
+    votelevies_table votelevies(N(eosio.trail), N(eosio.trail));
+    auto vl_from = votelevies.find(from);
+    
+    if (vl_from != votelevies.end()) {
+        votelevies.emplace(N(eosio.trail), [&]( auto& a ){
+            a.voter = voter;
+            a.levy_amount = amount;
+            a.last_decay = env_struct.time_now;
+        });
+    } else {
+        auto levy_from = *vl_from;
+        uint32_t time_delta = env_struct.time_now - levy_from.last_decay;
+        int64_t decay = int64_t(time_delta / 60);
+        asset decayed_levy = levy_from.levy_amount - asset(decay, S(4, VOTE)); //TODO: update with final equation
 
+        asset new_levy = decayed_levy - amount;
+
+        if (new_levy < asset(0, S(4, VOTE))) {
+            new_levy = asset(0, S(4, VOTE));
+        }
+
+        votelevies.modify(vl_from, 0, [&]( auto& a ) {
+            a.levy_amount = new_levy;
+            a.last_decay = env_struct.time_now;
+        });
+    }
+
+
+    auto vl_to = votelevies.find(to);
+
+    if (vl_to != votelevies.end()) {
+        votelevies.emplace(N(eosio.trail), [&]( auto& a ){
+            a.voter = voter;
+            a.levy_amount = amount;
+            a.last_decay = env_struct.time_now;
+        });
+    } else {
+        auto levy_to = *vl_to;
+        uint32_t time_delta = env_struct.time_now - levy_to.last_decay;
+        int64_t decay = int64_t(time_delta / 60);
+        asset decayed_levy = levy_to.levy_amount - asset(decay, S(4, VOTE)); //TODO: update with final equation
+
+        asset new_levy = decayed_levy + amount;
+
+        if (new_levy < asset(0, S(4, VOTE))) {
+            new_levy = asset(0, S(4, VOTE));
+        }
+
+        votelevies.modify(vl_to, 0, [&]( auto& a ) {
+            a.levy_amount = new_levy;
+            a.last_decay = env_struct.time_now;
+        });
+    }
+}
 
 #pragma endregion Reactions
 
@@ -343,6 +397,9 @@ extern "C" {
 
         } else if (code == N(eosio.token) && action == N(transfer)) { //NOTE: updates vote_levy after transfers
             //TODO: add require_recipient to token contract
+            auto args = unpack_action_data<transfer_args>();
+
+
         }
     } //end apply
 }; //end dispatcher
