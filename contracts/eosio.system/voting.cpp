@@ -105,8 +105,8 @@ namespace eosiosystem {
 
           if (pitr != _producers.end()) {
             _producers.modify(pitr, 0, [&](auto &p) {
-              if (p.kick_penalty_hours > 0 && p.missed_blocks_per_rotation == 0) {
-                p.kick_penalty_hours--;
+              if (p.times_kicked > 0 && p.missed_blocks_per_rotation == 0) {
+                p.times_kicked--;
               } 
               p.lifetime_missed_blocks += p.missed_blocks_per_rotation;
               p.missed_blocks_per_rotation = 0;
