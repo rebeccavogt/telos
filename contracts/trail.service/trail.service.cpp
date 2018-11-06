@@ -421,8 +421,8 @@ extern "C" {
             execute_action(&trailservice, &trail::deloldvotes);
         } else if (code == N(eosio.token) && action == N(transfer)) { //NOTE: updates vote_levy after transfers
             auto args = unpack_action_data<transfer_args>();
-            //trailservice.update_from_levy(args.from, asset(args.quantity.amount, S(4, VOTE)));
-            trailservice.update_to_levy(args.to, asset(args.quantity.amount, S(4, VOTE)));
+            trailservice.update_from_levy(args.from, asset(args.quantity.amount, S(4, VOTE)));
+            //trailservice.update_to_levy(args.to, asset(args.quantity.amount, S(4, VOTE)));
         }
     } //end apply
 }; //end dispatcher
