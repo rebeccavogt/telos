@@ -28,8 +28,8 @@ void ratifyamend::insertdoc(string title, vector<string> clauses) {
     uint64_t doc_id = documents.available_primary_key();
 
     documents.emplace(_self, [&]( auto& a ){
-        a.id = doc_id;
-        a.title = title;
+        a.document_id = doc_id;
+        a.document_title = title;
         a.clauses = clauses;
     });
 
