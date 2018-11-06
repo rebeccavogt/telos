@@ -220,6 +220,8 @@ void trail::castvote(account_name voter, uint64_t ballot_id, uint16_t direction)
     votereceipts_table votereceipts(N(eosio.trail), voter);
     auto vr_itr = votereceipts.find(ballot_id);
     //eosio_assert(vr_itr == votereceipts.end(), "voter has already cast vote for this ballot");
+    
+    uint32_t new_voter = 1;
 
     if (vr_itr == votereceipts.end()) { //NOTE: voter hasn't voted on ballot before
         votereceipts.emplace(voter, [&]( auto& a ){
@@ -244,6 +246,8 @@ void trail::castvote(account_name voter, uint64_t ballot_id, uint16_t direction)
                 a.weight = vid.votes;
             });
 
+            new_voter = 0;
+
             print("\nVote Recast: SUCCESS");
         } else if (vr.expiration < bal.end_time) { //NOTE: vote for new cycle
             votereceipts.modify(vr_itr, 0, [&]( auto& a ) {
@@ -264,13 +268,13 @@ void trail::castvote(account_name voter, uint64_t ballot_id, uint16_t direction)
         a.no_count = bal.no_count;
         a.yes_count = bal.yes_count;
         a.abstain_count = bal.abstain_count;
-        a.unique_voters += uint32_t(1);
+        a.unique_voters += new_voter;
     });
 
     print("\nVote: SUCCESS");
 }
 
-void trail::closevote(account_name publisher, uint64_t ballot_id, bool pass) {
+void trail::closevote(account_name publisher, uint64_t ballot_id, uint8_t pass) {
     require_auth(publisher);
 
     ballots_table ballots(N(eosio.trail), N(eosio.trail));
