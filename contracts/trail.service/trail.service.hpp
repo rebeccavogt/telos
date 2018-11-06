@@ -83,6 +83,8 @@ class trail : public contract {
 
         void update_vote_levy(account_name from, account_name to, asset amount);
 
+        asset calc_decay(account_name voter, asset amount);
+
         #pragma endregion Reactions
 
     protected:

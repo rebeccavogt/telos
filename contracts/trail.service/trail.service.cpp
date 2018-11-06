@@ -155,6 +155,8 @@ void trail::getvotes(account_name voter, uint32_t lock_period) {
     eosio_assert(lock_period >= MIN_LOCK_PERIOD, "lock period must be greater than 1 day (86400 secs)");
     eosio_assert(lock_period <= MAX_LOCK_PERIOD, "lock period must be less than 3 months (7,776,000 secs)");
 
+    //TODO: apply decay here instead of in dispatcher
+
     asset max_votes = get_liquid_tlos(voter) + get_staked_tlos(voter);
     eosio_assert(max_votes.symbol == S(4, TLOS), "only TLOS can be used to get VOTEs"); //NOTE: redundant?
     eosio_assert(max_votes > asset(0, S(4, TLOS)), "must get a positive amount of VOTEs"); //NOTE: redundant?
@@ -320,21 +322,17 @@ void trail::deloldvotes(account_name voter, uint16_t num_to_delete) {
 
 void trail::update_vote_levy(account_name from, account_name to, asset amount) { //NOTE: amount is already correct symbol/precision
     votelevies_table votelevies(N(eosio.trail), N(eosio.trail));
-    auto vl_from = votelevies.find(from);
+    auto vl_from_itr = votelevies.find(from);
     
-    if (vl_from == votelevies.end()) {
+    if (vl_from_itr == votelevies.end()) {
         votelevies.emplace(N(eosio.trail), [&]( auto& a ){
             a.voter = from;
-            a.levy_amount = amount;
+            a.levy_amount = asset(0, S(4, VOTE));
             a.last_decay = env_struct.time_now;
         });
     } else {
-        auto levy_from = *vl_from;
-        uint32_t time_delta = env_struct.time_now - levy_from.last_decay;
-        int64_t decay = int64_t(time_delta / 60);
-        asset decayed_levy = levy_from.levy_amount - asset(decay, S(4, VOTE)); //TODO: update with final equation
-
-        asset new_levy = decayed_levy - amount;
+        auto vl_from = *vl_from_itr;
+        asset new_levy = vl_from.levy_amount - amount;
 
         if (new_levy < asset(0, S(4, VOTE))) {
             new_levy = asset(0, S(4, VOTE));
@@ -346,31 +344,38 @@ void trail::update_vote_levy(account_name from, account_name to, asset amount) {
         });
     }
 
-    auto vl_to = votelevies.find(to);
+    auto vl_to_itr = votelevies.find(to);
 
-    if (vl_to == votelevies.end()) {
+    if (vl_to_itr == votelevies.end()) {
         votelevies.emplace(N(eosio.trail), [&]( auto& a ){
             a.voter = to;
-            a.levy_amount = amount;
+            a.levy_amount = asset(0, S(4, VOTE));
             a.last_decay = env_struct.time_now;
         });
     } else {
-        auto levy_to = *vl_to;
-        uint32_t time_delta = env_struct.time_now - levy_to.last_decay;
-        int64_t decay = int64_t(time_delta / 60);
-        asset decayed_levy = levy_to.levy_amount - asset(decay, S(4, VOTE)); //TODO: update with final equation
-
-        asset new_levy = decayed_levy + amount;
-
-        if (new_levy < asset(0, S(4, VOTE))) {
-            new_levy = asset(0, S(4, VOTE));
-        }
+        auto vl_to = *vl_to_itr;
+        asset new_levy = vl_to.levy_amount + amount;
 
         votelevies.modify(vl_to, 0, [&]( auto& a ) {
             a.levy_amount = new_levy;
             a.last_decay = env_struct.time_now;
         });
     }
+}
+
+asset trail::calc_decay(account_name voter, asset amount) {
+    votelevies_table votelevies(N(eosio.trail), N(eosio.trail));
+    auto vl_itr = votelevies.find(voter);
+
+    uint32_t time_delta;
+
+    if (vl_itr != votelevies.end()) {
+        auto vl = *vl_itr;
+        time_delta = env_struct.time_now - vl.last_decay;
+        return asset(int64_t(time_delta / 60), S(4, VOTE));
+    }
+
+    return asset(0, S(4, VOTE));
 }
 
 #pragma endregion Reactions
