@@ -45,23 +45,6 @@ void ratifyamend::makeproposal(string prop_title, uint64_t doc_id, uint8_t new_c
     eosio_assert(d != documents.end(), "Document Not Found");
     auto doc_struct = *d;
 
-    //eosio_assert(new_clause_ids.size() == new_ipfs_urls.size(), "Clause ID vector and IPFS url vector sizes must match");
-
-    // auto doc_size = doc_struct.clauses.size();
-    // int16_t last_clause_id = -1;
-    // auto last_ipfs_url = 0;
-
-    // for (int i = 0; i < new_clause_ids.size(); i++) {
-    //     eosio_assert(new_clause_ids.at(i) > last_clause_id, "Clause IDs Must Be In Ascending Order");
-    //     last_clause_id = new_clause_ids.at(i);
-    //     eosio_assert(new_clause_ids.at(i) <= (doc_size + 1), "Invalid Clause Number");
-        
-    //     last_ipfs_url++;
-    //     if (new_clause_ids.at(i) == (doc_size + 1)) { //if clause is new, increase doc_size
-    //         doc_size++;
-    //     }
-    // }
-
     //NOTE: 100.0000 TLOS fee, refunded if proposal passes or meets specified lower thresholds
     action(permission_level{ proposer, N(active) }, N(eosio.token), N(transfer), make_tuple(
     	proposer,
@@ -97,84 +80,6 @@ void ratifyamend::makeproposal(string prop_title, uint64_t doc_id, uint8_t new_c
     print("\nProposal: SUCCESS");
     print("\nAssigned Proposal ID: ", prop_id);
 }
-
-/*
-void ratifyamend::vote(uint64_t vote_code, uint64_t vote_scope, uint64_t proposal_id, uint16_t direction, uint32_t expiration, account_name voter) {
-    require_auth(voter);
-    eosio_assert(direction >= 0 && direction <= 2, "Invalid Vote. [0 = NO, 1 = YES, 2 = ABSTAIN]");
-    eosio_assert(is_voter(voter), "voter is not registered");
-
-    proposals_table proposals(_self, _self);
-    auto p = proposals.find(proposal_id);
-    eosio_assert(p != proposals.end(), "Proposal Not Found");
-    auto prop = *p;
-    eosio_assert(prop.expiration >= now(), "Proposal Has Expired");
-
-    eosio_assert(expiration == prop.expiration, "expiration does not match proposal");
-    eosio_assert(vote_code == _self, "vote_code must be eosio.amend");
-    eosio_assert(vote_scope == _self, "vote_scope must be eosio.amend");
-
-    require_recipient(N(eosio.trail));
-    print("\nVote sent to Trail");
-}
-*/
-
-/*
-void ratifyamend::processvotes(uint64_t vote_code, uint64_t vote_scope, uint64_t proposal_id, uint16_t loop_count) {
-    proposals_table proposals(_self, _self);
-    auto p = proposals.find(proposal_id);
-    eosio_assert(p != proposals.end(), "Proposal Not Found");
-    auto prop = *p;
-    eosio_assert(prop.expiration < now(), "Proposal is still open");
-    
-    receipts_table votereceipts(N(eosio.trail), N(eosio.trail));
-    auto by_code = votereceipts.get_index<N(bycode)>();
-    auto itr = by_code.lower_bound(vote_code);
-
-    eosio_assert(itr != by_code.end(), "no votes to process");
-    print("\neosio.amend processing votes...");
-
-    uint64_t loops = 0;
-    uint64_t unique_voters = 0;
-    int64_t new_no_votes = 0;
-    int64_t new_yes_votes = 0;
-    int64_t new_abs_votes = 0;
-
-    while(itr->vote_code == vote_code && loops < loop_count) { //loops variable to limit cpu/net expense per call
-        
-        if (itr->vote_scope == vote_scope &&
-            itr->prop_id == proposal_id &&
-            now() > itr->expiration) {
-
-            print("\nvr found...counting...");
-            
-            switch (itr->direction) {
-                case 0 : new_no_votes += itr->weight.amount; break;
-                case 1 : new_yes_votes += itr->weight.amount; break;
-                case 2 : new_abs_votes += itr->weight.amount; break;
-            }
-
-            unique_voters++;
-        }
-        loops++;
-        itr++;
-    }
-
-    proposals.modify(p, 0, [&]( auto& a ) {
-        a.no_count += asset(new_no_votes);
-        a.yes_count += asset(new_yes_votes);
-        a.abstain_count += asset(new_abs_votes);
-        a.total_voters += unique_voters;
-    });
-
-    print("\nloops processed: ", loops);
-    print("\nnew no votes: ", asset(new_no_votes));
-    print("\nnew yes votes: ", asset(new_yes_votes));
-    print("\nnew abstain votes: ", asset(new_abs_votes));
-
-    require_recipient(N(eosio.trail));
-}
-*/
 
 void ratifyamend::addclause(uint64_t prop_id, uint8_t new_clause_num, string new_ipfs_url, account_name proposer) {
     require_auth(proposer);
@@ -237,17 +142,17 @@ void ratifyamend::closeprop(uint64_t proposal_id, account_name proposer) {
     eosio_assert(bal.end_time < now(), "Proposal is still open");
     eosio_assert(prop.status == 0 && bal.status == 0, "Proposal is already closed");
 
-    environment_singleton environment(N(eosio.trail), N(eosio.trail));
-    auto e = environment.get();
+    //environment_singleton environment(N(eosio.trail), N(eosio.trail));
+    //auto e = environment.get();
 
     asset total_votes = (bal.yes_count + bal.no_count + bal.abstain_count); //total votes cast on proposal
 
     //pass thresholds
-    uint64_t quorum_thresh = (e.total_voters / 20); // 5% of all registered voters
+    uint64_t quorum_thresh = (100 / 20); // 5% of all registered voters
     asset pass_thresh = ((bal.yes_count + bal.no_count) / 3) * 2; // 66.67% yes votes over no votes
 
     //refund thresholds - both must be met for a refund - proposal pass triggers automatic refund
-    uint64_t q_refund_thresh = (e.total_voters / 25); //4% of all registered voters
+    uint64_t q_refund_thresh = (100 / 25); //4% of all registered voters
     asset p_refund_thresh = total_votes / 4; //25% yes votes of total_votes
 
     uint8_t result_status = 2;
