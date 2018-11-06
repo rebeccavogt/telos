@@ -323,4 +323,4 @@ void ratifyamend::update_doc(uint64_t document_id, vector<uint8_t> new_clause_nu
 
 #pragma endregion Helper_Functions
 
-EOSIO_ABI(ratifyamend, (insertdoc)(makeproposal)(closeprop))
+EOSIO_ABI(ratifyamend, (insertdoc)(makeproposal)(addclause)(linkballot)(closeprop))
