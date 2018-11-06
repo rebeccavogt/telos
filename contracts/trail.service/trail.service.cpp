@@ -329,7 +329,7 @@ void trail::deloldvotes(account_name voter, uint16_t num_to_delete) {
 
 #pragma region Reactions
 
-void trail::update_from_levy(account_name from, asset amount) { //NOTE: amount is already correct symbol/precision
+void trail::update_from_levy(account_name from, asset amount) {
     votelevies_table votelevies(N(eosio.trail), N(eosio.trail));
     auto vl_from_itr = votelevies.find(from);
     
@@ -347,7 +347,7 @@ void trail::update_from_levy(account_name from, asset amount) { //NOTE: amount i
             new_levy = asset(0, S(4, VOTE));
         }
 
-        votelevies.modify(vl_from, 0, [&]( auto& a ) {
+        votelevies.modify(vl_from_itr, 0, [&]( auto& a ) {
             a.levy_amount = new_levy;
             a.last_decay = env_struct.time_now;
         });
@@ -368,7 +368,7 @@ void trail::update_to_levy(account_name to, asset amount) {
         auto vl_to = *vl_to_itr;
         asset new_levy = vl_to.levy_amount + amount;
 
-        votelevies.modify(vl_to, 0, [&]( auto& a ) {
+        votelevies.modify(vl_to_itr, 0, [&]( auto& a ) {
             a.levy_amount = new_levy;
             a.last_decay = env_struct.time_now;
         });
