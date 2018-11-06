@@ -330,11 +330,11 @@ void trail::deloldvotes(account_name voter, uint16_t num_to_delete) {
 #pragma region Reactions
 
 void trail::update_from_levy(account_name from, asset amount) {
-    votelevies_table votelevies(N(eosio.trail), N(eosio.trail));
-    auto vl_from_itr = votelevies.find(from);
+    votelevies_table fromlevies(N(eosio.trail), N(eosio.trail));
+    auto vl_from_itr = fromlevies.find(from);
     
-    if (vl_from_itr == votelevies.end()) {
-        votelevies.emplace(N(eosio.trail), [&]( auto& a ){
+    if (vl_from_itr == fromlevies.end()) {
+        fromlevies.emplace(N(eosio.trail), [&]( auto& a ){
             a.voter = from;
             a.levy_amount = asset(0, S(4, VOTE));
             a.last_decay = env_struct.time_now;
@@ -347,7 +347,7 @@ void trail::update_from_levy(account_name from, asset amount) {
             new_levy = asset(0, S(4, VOTE));
         }
 
-        votelevies.modify(vl_from_itr, 0, [&]( auto& a ) {
+        fromlevies.modify(vl_from_itr, 0, [&]( auto& a ) {
             a.levy_amount = new_levy;
             a.last_decay = env_struct.time_now;
         });
@@ -355,11 +355,11 @@ void trail::update_from_levy(account_name from, asset amount) {
 }
 
 void trail::update_to_levy(account_name to, asset amount) {
-    votelevies_table votelevies(N(eosio.trail), N(eosio.trail));
-    auto vl_to_itr = votelevies.find(to);
+    votelevies_table tolevies(N(eosio.trail), N(eosio.trail));
+    auto vl_to_itr = tolevies.find(to);
 
-    if (vl_to_itr == votelevies.end()) {
-        votelevies.emplace(N(eosio.trail), [&]( auto& a ){
+    if (vl_to_itr == tolevies.end()) {
+        tolevies.emplace(N(eosio.trail), [&]( auto& a ){
             a.voter = to;
             a.levy_amount = asset(0, S(4, VOTE));
             a.last_decay = env_struct.time_now;
@@ -368,7 +368,7 @@ void trail::update_to_levy(account_name to, asset amount) {
         auto vl_to = *vl_to_itr;
         asset new_levy = vl_to.levy_amount + amount;
 
-        votelevies.modify(vl_to_itr, 0, [&]( auto& a ) {
+        tolevies.modify(vl_to_itr, 0, [&]( auto& a ) {
             a.levy_amount = new_levy;
             a.last_decay = env_struct.time_now;
         });
@@ -422,7 +422,7 @@ extern "C" {
         } else if (code == N(eosio.token) && action == N(transfer)) { //NOTE: updates vote_levy after transfers
             auto args = unpack_action_data<transfer_args>();
             trailservice.update_from_levy(args.from, asset(args.quantity.amount, S(4, VOTE)));
-            //trailservice.update_to_levy(args.to, asset(args.quantity.amount, S(4, VOTE)));
+            trailservice.update_to_levy(args.to, asset(args.quantity.amount, S(4, VOTE)));
         }
     } //end apply
 }; //end dispatcher
