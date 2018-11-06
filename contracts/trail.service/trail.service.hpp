@@ -81,7 +81,9 @@ class trail : public contract {
 
         //Reactions are regular functions called only as a trigger from the dispatcher.
 
-        void update_vote_levy(account_name from, account_name to, asset amount);
+        void update_from_levy(account_name from, asset amount);
+
+        void update_to_levy(account_name to, asset amount);
 
         asset calc_decay(account_name voter, asset amount);
 

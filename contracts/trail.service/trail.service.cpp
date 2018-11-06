@@ -329,7 +329,7 @@ void trail::deloldvotes(account_name voter, uint16_t num_to_delete) {
 
 #pragma region Reactions
 
-void trail::update_vote_levy(account_name from, account_name to, asset amount) { //NOTE: amount is already correct symbol/precision
+void trail::update_from_levy(account_name from, asset amount) { //NOTE: amount is already correct symbol/precision
     votelevies_table votelevies(N(eosio.trail), N(eosio.trail));
     auto vl_from_itr = votelevies.find(from);
     
@@ -352,7 +352,10 @@ void trail::update_vote_levy(account_name from, account_name to, asset amount) {
             a.last_decay = env_struct.time_now;
         });
     }
+}
 
+void trail::update_to_levy(account_name to, asset amount) {
+    votelevies_table votelevies(N(eosio.trail), N(eosio.trail));
     auto vl_to_itr = votelevies.find(to);
 
     if (vl_to_itr == votelevies.end()) {
@@ -418,7 +421,8 @@ extern "C" {
             execute_action(&trailservice, &trail::deloldvotes);
         } else if (code == N(eosio.token) && action == N(transfer)) { //NOTE: updates vote_levy after transfers
             auto args = unpack_action_data<transfer_args>();
-            trailservice.update_vote_levy(args.from, args.to, asset(args.quantity.amount, S(4, VOTE)));
+            trailservice.update_from_levy(args.from, asset(args.quantity.amount, S(4, VOTE)));
+            trailservice.update_to_levy(args.to, asset(args.quantity.amount, S(4, VOTE)));
         }
     } //end apply
 }; //end dispatcher
