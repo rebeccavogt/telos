@@ -61,7 +61,7 @@ class trail : public contract {
         void unregballot(account_name publisher, uint64_t ballot_id);
 
         /// @abi action
-        void getvotes(account_name voter, uint32_t lock_period);
+        void mirrorstake(account_name voter, uint32_t lock_period);
 
         /// @abi action
         void castvote(account_name voter, uint64_t ballot_id, uint16_t direction);
