@@ -90,7 +90,7 @@ void ratifyamend::addclause(uint64_t prop_id, uint8_t new_clause_num, string new
     auto prop = *p;
 
     eosio_assert(prop.proposer == proposer, "can't add clauses to proposal you don't own");
-    eosio_assert(prop.status == 0, "proposal is past stage allowing clause addtions");
+    eosio_assert(prop.status == 0, "proposal is past stage allowing clause additions");
 
     prop.new_clause_nums.push_back(new_clause_num);
     prop.new_ipfs_urls.push_back(new_ipfs_url);
