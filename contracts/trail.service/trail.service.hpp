@@ -89,8 +89,8 @@ class trail : public contract {
 
         #pragma endregion Reactions
 
-    protected:
-
+    //protected:
+        
         environment_singleton environment;
         env env_struct;
 };

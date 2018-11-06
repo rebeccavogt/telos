@@ -16,9 +16,9 @@ ratifyamend::ratifyamend(account_name self) : contract(self), configs(self, self
     }
 }
 
-// ratifyamend::~ratifyamend() {
+ratifyamend::~ratifyamend() {
     
-// }
+}
 
 void ratifyamend::insertdoc(string title, vector<string> clauses) {
     require_auth(_self); //only contract owner can insert new document
@@ -142,17 +142,17 @@ void ratifyamend::closeprop(uint64_t proposal_id, account_name proposer) {
     eosio_assert(bal.end_time < now(), "Proposal is still open");
     eosio_assert(prop.status == 0 && bal.status == 0, "Proposal is already closed");
 
-    //environment_singleton environment(N(eosio.trail), N(eosio.trail));
-    //auto e = environment.get();
+    environment_singleton environment(N(eosio.trail), N(eosio.trail));
+    auto e = environment.get();
 
     asset total_votes = (bal.yes_count + bal.no_count + bal.abstain_count); //total votes cast on proposal
 
     //pass thresholds
-    uint64_t quorum_thresh = (100 / 20); // 5% of all registered voters
+    uint64_t quorum_thresh = (e.total_voters / 20); // 5% of all registered voters
     asset pass_thresh = ((bal.yes_count + bal.no_count) / 3) * 2; // 66.67% yes votes over no votes
 
     //refund thresholds - both must be met for a refund - proposal pass triggers automatic refund
-    uint64_t q_refund_thresh = (100 / 25); //4% of all registered voters
+    uint64_t q_refund_thresh = (e.total_voters / 25); //4% of all registered voters
     asset p_refund_thresh = total_votes / 4; //25% yes votes of total_votes
 
     uint8_t result_status = 2;
