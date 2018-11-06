@@ -155,8 +155,6 @@ void trail::getvotes(account_name voter, uint32_t lock_period) {
     eosio_assert(lock_period >= MIN_LOCK_PERIOD, "lock period must be greater than 1 day (86400 secs)");
     eosio_assert(lock_period <= MAX_LOCK_PERIOD, "lock period must be less than 3 months (7,776,000 secs)");
 
-    //TODO: apply decay here instead of in dispatcher
-
     asset max_votes = get_liquid_tlos(voter) + get_staked_tlos(voter);
     eosio_assert(max_votes.symbol == S(4, TLOS), "only TLOS can be used to get VOTEs"); //NOTE: redundant?
     eosio_assert(max_votes > asset(0, S(4, TLOS)), "must get a positive amount of VOTEs"); //NOTE: redundant?
@@ -172,14 +170,25 @@ void trail::getvotes(account_name voter, uint32_t lock_period) {
     auto vl = votelevies.find(voter);
 
     auto new_votes = asset(max_votes.amount, S(4, VOTE)); //mirroring TLOS amount, not spending/locking it up
+    asset decay_amount = calc_decay(voter, new_votes);
     
     if (vl != votelevies.end()) { //NOTE: if no levy found, give levy of 0
         auto levy = *vl;
-        new_votes -= levy.levy_amount; //subtracting levy
+        asset new_levy = (levy.levy_amount - decay_amount); //subtracting levy
 
-        if (new_votes < asset(0, S(4, VOTE))) { //NOTE: can't have less than 0 votes
-            new_votes = asset(0, S(4, VOTE));
+        if (new_levy < asset(0, S(4, VOTE))) {
+            new_levy = asset(0, S(4, VOTE));
         }
+
+        new_votes -= new_levy;
+
+        votelevies.modify(vl, 0, [&]( auto& a ) {
+            a.vote_levy = new_levy;
+        });
+    }
+
+    if (new_votes < asset(0, S(4, VOTE))) { //NOTE: can't have less than 0 votes
+        new_votes = asset(0, S(4, VOTE));
     }
 
     voters.modify(v, 0, [&]( auto& a ) {
