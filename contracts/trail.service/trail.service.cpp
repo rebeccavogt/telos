@@ -155,8 +155,6 @@ void trail::getvotes(account_name voter, uint32_t lock_period) {
     eosio_assert(lock_period >= MIN_LOCK_PERIOD, "lock period must be greater than 1 day (86400 secs)");
     eosio_assert(lock_period <= MAX_LOCK_PERIOD, "lock period must be less than 3 months (7,776,000 secs)");
 
-    //TODO: implement vote_levy
-
     asset max_votes = get_liquid_tlos(voter) + get_staked_tlos(voter);
     eosio_assert(max_votes.symbol == S(4, TLOS), "only TLOS can be used to get VOTEs"); //NOTE: redundant?
     eosio_assert(max_votes > asset(0, S(4, TLOS)), "must get a positive amount of VOTEs"); //NOTE: redundant?
@@ -168,8 +166,22 @@ void trail::getvotes(account_name voter, uint32_t lock_period) {
     auto vid = *v;
     eosio_assert(now() >= vid.release_time, "cannot get more votes until lock period is over");
 
+    votelevies_table votelevies(N(eosio.trail), N(eosio.trail));
+    auto vl = votelevies.find(voter);
+
+    auto new_votes = asset(max_votes.amount, S(4, VOTE)); //mirroring TLOS amount, not spending/locking it up
+    
+    if (vl != votelevies.end()) { //NOTE: if no levy found, give levy of 0
+        auto levy = *vl;
+        new_votes -= levy.levy_amount; //subtracting levy
+
+        if (new_votes < asset(0, S(4, VOTE))) { //NOTE: can't have less than 0 votes
+            new_votes = asset(0, S(4, VOTE));
+        }
+    }
+
     voters.modify(v, 0, [&]( auto& a ) {
-        a.votes = asset(max_votes.amount, S(4, VOTE)); //mirroring TLOS amount, not spending/locking it up
+        a.votes = new_votes;
         a.release_time = now() + lock_period;
     });
 
