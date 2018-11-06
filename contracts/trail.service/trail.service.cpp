@@ -183,7 +183,7 @@ void trail::getvotes(account_name voter, uint32_t lock_period) {
         new_votes -= new_levy;
 
         votelevies.modify(vl, 0, [&]( auto& a ) {
-            a.vote_levy = new_levy;
+            a.levy_amount = new_levy;
         });
     }
 
