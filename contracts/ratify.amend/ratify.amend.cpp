@@ -43,7 +43,9 @@ void ratifyamend::makeproposal(string prop_title, uint64_t doc_id, uint8_t new_c
     documents_table documents(_self, _self);
     auto d = documents.find(doc_id);
     eosio_assert(d != documents.end(), "Document Not Found");
-    auto doc_struct = *d;
+    auto doc = *d;
+
+    eosio_assert(new_clause_num <= doc.clauses.size() + 1 && new_clause_num >= 0, "new clause num is not valid");
 
     //NOTE: 100.0000 TLOS fee, refunded if proposal passes or meets specified lower thresholds
     action(permission_level{ proposer, N(active) }, N(eosio.token), N(transfer), make_tuple(
@@ -91,6 +93,22 @@ void ratifyamend::addclause(uint64_t prop_id, uint8_t new_clause_num, string new
 
     eosio_assert(prop.proposer == proposer, "can't add clauses to proposal you don't own");
     eosio_assert(prop.status == 0, "proposal is past stage allowing clause additions");
+
+    documents_table documents(_self, _self);
+    auto d = documents.find(prop.document_id);
+    eosio_assert(d != documents.end(), "Document Not Found");
+    auto doc = *d;
+
+    eosio_assert(new_clause_num <= doc.clauses.size() + 1 && new_clause_num >= 0, "new clause num is not valid");
+    bool existing_clause = false;
+
+    for (int i = 0; i < prop.new_clause_nums.size(); i++) {
+        if (prop.new_clause_nums[i] == new_clause_num) {
+            existing_clause = true;
+        }
+    }
+
+    eosio_assert(existing_clause = false, "clause number to add already exists in proposal");
 
     prop.new_clause_nums.push_back(new_clause_num);
     prop.new_ipfs_urls.push_back(new_ipfs_url);
