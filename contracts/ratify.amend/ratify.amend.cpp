@@ -196,6 +196,7 @@ void ratifyamend::closeprop(uint64_t proposal_id, account_name proposer) {
         print("\nProposal refund witheld");
     }
 
+    //NOTE: for now, called separately by proposer
     //Inline action to Trail to close vote
     // action(permission_level{ proposer, N(active) }, N(eosio.trail), N(closevote), make_tuple(
     //     prop.proposer,
