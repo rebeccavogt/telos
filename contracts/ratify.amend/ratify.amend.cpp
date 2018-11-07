@@ -92,7 +92,7 @@ void ratifyamend::addclause(uint64_t prop_id, uint8_t new_clause_num, string new
     auto prop = *p;
 
     eosio_assert(prop.proposer == proposer, "can't add clauses to proposal you don't own");
-    eosio_assert(prop.status == 0, "proposal is past stage allowing clause additions");
+    eosio_assert(prop.status == 0, "proposal is no longer in building stage");
 
     documents_table documents(_self, _self);
     auto d = documents.find(prop.document_id);
@@ -144,6 +144,23 @@ void ratifyamend::linkballot(uint64_t prop_id, uint64_t ballot_id, account_name 
     });
 
     print("\nBallot Link: SUCCESS");
+}
+
+void ratifyamend::readyprop(uint64_t prop_id, account_name proposer) {
+    require_auth(proposer);
+
+    proposals_table proposals(_self, _self);
+    auto p = proposals.find(prop_id);
+    eosio_assert(p != proposals.end(), "Proposal Not Found");
+    auto prop = *p;
+
+    eosio_assert(prop.status == 0, "proposal is no longer in building stage");
+
+    proposals.modify(p, 0, [&]( auto& a ) {
+        a.status = uint8(1);
+    });
+
+    print("\nReady Proposal: SUCCESS");
 }
 
 void ratifyamend::closeprop(uint64_t proposal_id, account_name proposer) {
