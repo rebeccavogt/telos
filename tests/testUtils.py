@@ -22,8 +22,8 @@ class Utils:
     EosClientPath="programs/teclos/teclos"
     MiscEosClientArgs="--no-auto-keosd"
 
-    EosWalletName="tkeosd"
-    EosWalletPath="programs/tkeosd/"+ EosWalletName
+    EosWalletName="keosd"
+    EosWalletPath="programs/keosd/"+ EosWalletName
 
     EosServerName="nodeos"
     EosServerPath="programs/nodeos/"+ EosServerName
@@ -1336,11 +1336,11 @@ class Node(object):
 Wallet=namedtuple("Wallet", "name password host port")
 # pylint: disable=too-many-instance-attributes
 class WalletMgr(object):
-    __walletLogFile="test_tkeosd_output.log"
+    __walletLogFile="test_keosd_output.log"
     __walletDataDir="test_wallet_0"
 
     # pylint: disable=too-many-arguments
-    # walletd [True|False] True=Launch wallet(tkeosd) process; False=Manage launch process externally.
+    # walletd [True|False] True=Launch wallet(keosd) process; False=Manage launch process externally.
     def __init__(self, walletd, nodeosPort=8888, nodeosHost="localhost", port=8899, host="localhost"):
         self.walletd=walletd
         self.nodeosPort=nodeosPort
@@ -1357,7 +1357,7 @@ class WalletMgr(object):
 
     def launch(self):
         if not self.walletd:
-            Utils.Print("ERROR: Wallet Manager wasn't configured to launch tkeosd")
+            Utils.Print("ERROR: Wallet Manager wasn't configured to launch keosd")
             return False
 
         cmd="%s --data-dir %s --config-dir %s --http-server-address=%s:%d --verbose-http-errors" % (
@@ -1367,7 +1367,7 @@ class WalletMgr(object):
             popen=subprocess.Popen(cmd.split(), stdout=sout, stderr=serr)
             self.__walletPid=popen.pid
 
-        # Give tkeosd time to warm up
+        # Give keosd time to warm up
         time.sleep(1)
         return True
 
@@ -1532,10 +1532,10 @@ class Cluster(object):
     __BiosPort=8788
 
     # pylint: disable=too-many-arguments
-    # walletd [True|False] Is tkeosd running. If not load the wallet plugin
+    # walletd [True|False] Is keosd running. If not load the wallet plugin
     def __init__(self, walletd=False, localCluster=True, host="localhost", port=8888, walletHost="localhost", walletPort=8899, enableMongo=False, mongoHost="localhost", mongoPort=27017, mongoDb="EOStest", defproduceraPrvtKey=None, defproducerbPrvtKey=None, staging=False):
         """Cluster container.
-        walletd [True|False] Is wallet tkeosd running. If not load the wallet plugin
+        walletd [True|False] Is wallet keosd running. If not load the wallet plugin
         localCluster [True|False] Is cluster local to host.
         host: eos server host
         port: eos server port
@@ -2537,7 +2537,7 @@ class TestState(object):
     __killEosInstances=False
     __killWallet=False
     __testSuccessful=False
-    WalletdName="tkeosd"
+    WalletdName="keosd"
     ClientName="cleos"
     cluster=None
     __args=None

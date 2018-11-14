@@ -25,7 +25,7 @@ Options:
   -u,--url TEXT=http://localhost:8888/
                               the http/https URL where nodeos is running
   --wallet-url TEXT=http://localhost:8999/
-                              the http/https URL where tkeosd is running
+                              the http/https URL where keosd is running
   -r,--header                 pass specific HTTP header, repeat this option to pass multiple headers
   -n,--no-verify              don't verify peer certificate when using HTTPS
   -v,--verbose                output verbose actions on error
@@ -245,8 +245,8 @@ fc::variant call( const std::string& url,
    catch(boost::system::system_error& e) {
       if(url == ::url)
          std::cerr << localized("Failed to connect to nodeos at ${u}; is nodeos running?", ("u", url)) << std::endl;
-      else if(url == ::wallet_url) // TELOS CHANGES: rename keosd to tkeosd
-         std::cerr << localized("Failed to connect to tkeosd at ${u}; is tkeosd running?", ("u", url)) << std::endl;
+      else if(url == ::wallet_url) // TELOS CHANGES: rename keosd to keosd
+         std::cerr << localized("Failed to connect to keosd at ${u}; is keosd running?", ("u", url)) << std::endl;
       throw connection_exception(fc::log_messages{FC_LOG_MESSAGE(error, e.what())});
    }
 }
@@ -786,8 +786,8 @@ void try_local_port(uint32_t duration) {
    auto start_time = duration_cast<std::chrono::milliseconds>( system_clock::now().time_since_epoch() ).count();
    while ( !local_port_used()) {
       if (duration_cast<std::chrono::milliseconds>( system_clock::now().time_since_epoch()).count() - start_time > duration ) {
-         std::cerr << "Unable to connect to tkeosd, if tkeosd is running please kill the process and try again.\n"; // TELOS CHANGES: rename keosd to tkeosd
-         throw connection_exception(fc::log_messages{FC_LOG_MESSAGE(error, "Unable to connect to tkeosd")});
+         std::cerr << "Unable to connect to keosd, if keosd is running please kill the process and try again.\n"; // TELOS CHANGES: rename keosd to keosd
+         throw connection_exception(fc::log_messages{FC_LOG_MESSAGE(error, "Unable to connect to keosd")});
       }
    }
 }
@@ -815,9 +815,9 @@ void ensure_keosd_running(CLI::App* app) {
     // This extra check is necessary when running cleos like this: ./cleos ...
     if (binPath.filename_is_dot())
         binPath.remove_filename();
-    binPath.append(key_store_executable_name); // if teclos and tkeosd are in the same installation directory
+    binPath.append(key_store_executable_name); // if teclos and keosd are in the same installation directory
     if (!boost::filesystem::exists(binPath)) {
-        binPath.remove_filename().remove_filename().append("tkeosd").append(key_store_executable_name);
+        binPath.remove_filename().remove_filename().append("keosd").append(key_store_executable_name);
     }
 
     if (boost::filesystem::exists(binPath)) {
@@ -1754,11 +1754,11 @@ int main( int argc, char** argv ) {
    app.require_subcommand();
    app.add_option( "-H,--host", obsoleted_option_host_port, localized("the host where nodeos is running") )->group("hidden");
    app.add_option( "-p,--port", obsoleted_option_host_port, localized("the port where nodeos is running") )->group("hidden");
-   app.add_option( "--wallet-host", obsoleted_option_host_port, localized("the host where tkeosd is running") )->group("hidden");// TELOS CHANGES: rename keosd to tkeosd
-   app.add_option( "--wallet-port", obsoleted_option_host_port, localized("the port where tkeosd is running") )->group("hidden");// TELOS CHANGES: rename keosd to tkeosd
+   app.add_option( "--wallet-host", obsoleted_option_host_port, localized("the host where keosd is running") )->group("hidden");// TELOS CHANGES: rename keosd to keosd
+   app.add_option( "--wallet-port", obsoleted_option_host_port, localized("the port where keosd is running") )->group("hidden");// TELOS CHANGES: rename keosd to keosd
 
    app.add_option( "-u,--url", url, localized("the http/https URL where nodeos is running"), true );
-   app.add_option( "--wallet-url", wallet_url, localized("the http/https URL where tkeosd is running"), true );// TELOS CHANGES: rename keosd to tkeosd
+   app.add_option( "--wallet-url", wallet_url, localized("the http/https URL where keosd is running"), true );// TELOS CHANGES: rename keosd to keosd
 
    app.add_option( "-r,--header", header_opt_callback, localized("pass specific HTTP header; repeat this option to pass multiple headers"));
    app.add_flag( "-n,--no-verify", no_verify, localized("don't verify peer certificate when using HTTPS"));
@@ -2685,10 +2685,10 @@ int main( int argc, char** argv ) {
       std::cout << fc::json::to_pretty_string(v) << std::endl;
    });
 
-   auto stopKeosd = wallet->add_subcommand("stop", localized("Stop tkeosd (doesn't work with nodeos)."), false);// TELOS CHANGES: rename keosd to tkeosd
+   auto stopKeosd = wallet->add_subcommand("stop", localized("Stop keosd (doesn't work with nodeos)."), false);// TELOS CHANGES: rename keosd to keosd
    stopKeosd->set_callback([] {
       const auto& v = call(wallet_url, keosd_stop);
-      if ( !v.is_object() || v.get_object().size() != 0 ) { //on success tkeosd responds with empty object
+      if ( !v.is_object() || v.get_object().size() != 0 ) { //on success keosd responds with empty object
          std::cerr << fc::json::to_pretty_string(v) << std::endl;
       } else {
          std::cout << "OK" << std::endl;

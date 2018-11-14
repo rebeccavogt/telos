@@ -42,7 +42,7 @@ set(VERSION_PATCH 3)
 # 1. Changed CLI to teclos
 set( CLI_CLIENT_EXECUTABLE_NAME teclos )
 set( NODE_EXECUTABLE_NAME nodeos )
-set( KEY_STORE_EXECUTABLE_NAME tkeosd )
+set( KEY_STORE_EXECUTABLE_NAME keosd )
 set( GUI_CLIENT_EXECUTABLE_NAME eosio )
 set( CUSTOM_URL_SCHEME "gcs" )
 set( INSTALLER_APP_ID "68ad7005-8eee-49c9-95ce-9eed97e5b347" )
