@@ -108,12 +108,8 @@ namespace eosio { namespace testing {
          push_genesis_block();
    }
 
-<<<<<<< HEAD
-   void base_tester::init(controller::config config) {
-=======
 
    void base_tester::init(controller::config config, const snapshot_reader_ptr& snapshot) {
->>>>>>> v1.4.0
       cfg = config;
       open(snapshot);
    }
