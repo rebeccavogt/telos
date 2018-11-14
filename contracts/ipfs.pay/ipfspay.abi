@@ -1,0 +1,72 @@
+{
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Wed Nov 14 10:27:33 2018",
+    "version": "eosio::abi/1.0",
+    "structs": [
+        {
+            "name": "buystorage",
+            "base": "",
+            "fields": [
+                {
+                    "name": "buyer",
+                    "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "document",
+            "base": "",
+            "fields": [
+                {
+                    "name": "storage_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "ipfs_url",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "savedoc",
+            "base": "",
+            "fields": [
+                {
+                    "name": "owner",
+                    "type": "name"
+                },
+                {
+                    "name": "storage_id",
+                    "type": "uint64"
+                },
+                {
+                    "name": "ipfs_url",
+                    "type": "string"
+                }
+            ]
+        }
+    ],
+    "types": [],
+    "actions": [
+        {
+            "name": "buystorage",
+            "type": "buystorage",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "savedoc",
+            "type": "savedoc",
+            "ricardian_contract": ""
+        }
+    ],
+    "tables": [
+        {
+            "name": "storage",
+            "type": "document",
+            "index_type": "i64",
+            "key_names": [],
+            "key_types": []
+        }
+    ],
+    "ricardian_clauses": [],
+    "abi_extensions": []
+}

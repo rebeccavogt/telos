@@ -14,15 +14,19 @@
 using namespace eosio;
 using namespace std;
 
-class [[eosio::contract("ipfspay")]] ipfspay : public eosio::contract {
+class [[eosio::contract]] ipfspay : public contract {
     
-    public:
+public:
+
+    using contract::contract;
 
     const asset STORAGE_FEE = asset(10, symbol("TLOS", 4));
 
     ipfspay(name self, name code, datastream<const char*> ds) : contract(self, code, ds) {}
 
-    struct [[eosio::table, eosio::contract("ipfspay")]] document {
+
+
+    struct [[eosio::table]] document {
         uint64_t storage_id;
         string ipfs_url;
 
@@ -31,6 +35,8 @@ class [[eosio::contract("ipfspay")]] ipfspay : public eosio::contract {
     };
 
     typedef multi_index<name("storage"), document> storage_table;
+
+
 
     [[eosio::action]]
     void buystorage(name buyer) {
