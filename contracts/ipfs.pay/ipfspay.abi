@@ -1,5 +1,5 @@
 {
-    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Wed Nov 14 10:27:33 2018",
+    "____comment": "This file was generated with eosio-abigen. DO NOT EDIT Tue Nov 20 10:27:18 2018",
     "version": "eosio::abi/1.0",
     "structs": [
         {
@@ -9,6 +9,34 @@
                 {
                     "name": "buyer",
                     "type": "name"
+                }
+            ]
+        },
+        {
+            "name": "deldoc",
+            "base": "",
+            "fields": [
+                {
+                    "name": "owner",
+                    "type": "name"
+                },
+                {
+                    "name": "storage_id",
+                    "type": "uint64"
+                }
+            ]
+        },
+        {
+            "name": "delstorage",
+            "base": "",
+            "fields": [
+                {
+                    "name": "owner",
+                    "type": "name"
+                },
+                {
+                    "name": "storage_id",
+                    "type": "uint64"
                 }
             ]
         },
@@ -50,6 +78,16 @@
         {
             "name": "buystorage",
             "type": "buystorage",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "deldoc",
+            "type": "deldoc",
+            "ricardian_contract": ""
+        },
+        {
+            "name": "delstorage",
+            "type": "delstorage",
             "ricardian_contract": ""
         },
         {

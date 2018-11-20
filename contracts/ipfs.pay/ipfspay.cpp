@@ -61,6 +61,19 @@ public:
     }
 
     [[eosio::action]]
+    void delstorage(name owner, uint64_t storage_id) {
+        require_auth(owner);
+
+        storage_table storage(_self, owner.value);
+        auto s_itr = storage.find(storage_id);
+        eosio_assert(s_itr != storage.end(), "invalid storage id");
+
+        storage.erase(s_itr);
+
+        print("\nStorage Erased");
+    }
+
+    [[eosio::action]]
     void savedoc(name owner, uint64_t storage_id, string ipfs_url){
         require_auth(owner);
 
@@ -75,6 +88,23 @@ public:
         print("\nDocument Saved: ", ipfs_url);
     }
 
+    [[eosio::action]]
+    void deldoc(name owner, uint64_t storage_id) {
+        require_auth(owner);
+
+        string blank_url = "";
+
+        storage_table storage(_self, owner.value);
+        auto s_itr = storage.find(storage_id);
+        eosio_assert(s_itr != storage.end(), "invalid storage id");
+
+        storage.modify(s_itr, same_payer, [&]( auto& a ) {
+            a.ipfs_url = blank_url;
+        });
+
+        print("\nDocument Deleted");
+    }
+
 };
 
-EOSIO_DISPATCH(ipfspay, (buystorage)(savedoc))
+EOSIO_DISPATCH(ipfspay, (buystorage)(delstorage)(savedoc)(deldoc))
