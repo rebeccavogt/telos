@@ -72,8 +72,10 @@ void system_contract::update_missed_blocks_per_rotation() {
     auto pitr = _producers.find(pm.name);
     if (pitr != _producers.end() && pitr->is_active) {
       if (pm.missed_blocks_per_cycle > 0) {
+         print("\nblock producer: ", name{pm.name}, " missed ", pm.missed_blocks_per_cycle, " blocks."); 
         _producers.modify(pitr, 0, [&](auto &p) {
           p.missed_blocks_per_rotation += pm.missed_blocks_per_cycle;
+          print("\ntotal missed blocks: ", p.missed_blocks_per_rotation);
         });
       }
 
@@ -257,7 +259,7 @@ void system_contract::onblock(block_timestamp timestamp, account_name producer) 
 
     //called once per day to set payments snapshot
     if (_gstate.last_claimrewards + uint32_t(3600) <= timestamp.slot) { //172800 blocks in a day
-		auto start_time = current_time();
+		// auto start_time = current_time();
         claimrewards_snapshot();
         _gstate.last_claimrewards = timestamp.slot;
     }

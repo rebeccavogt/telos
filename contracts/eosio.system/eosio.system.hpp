@@ -11,8 +11,6 @@
 #include <eosiolib/singleton.hpp>
 #include <eosio.system/exchange_state.hpp>
 
-#include "../trail.service/trail.definitions/traildef.voting.hpp"
-
 #include <cmath>  
 #include <string>
 
@@ -125,7 +123,9 @@ namespace eosiosystem {
             kick_penalty_hours = penalty;
           break;
         }
-        
+        lifetime_missed_blocks += missed_blocks_per_rotation;
+        missed_blocks_per_rotation = 0;
+        print("\nblock producer: ", name{owner}, " was kicked.");
         deactivate();
       } 
 
