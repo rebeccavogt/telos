@@ -53,6 +53,7 @@ walletMgr=WalletMgr(True)
 
 try:
     TestHelper.printSystemInfo("BEGIN")
+    cluster.setWalletMgr(walletMgr)
 
     cluster.setChainStrategy(chainSyncStrategyStr)
     cluster.setWalletMgr(walletMgr)
@@ -76,12 +77,7 @@ try:
     if not cluster.waitOnClusterBlockNumSync(3):
         errorExit("Cluster never stabilized")
 
-    Print("Stand up EOS wallet tkeosd")
-    walletMgr.killall(allInstances=killAll)
-    walletMgr.cleanup()
-    if walletMgr.launch() is False:
-        errorExit("Failed to stand up tkeosd.")
-
+    Print("Stand up EOS wallet keosd")
     accountsCount=total_nodes
     walletName="MyWallet"
     Print("Creating wallet %s if one doesn't already exist." % walletName)

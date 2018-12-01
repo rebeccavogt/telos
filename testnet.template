@@ -37,9 +37,9 @@ echo Initializing ignition sequence  at $(date) | tee $logfile
 
 echo "http-server-address = $wdaddr" > $wddir/config.ini
 
-programs/tkeosd/tkeosd --config-dir $wddir --data-dir $wddir 2> $wddir/wdlog.txt &
+programs/keosd/keosd --config-dir $wddir --data-dir $wddir 2> $wddir/wdlog.txt &
 echo $$ > ignition_wallet.pid
-echo tkeosd log in $wddir/wdlog.txt >> $logfile
+echo keosd log in $wddir/wdlog.txt >> $logfile
 sleep 1
 
 ecmd () {
@@ -119,4 +119,4 @@ ecmd set contract eosio contracts/eosio.system eosio.system.wasm eosio.system.ab
 # ------ DO NOT ALTER THE NEXT LINE -------
 ###INSERT cacmd
 
-pkill -15 tkeosd
+pkill -15 keosd

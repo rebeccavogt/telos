@@ -1,4 +1,9 @@
+<<<<<<< HEAD
 # TELOS - A Smart Contract Platform for Everyone
+=======
+
+# EOSIO - The Most Powerful Infrastructure for Decentralized Applications
+>>>>>>> v1.4.3
 
 Welcome to the official Telos repository! This software enables anyone to rapidly build and deploy high-performance and high-security blockchain-based applications.
 
@@ -81,6 +86,50 @@ For a full explanation of all the proposed Telos features, be sure to read our w
     d. Run the generated `regproducer` command on your local node.
 
     e. Your account is now created and registered as a producer on the testnet.
+
+**If you have previously installed EOSIO, please run the `eosio_uninstall` script (it is in the directory where you cloned EOSIO) before downloading and using the binary releases.**
+
+#### Mac OS X Brew Install
+```sh
+$ brew tap eosio/eosio
+$ brew install eosio
+```
+#### Mac OS X Brew Uninstall
+```sh
+$ brew remove eosio
+```
+#### Ubuntu 18.04 Debian Package Install
+```sh
+$ wget https://github.com/eosio/eos/releases/download/v1.4.4/eosio_1.4.4-1-ubuntu-18.04_amd64.deb
+$ sudo apt install ./eosio_1.4.4-1-ubuntu-18.04_amd64.deb
+```
+#### Ubuntu 16.04 Debian Package Install
+```sh
+$ wget https://github.com/eosio/eos/releases/download/v1.4.4/eosio_1.4.4-1-ubuntu-16.04_amd64.deb
+$ sudo apt install ./eosio_1.4.4-1-ubuntu-16.04_amd64.deb
+```
+#### Debian Package Uninstall
+```sh
+$ sudo apt remove eosio
+```
+#### Centos RPM Package Install
+```sh
+$ wget https://github.com/eosio/eos/releases/download/v1.4.4/eosio-1.4.4-1.el7.x86_64.rpm
+$ sudo yum install ./eosio-1.4.4-1.el7.x86_64.rpm
+```
+#### Centos RPM Package Uninstall
+```sh
+$ sudo yum remove eosio.cdt
+```
+#### Fedora RPM Package Install
+```sh
+$ wget https://github.com/eosio/eos/releases/download/v1.4.4/eosio-1.4.4-1.fc27.x86_64.rpm
+$ sudo yum install ./eosio-1.4.4-1.fc27.x86_64.rpm
+```
+#### Fedora RPM Package Uninstall
+```sh
+$ sudo yum remove eosio.cdt
+```
 
 ## Supported Operating Systems
 Telos currently supports the following operating systems:  
