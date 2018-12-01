@@ -125,7 +125,6 @@ namespace eosiosystem {
         }
         lifetime_missed_blocks += missed_blocks_per_rotation;
         missed_blocks_per_rotation = 0;
-        print("\nblock producer: ", name{owner}, " was kicked.");
         deactivate();
       } 
 

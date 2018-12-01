@@ -16,17 +16,17 @@ services:
       - IPC_LOCK
     stop_grace_period: 10m
 
-  tkeosd:
+  keosd:
     image: eosio/eos:v1.0.8
-    command: /opt/eosio/bin/tkeosd --wallet-dir /opt/eosio/bin/data-dir --http-server-address=127.0.0.1:8999
-    hostname: tkeosd
+    command: /opt/eosio/bin/keosd --wallet-dir /opt/eosio/bin/data-dir --http-server-address=127.0.0.1:8999
+    hostname: keosd
     links:
       - nodeosd
     volumes:
-      - tkeosd-data-volume:/opt/eosio/bin/data-dir
+      - keosd-data-volume:/opt/eosio/bin/data-dir
 
 volumes:
  nodeos-data-volume:
    external: true
- tkeosd-data-volume:
+ keosd-data-volume:
    external: true

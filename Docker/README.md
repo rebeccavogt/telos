@@ -20,10 +20,10 @@ cd eos/Docker
 docker build . -t eosio/eos
 ```
 
-The above will build off the most recent commit to the master branch by default. If you would like to target a specific branch/tag, you may use a build argument. For example, if you wished to generate a docker image based off of the v1.3.1 tag, you could do the following:
+The above will build off the most recent commit to the master branch by default. If you would like to target a specific branch/tag, you may use a build argument. For example, if you wished to generate a docker image based off of the v1.4.4 tag, you could do the following:
 
 ```bash
-docker build -t eosio/eos:v1.3.1 --build-arg branch=v1.3.1 .
+docker build -t eosio/eos:v1.4.4 --build-arg branch=v1.4.4 .
 ```
 
 By default, the symbol in eosio.system is set to SYS. You can override this using the symbol argument while building the docker image.
@@ -58,22 +58,22 @@ docker run --name nodeos -v /path-to-data-dir:/opt/eosio/bin/data-dir -p 8888:88
 curl http://127.0.0.1:8888/v1/chain/get_info
 ```
 
-## Start both nodeos and tkeosd containers
+## Start both nodeos and keosd containers
 
 ```bash
 docker volume create --name=nodeos-data-volume
-docker volume create --name=tkeosd-data-volume
+docker volume create --name=keosd-data-volume
 docker-compose up -d
 ```
 
-After `docker-compose up -d`, two services named `nodeosd` and `tkeosd` will be started. nodeos service would expose ports 8888 and 9876 to the host. tkeosd service does not expose any port to the host, it is only accessible to cleos when running cleos is running inside the tkeosd container as described in "Execute cleos commands" section.
+After `docker-compose up -d`, two services named `nodeosd` and `keosd` will be started. nodeos service would expose ports 8888 and 9876 to the host. keosd service does not expose any port to the host, it is only accessible to cleos when running cleos is running inside the keosd container as described in "Execute cleos commands" section.
 
 ### Execute cleos commands
 
 You can run the `cleos` commands via a bash alias.
 
 ```bash
-alias cleos='docker-compose exec tkeosd /opt/eosio/bin/cleos -u http://nodeosd:8888 --wallet-url http://localhost:8999'
+alias cleos='docker-compose exec keosd /opt/eosio/bin/cleos -u http://nodeosd:8888 --wallet-url http://localhost:8999'
 cleos get info
 cleos get account inita
 ```
@@ -84,10 +84,10 @@ Upload sample exchange contract
 cleos set contract exchange contracts/exchange/
 ```
 
-If you don't need tkeosd afterwards, you can stop the tkeosd service using
+If you don't need keosd afterwards, you can stop the keosd service using
 
 ```bash
-docker-compose stop tkeosd
+docker-compose stop keosd
 ```
 
 ### Develop/Build custom contracts
@@ -128,7 +128,7 @@ The data volume created by docker-compose can be deleted as follows:
 
 ```bash
 docker volume rm nodeos-data-volume
-docker volume rm tkeosd-data-volume
+docker volume rm keosd-data-volume
 ```
 
 ### Docker Hub
@@ -152,18 +152,18 @@ services:
     volumes:
       - nodeos-data-volume:/opt/eosio/bin/data-dir
 
-  tkeosd:
+  keosd:
     image: eosio/eos:latest
-    command: /opt/eosio/bin/tkeosd --wallet-dir /opt/eosio/bin/data-dir --http-server-address=127.0.0.1:8999
-    hostname: tkeosd
+    command: /opt/eosio/bin/keosd --wallet-dir /opt/eosio/bin/data-dir --http-server-address=127.0.0.1:8999
+    hostname: keosd
     links:
       - nodeosd
     volumes:
-      - tkeosd-data-volume:/opt/eosio/bin/data-dir
+      - keosd-data-volume:/opt/eosio/bin/data-dir
 
 volumes:
   nodeos-data-volume:
-  tkeosd-data-volume:
+  keosd-data-volume:
 
 ```
 
@@ -182,7 +182,7 @@ Note: if you want to use the mongo db plugin, you have to enable it in your `dat
 ```
 # create volume
 docker volume create --name=nodeos-data-volume
-docker volume create --name=tkeosd-data-volume
+docker volume create --name=keosd-data-volume
 # pull images and start containers
 docker-compose -f docker-compose-eosio-latest.yaml up -d
 # get chain info
