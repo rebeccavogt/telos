@@ -86,11 +86,7 @@ try:
     cluster.killall(allInstances=killAll)
 
     Print("Restart nodeos repeatedly to ensure dirty database flag sticks.")
-<<<<<<< HEAD
-    timeout=3
-=======
     timeout=6
->>>>>>> v1.5.0
 
     for i in range(1,4):
         Print("Attempt %d." % (i))
