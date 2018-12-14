@@ -2597,7 +2597,6 @@ int main( int argc, char** argv ) {
    string recipient;
    string amount;
    string memo;
-   auto transfer = app.add_subcommand("transfer", localized("Transfer TLOS from account to account"), false);
    bool pay_ram = false;
    auto transfer = app.add_subcommand("transfer", localized("Transfer tokens from account to account"), false);
    transfer->add_option("sender", sender, localized("The account sending tokens"))->required();
