@@ -1,9 +1,5 @@
-<<<<<<< HEAD
 # TELOS - A Smart Contract Platform for Everyone
 =======
-
-# EOSIO - The Most Powerful Infrastructure for Decentralized Applications
->>>>>>> v1.4.3
 
 Welcome to the official Telos repository! This software enables anyone to rapidly build and deploy high-performance and high-security blockchain-based applications.
 
@@ -33,7 +29,7 @@ For a full explanation of all the proposed Telos features, be sure to read our w
 
     a. `git clone https://github.com/Telos-Foundation/telos`
 
-    b. `git checkout stage2.1`
+    b. `git checkout oak-v1.4.5`
 
     c. `git submodule update --init --recursive`
 
