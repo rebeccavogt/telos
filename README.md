@@ -1,9 +1,4 @@
-<<<<<<< HEAD
 # TELOS - A Smart Contract Platform for Everyone
-=======
-
-# EOSIO - The Most Powerful Infrastructure for Decentralized Applications
->>>>>>> v1.4.3
 
 Welcome to the official Telos repository! This software enables anyone to rapidly build and deploy high-performance and high-security blockchain-based applications.
 
@@ -100,13 +95,13 @@ $ brew remove eosio
 ```
 #### Ubuntu 18.04 Debian Package Install
 ```sh
-$ wget https://github.com/eosio/eos/releases/download/v1.4.5/eosio_1.4.5-1-ubuntu-18.04_amd64.deb
-$ sudo apt install ./eosio_1.4.5-1-ubuntu-18.04_amd64.deb
+$ wget https://github.com/eosio/eos/releases/download/v1.5.2/eosio_1.5.2-1-ubuntu-18.04_amd64.deb
+$ sudo apt install ./eosio_1.5.2-1-ubuntu-18.04_amd64.deb
 ```
 #### Ubuntu 16.04 Debian Package Install
 ```sh
-$ wget https://github.com/eosio/eos/releases/download/v1.4.5/eosio_1.4.5-1-ubuntu-16.04_amd64.deb
-$ sudo apt install ./eosio_1.4.5-1-ubuntu-16.04_amd64.deb
+$ wget https://github.com/eosio/eos/releases/download/v1.5.2/eosio_1.5.2-1-ubuntu-16.04_amd64.deb
+$ sudo apt install ./eosio_1.5.2-1-ubuntu-16.04_amd64.deb
 ```
 #### Debian Package Uninstall
 ```sh
@@ -114,8 +109,13 @@ $ sudo apt remove eosio
 ```
 #### Centos RPM Package Install
 ```sh
+<<<<<<< HEAD
 $ wget https://github.com/eosio/eos/releases/download/v1.4.5/eosio-1.4.5-1.el7.x86_64.rpm
 $ sudo yum install ./eosio-1.4.5-1.el7.x86_64.rpm
+=======
+$ wget https://github.com/eosio/eos/releases/download/v1.5.2/eosio-1.5.2-1.el7.x86_64.rpm
+$ sudo yum install ./eosio-1.5.2-1.el7.x86_64.rpm
+>>>>>>> merge/1.5.x
 ```
 #### Centos RPM Package Uninstall
 ```sh
@@ -123,8 +123,13 @@ $ sudo yum remove eosio.cdt
 ```
 #### Fedora RPM Package Install
 ```sh
+<<<<<<< HEAD
 $ wget https://github.com/eosio/eos/releases/download/v1.4.5/eosio-1.4.5-1.fc27.x86_64.rpm
 $ sudo yum install ./eosio-1.4.5-1.fc27.x86_64.rpm
+=======
+$ wget https://github.com/eosio/eos/releases/download/v1.5.2/eosio-1.5.2-1.fc27.x86_64.rpm
+$ sudo yum install ./eosio-1.5.2-1.fc27.x86_64.rpm
+>>>>>>> merge/1.5.x
 ```
 #### Fedora RPM Package Uninstall
 ```sh
