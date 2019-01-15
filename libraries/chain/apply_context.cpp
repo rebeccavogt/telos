@@ -205,12 +205,9 @@ void apply_context::execute_inline( action&& a ) {
    EOS_ASSERT( code != nullptr, action_validate_exception,
                "inline action's code account ${account} does not exist", ("account", a.account) );
 
-<<<<<<< HEAD
-=======
    bool enforce_actor_whitelist_blacklist = trx_context.enforce_whiteblacklist && control.is_producing_block();
    flat_set<account_name> actors;
 
->>>>>>> merge/1.5.x
    bool disallow_send_to_self_bypass = false; // eventually set to whether the appropriate protocol feature has been activated
    bool send_to_self = (a.account == receiver);
    bool inherit_parent_authorizations = (!disallow_send_to_self_bypass && send_to_self && (receiver == act.account) && control.is_producing_block());
@@ -227,24 +224,18 @@ void apply_context::execute_inline( action&& a ) {
       EOS_ASSERT( control.get_authorization_manager().find_permission(auth) != nullptr, action_validate_exception,
                   "inline action's authorizations include a non-existent permission: ${permission}",
                   ("permission", auth) );
-<<<<<<< HEAD
-=======
       if( enforce_actor_whitelist_blacklist )
          actors.insert( auth.actor );
->>>>>>> merge/1.5.x
 
       if( inherit_parent_authorizations && std::find(act.authorization.begin(), act.authorization.end(), auth) != act.authorization.end() ) {
          inherited_authorizations.insert( auth );
       }
    }
 
-<<<<<<< HEAD
-=======
    if( enforce_actor_whitelist_blacklist ) {
       control.check_actor_list( actors );
    }
 
->>>>>>> merge/1.5.x
    // No need to check authorization if replaying irreversible blocks or contract is privileged
    if( !control.skip_auth_check() && !privileged ) {
       try {
