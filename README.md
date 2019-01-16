@@ -95,13 +95,13 @@ $ brew remove eosio
 ```
 #### Ubuntu 18.04 Debian Package Install
 ```sh
-$ wget https://github.com/eosio/eos/releases/download/v1.5.4/eosio_1.5.4-1-ubuntu-18.04_amd64.deb
-$ sudo apt install ./eosio_1.5.4-1-ubuntu-18.04_amd64.deb
+$ wget https://github.com/eosio/eos/releases/download/v1.6.0/eosio_1.6.0-1-ubuntu-18.04_amd64.deb
+$ sudo apt install ./eosio_1.6.0-1-ubuntu-18.04_amd64.deb
 ```
 #### Ubuntu 16.04 Debian Package Install
 ```sh
-$ wget https://github.com/eosio/eos/releases/download/v1.5.4/eosio_1.5.4-1-ubuntu-16.04_amd64.deb
-$ sudo apt install ./eosio_1.5.4-1-ubuntu-16.04_amd64.deb
+$ wget https://github.com/eosio/eos/releases/download/v1.6.0/eosio_1.6.0-1-ubuntu-16.04_amd64.deb
+$ sudo apt install ./eosio_1.6.0-1-ubuntu-16.04_amd64.deb
 ```
 #### Debian Package Uninstall
 ```sh
@@ -109,6 +109,7 @@ $ sudo apt remove eosio
 ```
 #### Centos RPM Package Install
 ```sh
+<<<<<<< HEAD
 <<<<<<< HEAD
 $ wget https://github.com/eosio/eos/releases/download/v1.4.5/eosio-1.4.5-1.el7.x86_64.rpm
 $ sudo yum install ./eosio-1.4.5-1.el7.x86_64.rpm
@@ -124,6 +125,10 @@ $ sudo yum install ./eosio-1.5.3-1.el7.x86_64.rpm
 $ wget https://github.com/eosio/eos/releases/download/v1.5.4/eosio-1.5.4-1.el7.x86_64.rpm
 $ sudo yum install ./eosio-1.5.4-1.el7.x86_64.rpm
 >>>>>>> v1.5.4
+=======
+$ wget https://github.com/eosio/eos/releases/download/v1.6.0/eosio-1.6.0-1.el7.x86_64.rpm
+$ sudo yum install ./eosio-1.6.0-1.el7.x86_64.rpm
+>>>>>>> v1.6.0
 ```
 #### Centos RPM Package Uninstall
 ```sh
@@ -131,6 +136,7 @@ $ sudo yum remove eosio.cdt
 ```
 #### Fedora RPM Package Install
 ```sh
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -148,6 +154,10 @@ $ sudo yum install ./eosio-1.5.3-1.fc27.x86_64.rpm
 $ wget https://github.com/eosio/eos/releases/download/v1.5.4/eosio-1.5.4-1.fc27.x86_64.rpm
 $ sudo yum install ./eosio-1.5.4-1.fc27.x86_64.rpm
 >>>>>>> v1.5.4
+=======
+$ wget https://github.com/eosio/eos/releases/download/v1.6.0/eosio-1.6.0-1.fc27.x86_64.rpm
+$ sudo yum install ./eosio-1.6.0-1.fc27.x86_64.rpm
+>>>>>>> v1.6.0
 ```
 #### Fedora RPM Package Uninstall
 ```sh
@@ -164,6 +174,7 @@ Telos currently supports the following operating systems:
 6. Ubuntu 18.04
 7. MacOS Darwin 10.12 and higher (MacOS 10.13.x recommended)
 
+<<<<<<< HEAD
 # Testnet Contributions
 
 The Telos Testnet is a sandbox for testing newly implemented features and finding bugs within the network. In order to ensure the network behaves as expected, participation in Testnet activites and providing meaningful feedback is encouraged. 
@@ -233,3 +244,18 @@ The Telos Roadmap is broken into four separate stages. Each stage implements new
 
 
 Telos is released under the open source MIT license and is offered “AS IS” without warranty of any kind, express or implied. Any security provided by the Telos software depends in part on how it is used, configured, and deployed. Telos is built upon many third-party libraries such as Binaryen (Apache License) and WAVM (BSD 3-clause) which are also provided “AS IS” without warranty of any kind. Without limiting the generality of the foregoing, Telos Foundation makes no representation or guarantee that Telos or any third-party libraries will perform as intended or will be free of errors, bugs or faulty code. Both may fail in large or small ways that could completely or partially limit functionality or compromise computer systems. If you use or implement Telos, you do so at your own risk. In no event will Telos Foundation be liable to any party for any damages whatsoever, even if it had been advised of the possibility of damage.
+=======
+## Resources
+1. [Website](https://eos.io)
+1. [Blog](https://medium.com/eosio)
+1. [Developer Portal](https://developers.eos.io)
+1. [StackExchange for Q&A](https://eosio.stackexchange.com/)
+1. [Community Telegram Group](https://t.me/EOSProject)
+1. [Developer Telegram Group](https://t.me/joinchat/EaEnSUPktgfoI-XPfMYtcQ)
+1. [White Paper](https://github.com/EOSIO/Documentation/blob/master/TechnicalWhitePaper.md)
+1. [Roadmap](https://github.com/EOSIO/Documentation/blob/master/Roadmap.md)
+
+<a name="gettingstarted"></a>
+## Getting Started
+Instructions detailing the process of getting the software, building it, running a simple test network that produces blocks, account creation and uploading a sample contract to the blockchain can be found in [Getting Started](https://developers.eos.io/eosio-home/docs) on the [EOSIO Developer Portal](https://developers.eos.io).
+>>>>>>> v1.6.0
