@@ -10,12 +10,12 @@ namespace eosio {
 
 using namespace appbase;
 
-class tipfs_plugin : public appbase::plugin<template_plugin> {
+class canopy_plugin : public appbase::plugin<template_plugin> {
 public:
     APPBASE_PLUGIN_REQUIRES((chain_plugin))
 
-    tipfs_plugin();
-    virtual ~tipfs_plugin();
+    canopy_plugin();
+    virtual ~canopy_plugin();
     
     APPBASE_PLUGIN_REQUIRES()
     virtual void set_program_options(options_description&, options_description& cfg) override;
