@@ -12,7 +12,8 @@
 namespace eosio {
 
 class login_plugin : public plugin<login_plugin> {
- public:
+
+public:
    APPBASE_PLUGIN_REQUIRES((chain_plugin)(http_plugin))
 
    login_plugin();
@@ -78,7 +79,7 @@ class login_plugin : public plugin<login_plugin> {
    do_not_use_sign_results do_not_use_sign(const do_not_use_sign_params&);
    do_not_use_get_secret_results do_not_use_get_secret(const do_not_use_get_secret_params&);
 
- private:
+private:
    unique_ptr<class login_plugin_impl> my;
 };
 
