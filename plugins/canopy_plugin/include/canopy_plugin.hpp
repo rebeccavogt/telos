@@ -5,6 +5,8 @@
 #pragma once
 #include <appbase/application.hpp>
 #include <eosio/chain_plugin/chain_plugin.hpp>
+#include <eosio/chain/controller.hpp>
+#include <eosio/http_plugin/http_plugin.hpp>
 
 namespace eosio {
 
@@ -23,15 +25,45 @@ public:
     void plugin_startup();
     void plugin_shutdown();
 
-    struct addfile_request_params {
+    struct addfile_params {
         chain::uint64_t ipfs_cid;
         chain::name payer;
+    };
+    
+    //holds info needed for routing file to ipfs node
+    struct addfile_results {
+        uint32_t request_time;
+        uint16_t ipfs_chunks;
+        asset escrowed_bill;
     };
 
-    struct rmvfile_request_params {
+    struct acceptfile_params {
         chain::uint64_t ipfs_cid;
-        chain::name payer;
+        chain::name validator;
     };
+
+    struct acceptfile_results {
+        uint32_t accept_time;
+    };
+
+    // struct billing_info {
+    //     uint16_t ipfs_chunks;
+    //     asset final_bill; //NOTE: denominated by HDD token (represents 256KiB chunks)
+    // };
+
+    // struct rmvfile_params {
+    //     chain::uint64_t ipfs_cid;
+    //     chain::name payer;
+    // };
+
+    addfile_results addfile_request(const addfile_params&);
+    acceptfile_results acceptfile_request(const acceptfile_params&);
+
+    asset calculate_bill(uint32_t file_size_bytes);
+
+    namespace chain {
+
+    }
 
 private:
     std::unique_ptr<class canopy_plugin_impl> my;
@@ -40,4 +72,4 @@ private:
 } //namespace eosio
 
 FC_REFLECT(eosio::canopy_plugin::addfile_request_params, (ipfs_cid)(payer))
-FC_REFLECT(eosio::canopy_plugin::rmvfile_request_params, (ipfs_cid)(payer))
+//FC_REFLECT(eosio::canopy_plugin::rmvfile_request_params, (ipfs_cid)(payer))
