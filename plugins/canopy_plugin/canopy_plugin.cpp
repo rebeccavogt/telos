@@ -6,10 +6,14 @@
 #include <eosio/canopy_plugin/canopy_plugin.hpp>
 
 namespace eosio {
+    
     static appbase::abstract_plugin& _canopy_plugin = app().register_plugin<canopy_plugin>();
 
 class canopy_plugin_impl {
     public:
+
+    canopy_plugin_impl(){}
+    ~canopy_plugin_impl(){}
 
     int64_t billing_rate_per_chunk = 1;
     string ipfs_node = "http://";
