@@ -3,7 +3,7 @@
  *  @copyright defined in telos/LICENSE.txt
  */
 //#include <eosio/canopy_plugin/canopy_plugin.hpp>
-#include <include/canopy_plugin.hpp>
+#include <eosio/canopy_plugin/canopy_plugin.hpp>
 
 namespace eosio {
     static appbase::abstract_plugin& _canopy_plugin = app().register_plugin<canopy_plugin>();
@@ -87,7 +87,7 @@ void canopy_plugin::plugin_shutdown() {
     ilog("shutdown complete");
 }
 
-addfile_results canopy_plugin::addfile_request(const addfile_params&) {
+canopy_plugin::addfile_results canopy_plugin::addfile_request(const addfile_params&) {
    
     //TODO: check file doesn't exist on contract (in addrequests table?)
 
@@ -98,11 +98,11 @@ addfile_results canopy_plugin::addfile_request(const addfile_params&) {
 
     //TODO: forward file and add request to IPFS node
 
-    return addfile_results{fc::time_point::now()};
+    return addfile_results{fc::time_point::now().sec_since_epoch()};
 }
 
 asset canopy_plugin::calculate_bill(uint32_t file_size_bytes) {
-    return asset(int64_t(file_size_bytes / my->billing_rate_per_chunk + 1), symbol("HDD", 0));
+    return asset(int64_t(file_size_bytes / my->billing_rate_per_chunk + 1), symbol(0, "HDD"));
 }
 
 } //namespace eosio

@@ -13,6 +13,7 @@ namespace eosio {
 using namespace appbase;
 
 class canopy_plugin : public appbase::plugin<canopy_plugin> {
+
 public:
     APPBASE_PLUGIN_REQUIRES((http_plugin)(chain_plugin))
 
@@ -26,19 +27,19 @@ public:
     void plugin_shutdown();
 
     struct addfile_params {
-        chain::uint64_t ipfs_cid;
+        uint64_t ipfs_cid;
         chain::name payer;
     };
     
     //holds info needed for routing file to ipfs node
     struct addfile_results {
         uint32_t request_time;
-        uint16_t ipfs_chunks;
-        asset escrowed_bill;
+        //uint16_t ipfs_chunks;
+        //asset escrowed_bill;
     };
 
     struct acceptfile_params {
-        chain::uint64_t ipfs_cid;
+        uint64_t ipfs_cid;
         chain::name validator;
     };
 
@@ -61,15 +62,11 @@ public:
 
     asset calculate_bill(uint32_t file_size_bytes);
 
-    namespace chain {
-
-    }
-
 private:
     std::unique_ptr<class canopy_plugin_impl> my;
 };
 
 } //namespace eosio
 
-FC_REFLECT(eosio::canopy_plugin::addfile_request_params, (ipfs_cid)(payer))
+FC_REFLECT(eosio::canopy_plugin::addfile_params, (ipfs_cid)(payer))
 //FC_REFLECT(eosio::canopy_plugin::rmvfile_request_params, (ipfs_cid)(payer))

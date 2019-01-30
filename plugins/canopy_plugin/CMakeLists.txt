@@ -3,5 +3,5 @@ add_library( canopy_plugin
              canopy_plugin.cpp
              ${HEADERS} )
 
-target_link_libraries( canopy_plugin appbase fc )
+target_link_libraries( canopy_plugin http_plugin chain_plugin eosio_chain appbase fc )
 target_include_directories( canopy_plugin PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
