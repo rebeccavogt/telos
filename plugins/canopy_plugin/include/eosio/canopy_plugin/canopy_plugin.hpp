@@ -7,6 +7,8 @@
 #include <eosio/chain_plugin/chain_plugin.hpp>
 #include <eosio/chain/controller.hpp>
 #include <eosio/http_plugin/http_plugin.hpp>
+#include <eosio/chain/exceptions.hpp>
+#include <fc/io/json.hpp>
 
 namespace eosio {
 

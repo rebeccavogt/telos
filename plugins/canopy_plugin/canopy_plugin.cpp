@@ -44,28 +44,9 @@ void canopy_plugin::plugin_initialize(const variables_map& options) {
     ilog("intialization complete");
 }
 
-#define CALL(call_name, http_response_code)                                                                         \
-{                                                                                                                   \
-    std::string("/v1/canopy/" #call_name), [this](string, string body, url_response_callback cb) mutable {          \
-        try {                                                                                                       \
-            if (body.empty())                                                                                       \
-                body = "{}";                                                                                        \
-            auto result = call_name(fc::json::from_string(body).as<login_plugin::call_name##_params>());            \
-            cb(http_response_code, fc::json::to_string(result));                                                    \
-        } catch (...) {                                                                                             \
-            http_plugin::handle_exception("canopy", #call_name, body, cb);                                          \
-        }                                                                                                           \
-    }                                                                                                               \
-}
-
 void canopy_plugin::plugin_startup() {
     
     ilog("starting canopy_plugin...");
-
-    // app().get_plugin<http_plugin>().add_api({
-    //    CALL(addfile_request, 200),
-    //    CALL(rmvfile_request, 200)
-    // });
 
     //TODO: grab provider pk and provider name from config file
 
