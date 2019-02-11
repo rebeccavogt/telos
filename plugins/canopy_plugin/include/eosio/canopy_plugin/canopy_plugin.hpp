@@ -1,5 +1,6 @@
 /**
- *  @file
+ *  
+ *  @author Craig Branscom
  *  @copyright defined in telos/LICENSE.txt
  */
 #pragma once
@@ -16,7 +17,8 @@ using namespace appbase;
 
 class canopy_plugin : public appbase::plugin<canopy_plugin> {
 
-public:
+    public:
+
     APPBASE_PLUGIN_REQUIRES((http_plugin)(chain_plugin))
 
     canopy_plugin();
@@ -28,47 +30,25 @@ public:
     void plugin_startup();
     void plugin_shutdown();
 
-    struct addfile_params {
-        uint64_t ipfs_cid;
-        chain::name payer;
-    };
-    
-    //holds info needed for routing file to ipfs node
-    struct addfile_results {
-        uint32_t request_time;
-        //uint16_t ipfs_chunks;
-        //asset escrowed_bill;
+    struct get_provider_params {
+        chain::name provider;
     };
 
-    struct acceptfile_params {
-        uint64_t ipfs_cid;
-        chain::name validator;
+    struct get_provider_results {
+        chain::name account;
+        uint8_t status;
+        string ipfs_endpoint;
+        asset disk_balance;
     };
 
-    struct acceptfile_results {
-        uint32_t accept_time;
-    };
+    get_provider_results get_provider(get_provider_params p);
 
-    // struct billing_info {
-    //     uint16_t ipfs_chunks;
-    //     asset final_bill; //NOTE: denominated by HDD token (represents 256KiB chunks)
-    // };
+    private:
 
-    // struct rmvfile_params {
-    //     chain::uint64_t ipfs_cid;
-    //     chain::name payer;
-    // };
-
-    addfile_results addfile_request(const addfile_params&);
-    acceptfile_results acceptfile_request(const acceptfile_params&);
-
-    asset calculate_bill(uint32_t file_size_bytes);
-
-private:
     std::unique_ptr<class canopy_plugin_impl> my;
 };
 
 } //namespace eosio
 
-FC_REFLECT(eosio::canopy_plugin::addfile_params, (ipfs_cid)(payer))
+FC_REFLECT(eosio::canopy_plugin::get_provider_params, (provider))
 //FC_REFLECT(eosio::canopy_plugin::rmvfile_request_params, (ipfs_cid)(payer))

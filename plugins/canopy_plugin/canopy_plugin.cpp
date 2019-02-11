@@ -2,7 +2,6 @@
  *  @file
  *  @copyright defined in telos/LICENSE.txt
  */
-//#include <eosio/canopy_plugin/canopy_plugin.hpp>
 #include <eosio/canopy_plugin/canopy_plugin.hpp>
 
 namespace eosio {
@@ -20,6 +19,10 @@ class canopy_plugin_impl {
     string ipfs_peer_id = "Qm...";
     name provider = name("testprovider");
     name pool_name = name("testpool");
+
+    // read_write db = get_read_write_api();
+    // abi_def canopy_abi = get_abi(&db, name("teloscanopy"));
+    // auto table_type = get_table_type( abi, "accounts" );
 
 };
 
@@ -72,22 +75,17 @@ void canopy_plugin::plugin_shutdown() {
     ilog("shutdown complete");
 }
 
-canopy_plugin::addfile_results canopy_plugin::addfile_request(const addfile_params&) {
-   
-    //TODO: check file doesn't exist on contract (in addrequests table?)
+canopy_plugin::get_provider_results canopy_plugin::get_provider(get_provider_params p) {
+    //get_provider_results results;
 
-    // const auto &d = db.db(); //TODO: shame whoever named this
-    // const account_object& d.get_account(my->provider);
+    eosio::chain_apis::read_only::get_table_rows_params table_params;
+    table_params.code = chain::name("teloscanopy");
+    table_params.scope = "teloscanopy";
+    table_params.table = chain::name("users");
+    table_params.table_key = "account";
 
-    //TODO: check file isnt already in IPFS? If so, attempt to add. If already there, break.
-
-    //TODO: forward file and add request to IPFS node
-
-    return addfile_results{fc::time_point::now().sec_since_epoch()};
-}
-
-asset canopy_plugin::calculate_bill(uint32_t file_size_bytes) {
-    return asset(int64_t(file_size_bytes / my->billing_rate_per_chunk + 1), symbol(0, "HDD"));
+    chain_apis::read_only::get_table_rows_result result = chain_apis::read_only::get_table_rows(table_params);
+    return results;
 }
 
 } //namespace eosio
