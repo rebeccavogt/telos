@@ -74,7 +74,7 @@ void canopy_plugin::plugin_shutdown() {
 
     ilog("shutdown complete");
 }
-
+/*
 canopy_plugin::get_provider_results canopy_plugin::get_provider(get_provider_params p) {
     //get_provider_results results;
 
@@ -87,5 +87,13 @@ canopy_plugin::get_provider_results canopy_plugin::get_provider(get_provider_par
     chain_apis::read_only::get_table_rows_result result = chain_apis::read_only::get_table_rows(table_params);
     return results;
 }
+*/
 
+namespace canopy_apis{
+    read_only::get_hello_world_results read_only::get_hello_world( const read_only::get_hello_world_params& params )const {
+        get_hello_world_results result;
+        result.world = "hello world";
+        return result;
+    }
+}
 } //namespace eosio
